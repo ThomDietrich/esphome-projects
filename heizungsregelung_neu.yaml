@@ -31,6 +31,10 @@ packages:
   include_5: !include include/heizungsregelung_pulse.yaml
   include_6: !include include/heizungsregelung_relais.yaml
 
+# Explicitly use IP address for connection
+#wifi:
+#  use_address: 192.168.23.187
+
 # https://esphome.io/components/status_led.html
 status_led:
   pin: GPIO19  # Rote LED

@@ -1,0 +1,220 @@
+|-
+  id(epaperdisplay_last_update).publish_state(id(homeassistant_time).now().timestamp);
+
+  /////////////////////////////////////////////////////////////////////////
+  it.print(10, 10, id(font_header), TextAlign::LEFT, "WETTER");
+  //it.strftime(10, 10, id(font_header), TextAlign::LEFT , "%a %d. %b", id(homeassistant_time).now()); // english
+  it.print(400-10, 10, id(font_header), TextAlign::RIGHT, "POS");
+  it.filled_rectangle(98, 10+11, 245, 3); // horizontal 1
+
+  if (id(datumsstempel).state == "unknown" || id(datumsstempel).state == "") {
+    it.print(10, 175, id(font_header), TextAlign::LEFT, "KALENDER");
+  } else {
+    it.printf(10, 175, id(font_header), TextAlign::LEFT, "%s", id(datumsstempel).state.c_str());
+  }
+
+  it.filled_rectangle(120, 175+11, 172, 3); // horizontal 2
+
+  /////////////////////////////////////////////////////////////////////////
+  /* Block 1 - WETTER */
+  int b1_x_start = 15;
+  int b1_x_end = 300;
+  int b1_y_start = 50;
+
+  // Current temperature
+  if (isnan(id(temperature).state)) {
+    it.print(b1_x_start+145, b1_y_start+30, id(font_wetter_gross), TextAlign::BASELINE_RIGHT, " - ºC");
+  } else {
+    it.printf(b1_x_start+145, b1_y_start+30, id(font_wetter_gross), TextAlign::BASELINE_RIGHT, "%2.1fºC", id(temperature).state);
+  }
+
+  // Min temperature 24h
+  if (isnan(id(temperature_min).state)) {
+    it.print(b1_x_end-40, b1_y_start+5, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, " - ºC");
+  } else {
+    it.printf(b1_x_end-40, b1_y_start+5, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, "%2.1fºC", id(temperature_min).state);
+  }
+  it.print(b1_x_end-20, b1_y_start+5+1, id(mdi_wetter_klein), TextAlign::BASELINE_CENTER, "󰸂"); //low temperature
+
+  // Rain 24h
+  if (isnan(id(rain_24h).state)) {
+    it.print(b1_x_end-40, b1_y_start+35, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, " - mm");
+  } else {
+    it.printf(b1_x_end-40, b1_y_start+35, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, "%2.1fmm", id(rain_24h).state);
+  }
+  it.print(b1_x_end-20, b1_y_start+35+1, id(mdi_wetter_klein), TextAlign::BASELINE_CENTER, "󰆫"); //rain
+
+  // Forecast
+  auto forecast_cond = id(forecast_condition).state;
+  if (forecast_cond == "unknown" || forecast_cond == "") {
+    it.print(b1_x_start, b1_y_start+55, id(mdi_wetter_gross), TextAlign::TOP_LEFT, "󰨹");  // mdi-cloud-question
+  } else {
+    auto cond_icon = "󰨹";  // mdi-cloud-question
+    if (forecast_cond == "Klare Nacht") {
+      cond_icon = "󰖔"; // mdi-weather-night
+    } else if (forecast_cond == "Wolkig") {
+      cond_icon = "󰖐";  // mdi-weather-cloudy
+    } else if (forecast_cond == "Außergewöhnlich") {
+      cond_icon = "󰼯";  // mdi-weather-cloudy-alert
+    } else if (forecast_cond == "Nebel") {
+      cond_icon = "󰖑";  // mdi-weather-fog
+    } else if (forecast_cond == "Hagel") {
+      cond_icon = "󰖒";  // mdi-weather-hail
+    } else if (forecast_cond == "Gewitter") {
+      cond_icon = "󰖓";  // mdi-weather-lightning
+    } else if (forecast_cond == "Gewitterregen") {
+      cond_icon = "󰙾";  // mdi-weather-lightning-rainy
+    } else if (forecast_cond == "Teils Wolkig") {
+      cond_icon = "󰖕";  // mdi-weather-partly-cloudy
+    } else if (forecast_cond == "Nieselregen") {
+      cond_icon = "󰼳"; // mdi-weather-partly-rainy
+    } else if (forecast_cond == "Regen") {
+      cond_icon = "󰖖";  // mdi-weather-pouring
+    } else if (forecast_cond == "Schnee") {
+      cond_icon = "󰼶";  // mdi-weather-snowy-heavy
+    } else if (forecast_cond == "Schneeregen") {
+      cond_icon = "󰙿";  // mdi-weather-snowy-rainy
+    } else if (forecast_cond == "Sonnig") {
+      cond_icon = "󰖙";  // mdi-weather-sunny
+    } else if (forecast_cond == "Windig") {
+      cond_icon = "󰖝";  // mdi-weather-windy
+    } else if (forecast_cond == "Böig") {
+      cond_icon = "󰖞";  // mdi-weather-windy-variant
+    }
+
+    it.print(b1_x_start, b1_y_start+55, id(mdi_wetter_gross), TextAlign::TOP_LEFT, cond_icon);
+    it.printf(b1_x_start+65, b1_y_start+55, id(font_wetter_mittel), TextAlign::TOP_LEFT, "%s %s", id(forecast_tagesstempel).state.c_str(), forecast_cond.c_str());
+    //it.printf(b1_x_start+65, b1_y_start+55+30, id(font_wetter_mittel), TextAlign::TOP_LEFT, "%.0f..%.0f°C, %.0fmm, %d%%", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, int(id(forecast_precip_prob).state));
+    it.printf(b1_x_start+65, b1_y_start+55+30, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.0f..%.0f°C, %.0fmm, %dkWh", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, int(id(forecast_solar_production).state));
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  /* Block 3 - KALENDER */
+  int y_start_c = 228;
+  int y_sep_c = 30;
+  int cal_index = 0;
+  if (id(opstate_waschmaschine).state == "Active") {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
+    it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "Waschmaschine läuft ...");
+    cal_index += 1;
+  }
+  if (id(opstate_waschmaschine).state == "Finished") {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
+    it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "Waschmaschine ist fertig!");
+    cal_index += 1;
+  }
+  if (id(cal_geburtstag).state != "unknown" && id(cal_geburtstag).state != "unavailable" && id(cal_geburtstag).state != "") {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰻗"); // mdi-calendar-account
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(cal_geburtstag).state.c_str());
+    cal_index += 1;
+  }
+  if (id(cal_n100).state != "unknown" && id(cal_n100).state != "unavailable" && id(cal_n100).state != "") {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰻚"); // mdi-calendar-star
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(cal_n100).state.c_str());
+    cal_index += 1;
+  }
+  if (id(cal_termin).state != "unknown" && id(cal_termin).state != "unavailable" && id(cal_termin).state != "") {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰨱"); // mdi-calendar-alert
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(cal_termin).state.c_str());
+    cal_index += 1;
+  }
+  if (id(cal_feiertag).state != "unknown" && id(cal_feiertag).state != "unavailable" && id(cal_feiertag).state != "") {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰧓"); // mdi-calendar-star
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(cal_feiertag).state.c_str());
+    cal_index += 1;
+  }
+  if (id(muell_entsorgung_tage).state < 2) {
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰩺"); // mdi-trash-can-outline
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(muell_entsorgung).state.c_str());
+    cal_index += 1;
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  /* Lösche rechten Bereich */
+  it.filled_rectangle(295, 30, 400-295, 300-30, COLOR_OFF);
+  //it.filled_rectangle(300, 30, 3, 245); // vertikale Linie
+  it.filled_rectangle(300, 30, 3, 300-30-10); // vertikale Linie
+
+  /////////////////////////////////////////////////////////////////////////
+  /* Block 2 - POSITION */
+  int b2_x_start = 300+3+20;
+  int b2_y_start = 85;
+  int b2_x_end = 395;
+  int xsep = 25;
+  int ysep = 42; // 52
+  int y_text_shift = -5;
+
+
+  auto pos_werner_text = id(pos_werner).state;
+  const char *pos_werner_icon = "󰰯"; // mdi-alpha-w-circle-outline
+  if (pos_werner_text == "Zuh.") {
+    pos_werner_icon = "󰰮"; // mdi-alpha-w-circle
+  } else if (pos_werner_text == "unavailable" || pos_werner_text == "unknown" || pos_werner_text == "") {
+    pos_werner_icon = "󰬄"; // mdi-alpha-w
+    pos_werner_text = "";
+  }
+
+  auto pos_irene_text = id(pos_irene).state;
+  const char *pos_irene_icon = "󰰅"; // mdi-alpha-i-circle-outline
+  if (pos_irene_text == "Zuh.") {
+    pos_irene_icon = "󰰄"; // mdi-alpha-i-circle
+  } else if (pos_irene_text == "unavailable" || pos_irene_text == "unknown" || pos_irene_text == "") {
+    pos_irene_icon = "󰫶"; // mdi-alpha-i
+    pos_irene_text = "";
+  }
+
+  auto pos_thomas_text = id(pos_thomas).state;
+  const char *pos_thomas_icon = "󰰦"; // mdi-alpha-t-circle-outline
+  if (pos_thomas_text == "Zuh." || pos_thomas_text == "Woh.") {
+    pos_thomas_icon = "󰰥"; // mdi-alpha-t-circle
+  } else if (pos_thomas_text == "unavailable" || pos_thomas_text == "unknown" || pos_thomas_text == "") {
+    pos_thomas_icon = "󰬁"; // mdi-alpha-t
+    pos_thomas_text = "";
+  }
+
+  auto pos_stephan_text = id(pos_stephan).state;
+  const char *pos_stephan_icon = "󰰣"; // mdi-alpha-s-circle-outline
+  if (pos_stephan_text == "Zuh." || pos_stephan_text == "Woh.") {
+    pos_stephan_icon = "󰰢"; // mdi-alpha-s-circle
+  } else if (pos_stephan_text == "unavailable" || pos_stephan_text == "unknown" || pos_stephan_text == "") {
+    pos_stephan_icon = "󰬀"; // mdi-alpha-s
+    pos_stephan_text = "";
+  }
+
+  it.print(b2_x_start, b2_y_start+0*ysep, id(mdi_letters), TextAlign::BASELINE_CENTER, pos_werner_icon);
+  it.printf(b2_x_start+xsep, b2_y_start+0*ysep+y_text_shift, id(font_position), TextAlign::BASELINE_LEFT, "%s", pos_werner_text.c_str());
+  it.print(b2_x_start, b2_y_start+1*ysep, id(mdi_letters), TextAlign::BASELINE_CENTER, pos_irene_icon);
+  it.printf(b2_x_start+xsep, b2_y_start+1*ysep+y_text_shift, id(font_position), TextAlign::BASELINE_LEFT, "%s", pos_irene_text.c_str());
+  it.print(b2_x_start, b2_y_start+2*ysep, id(mdi_letters), TextAlign::BASELINE_CENTER, pos_thomas_icon);
+  it.printf(b2_x_start+xsep, b2_y_start+2*ysep+y_text_shift, id(font_position), TextAlign::BASELINE_LEFT, "%s", pos_thomas_text.c_str());
+  it.print(b2_x_start, b2_y_start+3*ysep, id(mdi_letters), TextAlign::BASELINE_CENTER, pos_stephan_icon);
+  it.printf(b2_x_start+xsep, b2_y_start+3*ysep+y_text_shift, id(font_position), TextAlign::BASELINE_LEFT, "%s", pos_stephan_text.c_str());
+
+  it.print(b2_x_start, b2_y_start+4*ysep, id(mdi_letters), TextAlign::BASELINE_CENTER, "󰯬");
+  it.print(b2_x_start+xsep, b2_y_start+4*ysep+y_text_shift, id(font_position), TextAlign::BASELINE_LEFT, "Zuh.");
+
+
+  /////////////////////////////////////////////////////////////////////////
+  /* FOOTER */
+  //it.strftime(365, 295, id(font_footer), TextAlign::BASELINE_RIGHT , "%d. %b  %H:%M", id(homeassistant_time).now());
+
+  if(id(wifisignal).has_state()) {
+    int x = 380;
+    int y = 297;
+    if (id(wifisignal).state >= -50) {
+      //Excellent
+      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤨");
+    } else if (id(wifisignal).state  >= -60) {
+      //Good
+      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤥");
+    } else if (id(wifisignal).state  >= -75) {
+      //Fair
+      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤢");
+    } else if (id(wifisignal).state  >= -100) {
+      //Weak
+      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤟");
+    } else {
+      //Unlikely working signal
+      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤫");
+    }
+  }

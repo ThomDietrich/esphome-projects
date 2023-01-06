@@ -1,0 +1,190 @@
+# Load used fonts and symbols
+font:
+  # https://materialdesignicons.com/
+  # https://pictogrammers.github.io/@mdi/font/5.3.45/
+
+  - id: font_header
+    file: 'fonts/Roboto-Bold.ttf'
+    size: 20
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: font_footer
+    file: 'fonts/Roboto-Regular.ttf'
+    size: 14
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: font_position
+    file: 'fonts/Roboto-Regular.ttf'
+    size: 18
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: font_calendar
+  #  file: 'fonts/Roboto-Light.ttf'
+    file: 'fonts/Sabon_Roman.ttf'
+    size: 20
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: font_wetter_klein
+    file: 'fonts/Roboto-Regular.ttf'
+    size: 21
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: font_wetter_mittel
+    file: 'fonts/Roboto-Regular.ttf'
+    size: 22
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: font_wetter_gross
+    file: 'fonts/Roboto-Medium.ttf'
+    size: 50
+    glyphs: [
+      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
+      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
+      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
+    ]
+
+  - id: mdi_wetter_klein
+    file: 'fonts/materialdesignicons-webfont.ttf'
+    size: 24
+    glyphs: [
+      '󰔏', # mdi-thermometer
+      '󰸂', # mdi-thermometer-chevron-down
+      '󰖎', # mdi-water-percent
+      '󰆫', # mdi-cup-water
+      ]
+
+  - id: mdi_wetter_gross
+    file: 'fonts/materialdesignicons-webfont.ttf'
+    size: 60
+    glyphs: [
+      "󰨹", # mdi-cloud-question
+      "󰖔", # mdi-weather-night
+      "󰖐", # mdi-weather-cloudy
+      "󰼯", # mdi-weather-cloudy-alert
+      "󰖑", # mdi-weather-fog
+      "󰖒", # mdi-weather-hail
+      "󰖓", # mdi-weather-lightning
+      "󰙾", # mdi-weather-lightning-rainy
+      "󰖕", # mdi-weather-partly-cloudy
+      "󰼳", # mdi-weather-partly-rainy
+      "󰖖", # mdi-weather-pouring
+      "󰼶", # mdi-weather-snowy-heavy
+      "󰙿", # mdi-weather-snowy-rainy
+      "󰖙", # mdi-weather-sunny
+      "󰖝", # mdi-weather-windy
+      "󰖞", # mdi-weather-windy-variant
+    ]
+
+  - id: mdi_letters
+    file: 'fonts/materialdesignicons-webfont.ttf'
+    size: 33
+    glyphs: [
+      '󰫮', # mdi-alpha-a
+      '󰯬', # mdi-alpha-a-circle
+      '󰯭', # mdi-alpha-a-circle-outline
+      '󰫵', # mdi-alpha-h
+      '󰰁', # mdi-alpha-h-circle
+      '󰰂', # mdi-alpha-h-circle-outline
+      '󰫶', # mdi-alpha-i
+      '󰰄', # mdi-alpha-i-circle
+      '󰰅', # mdi-alpha-i-circle-outline
+      '󰬀', # mdi-alpha-s
+      '󰰢', # mdi-alpha-s-circle
+      '󰰣', # mdi-alpha-s-circle-outline
+      '󰬁', # mdi-alpha-t
+      '󰰥', # mdi-alpha-t-circle
+      '󰰦', # mdi-alpha-t-circle-outline
+      '󰬄', # mdi-alpha-w
+      '󰰮', # mdi-alpha-w-circle
+      '󰰯', # mdi-alpha-w-circle-outline
+    ]
+
+  - id: mdi_calendar
+    file: 'fonts/materialdesignicons-webfont.ttf'
+    size: 24
+    glyphs: [
+      '󰜪', # mdi-washing-machine
+      '󰻗', # mdi-calendar-account
+      '󰨱', # mdi-calendar-alert
+      '󰧓', # mdi-calendar-star
+      '󰻚', # mdi-calendar-weekend-outline
+      '󰩺', # mdi-trash-can-outline
+      ]
+
+  - id: mdi_wifi
+    file: 'fonts/materialdesignicons-webfont.ttf'
+    size: 18
+    glyphs: [
+      '󰤫', # mdi-wifi-strength-alert-outline
+      '󰤟', # mdi-wifi-strength-1
+      '󰤢', # mdi-wifi-strength-2
+      '󰤥', # mdi-wifi-strength-3
+      '󰤨', # mdi-wifi-strength-4
+
+      ]
+
+  - id: mdi_med
+    file: 'fonts/materialdesignicons-webfont.ttf'
+    size: 33
+    glyphs: [
+      '󰀦', # mdi-alert
+      ]

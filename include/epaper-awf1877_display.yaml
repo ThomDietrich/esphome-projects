@@ -1,0 +1,15 @@
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO26
+
+display:
+  - platform: waveshare_epaper
+    id: epaperdisplay
+    cs_pin: GPIO19
+    dc_pin: GPIO21
+    busy_pin: GPIO22
+    reset_pin: GPIO25
+    model: 4.20in
+    update_interval: 30min
+
+    lambda: !include epaper-awf1877_display-content.yaml

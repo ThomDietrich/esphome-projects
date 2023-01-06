@@ -1,0 +1,114 @@
+# Retrieve local time and sensor data from Home Assistant
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+sensor:
+  - platform: homeassistant
+    entity_id: sensor.weather_station_outtemp_c
+    id: temperature
+
+  - platform: homeassistant
+    entity_id: sensor.weather_station_outtemp_c_18h_min
+    id: temperature_min
+
+  - platform: homeassistant
+    entity_id: sensor.weather_station_outhumidity
+    id: humidity
+
+  - platform: homeassistant
+    entity_id: sensor.weather_station_rain24_mm
+    id: rain_24h
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_temp
+    id: forecast_temp
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_templow
+    id: forecast_templow
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_precipitation
+    id: forecast_precip
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_precipitation_probability
+    id: forecast_precip_prob
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_forecast_solar_production
+    id: forecast_solar_production
+
+  - platform: homeassistant
+    entity_id: sensor.waste_collection_next_tage
+    id: muell_entsorgung_tage
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: sensor.epaper_display_datumsstempel
+    id: datumsstempel
+
+  - platform: homeassistant
+    entity_id: sensor.waste_collection_next
+    id: muell_entsorgung
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_tagesstempel
+    id: forecast_tagesstempel
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_condition
+    id: forecast_condition
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_display_position_werner
+    id: pos_werner
+    on_value:
+      then:
+        - component.update: epaperdisplay
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_display_position_irene
+    id: pos_irene
+    on_value:
+      then:
+        - component.update: epaperdisplay
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_display_position_thomas
+    id: pos_thomas
+    on_value:
+      then:
+        - component.update: epaperdisplay
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_display_position_stephan
+    id: pos_stephan
+    on_value:
+      then:
+        - component.update: epaperdisplay
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_kalender_geburtstag
+    id: cal_geburtstag
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_kalender_termin
+    id: cal_termin
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_kalender_feiertag
+    id: cal_feiertag
+
+  - platform: homeassistant
+    entity_id: sensor.epaper_kalender_nurzen100
+    id: cal_n100
+
+  - platform: homeassistant
+    entity_id: input_select.waschmaschine_opstate
+    id: opstate_waschmaschine
+    on_value:
+      then:
+        - delay: 30s
+        - component.update: epaperdisplay
