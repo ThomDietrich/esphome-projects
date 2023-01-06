@@ -1,0 +1,11 @@
+wifi:
+  networks:
+    - ssid: !secret wifi_home1_ssid
+      password: !secret wifi_home1_pw
+    - ssid: !secret wifi_home2_ssid
+      password: !secret wifi_home2_pw
+    - ssid: !secret wifi_home3_ssid
+      password: !secret wifi_home3_pw
+  ap:
+    ssid: "${device_name} fallback"
+    password: !secret wifi_fallback_pw

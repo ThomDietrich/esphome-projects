@@ -1,0 +1,40 @@
+captive_portal:
+
+api:
+  password: ""
+
+ota:
+  password: !secret ota_pw
+
+web_server:
+  port: 80
+
+logger:
+  # Get detailed output from max31865
+  #level: VERY_VERBOSE
+  #logs:
+  #  # Silence unrelated chatty components
+  #  api: DEBUG
+  #  api.connection: DEBUG
+  #  api.service: DEBUG
+  #  app: DEBUG
+  #  scheduler: DEBUG
+  #  sensor.filter: DEBUG
+  #  sensor: DEBUG
+
+binary_sensor:
+  # https://esphome.io/components/binary_sensor/status.html
+  - platform: status
+    name: "${device_friendly_name} ESP Device Status"
+
+button:
+  # https://esphome.io/components/button/restart.html
+  - platform: restart
+    name: "${device_friendly_name} ESP Device Restart"
+
+sensor:
+  # https://esphome.io/components/sensor/uptime.html
+  - platform: uptime
+    name: "${device_friendly_name} ESP Device Uptime"
+    update_interval: 60s
+    device_class: duration

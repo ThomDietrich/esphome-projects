@@ -1,0 +1,67 @@
+# esphome -s nummer 1 config bienenstockwaage.yaml
+substitutions:
+  nummer: 0
+
+  # secrets
+  ota_pw: !secret ota_pw
+  wifi_home1_ssid: !secret wifi_home1_ssid
+  wifi_home1_password: !secret wifi_home1_password
+  wifi_home2_ssid: !secret wifi_home2_ssid
+  wifi_home2_password: !secret wifi_home2_password
+  wifi_fallback_pw: !secret wifi_fallback_password
+
+esphome:
+  name: bienenstockwaage-${nummer}
+  platform: ESP8266
+  board: d1_mini
+
+#esphome:
+#  name: bienenstockwaage-${nummer}
+#  comment: Bienenstockwaage ${nummer}
+#  platform: ESP32
+#  board: esp32dev
+#  platformio_options:
+#    platform: espressif32
+#    board: az-delivery-devkit-v4
+#    board_build.mcu: esp32
+#    board_build.f_cpu: 240000000L
+
+wifi:
+  networks:
+    - ssid: ${wifi_home1_ssid}
+      password: ${wifi_home1_password}
+  ap:
+    ssid: "bienenstockwaage-${nummer}-fallback"
+    password: ${wifi_fallback_password}
+
+captive_portal:
+
+logger:
+
+api:
+  password: ""
+
+ota:
+  password: ${ota_pw}
+
+web_server:
+  port: 80
+
+sensor:
+  - platform: hx711
+    name: "Bienenstock ${nummer} Gewicht"
+    # ESP8266
+    dout_pin: D2
+    clk_pin: D1
+    # ESP32
+    #dout_pin: GPIO2
+    #clk_pin: GPIO0
+    #gain: 128
+    update_interval: 60s
+    accuracy_decimals: 1
+    unit_of_measurement: kg
+    icon: "mdi:scale"
+    filters:
+      - calibrate_linear:
+          - 370 -> 0
+          - 2000000 -> 90

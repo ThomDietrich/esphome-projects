@@ -1,0 +1,32 @@
+switch:
+  # Relais 1
+  - platform: gpio
+    name: "${device_friendly_name} Kesselkreis Umwaelzpumpe"
+    pin:
+      number: GPIO4
+      inverted: true
+    restore_mode: ALWAYS_OFF
+
+  # Relais 2
+  - platform: gpio
+    name: "${device_friendly_name} Solarkreis Umwaelzpumpe"
+    pin:
+      number: GPIO0
+      inverted: true
+    restore_mode: ALWAYS_OFF
+
+  # Relais 3
+  - platform: gpio
+    name: "${device_friendly_name} Relais 3 ungenutzt"
+    pin:
+      number: GPIO2
+      inverted: true
+    restore_mode: ALWAYS_OFF
+
+  # Relais 4
+  - platform: gpio
+    name: "${device_friendly_name} Warmwasserbereitung Anforderung"
+    pin:
+      number: GPIO15
+      inverted: true
+    restore_mode: ALWAYS_OFF

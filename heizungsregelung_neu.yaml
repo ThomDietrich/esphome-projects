@@ -1,0 +1,76 @@
+substitutions:
+  device_name: heizungsregelung
+  device_friendly_name: Heizungsregelung
+
+# AZ-Delivery ESP-32 Dev Kit C V4
+# https://www.az-delivery.de/en/products/esp-32-dev-kit-c-v4
+# https://cdn.shopify.com/s/files/1/1509/1638/files/ESP-32_DevKit_C_V4_Datenblatt_AZ-Delivery_Vertriebs_GmbH_24ec770f-c65e-4bd3-92c9-cd64b4d070b8.pdf?v=1615364587
+# https://cdn.shopify.com/s/files/1/1509/1638/files/ESP32_DevKit_C_V4_Pinout.pdf?v=1615364529
+# https://docs.platformio.org/en/latest/boards/espressif32/az-delivery-devkit-v4.html
+# https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+esphome:
+  name: ${device_name}
+  comment: ${device_friendly_name}
+  platform: ESP32
+  board: esp32dev
+  platformio_options:
+    #platform: espressif32
+    platform: espressif32@3.5.0
+    board: az-delivery-devkit-v4
+    board_build.mcu: esp32
+    board_build.f_cpu: 240000000L
+    upload_protocol: esptool
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  include_1: !include include/heizungsregelung_i2c.yaml
+  include_2: !include include/heizungsregelung_spi.yaml
+  include_3: !include include/heizungsregelung_ds18b20.yaml
+  include_4: !include include/heizungsregelung_em10_pwm.yaml
+  include_5: !include include/heizungsregelung_pulse.yaml
+  include_6: !include include/heizungsregelung_relais.yaml
+
+# https://esphome.io/components/status_led.html
+status_led:
+  pin: GPIO19  # Rote LED
+
+output:
+  # LEDs in Frontblende
+  # https://esphome.io/components/output/gpio.html
+  - id: green_led_output
+    platform: gpio
+    pin: GPIO23
+  #- id: red_led_output
+  #  platform: gpio
+  #  pin: GPIO19
+
+light:
+  # https://esphome.io/components/light/binary.html
+  # https://esphome.io/components/light/index.html
+  - platform: binary
+    name: "${device_friendly_name} Abdeckung Status-LED gruen"
+    output: green_led_output
+    restore_mode: ALWAYS_OFF
+
+binary_sensor:
+  - platform: gpio
+    name: "${device_friendly_name} Gastherme Stoermeldung"
+    pin:
+      number: GPIO25
+      mode: INPUT_PULLUP
+      inverted: false
+    device_class: problem
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+  - platform: gpio
+    name: "${device_friendly_name} Wassereinbruch Alarm"
+    pin:
+      number: GPIO26
+      mode: INPUT_PULLUP
+      inverted: false
+    device_class: problem
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms

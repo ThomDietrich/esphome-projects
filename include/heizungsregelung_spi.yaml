@@ -1,0 +1,35 @@
+# SPI für PT1000 über MAX31865
+spi:
+  clk_pin: GPIO14
+  miso_pin: GPIO12
+  mosi_pin: GPIO13
+
+# MAX31865 Platinum RTD Temperature Sensor (via SPI)
+# https://esphome.io/components/sensor/max31865.html
+sensor:
+  - platform: max31865
+    name: "${device_friendly_name} Holzkessel Abgas"
+    cs_pin: GPIO5
+    reference_resistance: 4002 Ω
+    rtd_nominal_resistance: 1000 Ω
+    mains_filter: 50 Hz
+    rtd_wires: 2
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 10s
+    filters:
+      - filter_out: NaN
+
+  - platform: max31865
+    name: "${device_friendly_name} Sonnenkollektor"
+    cs_pin: GPIO17
+    reference_resistance: 4002 Ω
+    rtd_nominal_resistance: 1000 Ω
+    mains_filter: 50 Hz
+    rtd_wires: 2
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: 10s
+    filters:
+      - filter_out: NaN
+      - offset: 2.0  # Messwert + 2°C als Korrektur für Leitungslänge

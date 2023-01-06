@@ -1,0 +1,118 @@
+# DS18B20 Temperatursensoren Pin
+# https://esphome.io/components/sensor/dallas.html
+dallas:
+  - pin: GPIO32
+    update_interval: 15s
+
+sensor:
+  # DS18B20 Temperatursensoren
+  # https://esphome.io/components/sensor/dallas.html
+  - platform: dallas
+    address: 0xd33c97f6491fd728
+    name: "${device_friendly_name} Solarkreis Ruecklauf"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer-chevron-down
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x540316839e33ff28
+    name: "${device_friendly_name} Warmwasserspeicher unten"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x060416846ab7ff28
+    name: "${device_friendly_name} Warmwasserspeicher oben"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x2500000cf8822e28
+    name: "${device_friendly_name} Heizkreis Vorlauf"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer-chevron-up
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0xaa041684630cff28
+    name: "${device_friendly_name} Heizkreis Ruecklauf"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x4400000cf8ea0528
+    name: "${device_friendly_name} Gastherme Vorlauf"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x9500000cf8984828
+    name: "${device_friendly_name} Gastherme Ruecklauf Warmwasserbereitung"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x45000005fa787a28
+    name: "${device_friendly_name} Pufferspeicher blau 550 Liter"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0xd6000005faf54928
+    name: "${device_friendly_name} Pufferspeicher grau 600 Liter"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0xc400000cf8624528
+    name: "${device_friendly_name} Holzkessel Vorlauf"
+    id: holzkessel_vor
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0xd900000cf8d4ca28
+    name: "${device_friendly_name} Holzkessel Ruecklauf"
+    id: holzkessel_rueck
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  # Differenz
+  #- platform: template
+  #  name: "${device_friendly_name} Holzkessel Differenz"
+  #  id: holzkessel_diff
+  #  unit_of_measurement: "°C"
+  #  update_interval: 10s
+  #  lambda: |-
+  #    return (id(holzkessel_rueck).state - id(holzkessel_vor).state);

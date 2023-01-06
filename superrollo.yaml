@@ -1,0 +1,100 @@
+
+# esphome -s room_name wohnzimmer -s open_seconds 20.0 -s close_seconds 19.5 config superrollo.yaml
+substitutions:
+  room_name: default
+  open_seconds: 20.0
+  close_seconds: 19.5
+  # superrollo-kueche
+  #open_seconds: 18.0
+  #close_seconds: 16.5
+  # superrollo-schlafzimmer
+  #open_seconds: 18.0
+  #close_seconds: 16.5
+  # superrollo-wohnzimmer
+  #open_seconds:
+  #close_seconds:
+
+  # secrets
+  ota_pw: !secret ota_pw
+  wifi_home1_ssid: !secret wifi_home1_ssid
+  wifi_home1_password: !secret wifi_home1_password
+  wifi_home2_ssid: !secret wifi_home2_ssid
+  wifi_home2_password: !secret wifi_home2_password
+  wifi_fallback_pw: !secret wifi_fallback_password
+
+esphome:
+  name: superrollo-${room_name}
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  networks:
+    - ssid: ${wifi_home2_ssid}
+      password: ${wifi_home2_password}
+    - ssid: ${wifi_home1_ssid}
+      password: ${wifi_home1_password}
+  ap:
+    ssid: "Superrollo ${room_name} fallback"
+    password: ${wifi_fallback_password}
+  # Explicitly use IP address for connection
+  #use_address: 192.168.23.66
+
+captive_portal:
+
+logger:
+
+api:
+  password: ""
+
+ota:
+  password: ${ota_pw}
+
+web_server:
+  port: 80
+
+switch:
+  - platform: gpio
+    pin: D2
+    id: relay_up
+    name: "Ausloeser Hoch"
+    icon: "mdi:archive-arrow-up-outline"
+    #interlock: &interlock_group [relay_up, relay_down]
+    on_turn_on:
+      - delay: 300ms
+      - switch.turn_off: relay_up
+  - platform: gpio
+    pin: D1
+    id: relay_down
+    name: "Ausloeser Runter"
+    icon: "mdi:archive-arrow-down-outline"
+    #interlock: *interlock_group
+    on_turn_on:
+      - delay: 300ms
+      - switch.turn_off: relay_down
+
+binary_sensor:
+  - platform: gpio
+    pin: D6
+    name: "Faehrt hoch"
+    filters:
+      - invert:
+  - platform: gpio
+    pin: D7
+    name: "Faehrt runter"
+    filters:
+      - invert:
+
+cover:
+  - platform: time_based
+    device_class: shade
+    name: "Superrollo ${room_name}"
+    open_action:
+      - switch.turn_on: relay_up
+    open_duration: ${open_seconds}s
+    close_action:
+      - switch.turn_on: relay_down
+    close_duration: ${close_seconds}s
+    has_built_in_endstop: True
+    stop_action:
+      - switch.turn_on: relay_up
+      - switch.turn_on: relay_down

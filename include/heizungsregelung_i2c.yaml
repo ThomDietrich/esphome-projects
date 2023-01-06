@@ -1,0 +1,21 @@
+# I2C für BME280
+# https://esphome.io/components/i2c.html
+i2c:
+  sda: GPIO22
+  scl: GPIO21
+  scan: true
+
+# SHT3X-D Temperature+Humidity Sensor
+# https://esphome.io/components/sensor/sht3xd.html
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: "${device_friendly_name} Gehäuse Temperatur"
+      unit_of_measurement: "°C"
+      accuracy_decimals: 1
+    humidity:
+      name: "${device_friendly_name} Gehäuse Luftfeuchte"
+      unit_of_measurement: "%"
+      accuracy_decimals: 1
+    address: 0x44
+    update_interval: 60s

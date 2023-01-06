@@ -1,0 +1,93 @@
+substitutions:
+  device_name: taubenkamera
+  device_friendly_name: Taubenkamera
+
+  # secrets
+  ota_pw: !secret ota_pw
+  wifi_home1_ssid: !secret wifi_home1_ssid
+  wifi_home1_password: !secret wifi_home1_password
+  wifi_home2_ssid: !secret wifi_home2_ssid
+  wifi_home2_password: !secret wifi_home2_password
+  wifi_fallback_pw: !secret wifi_fallback_password
+
+esphome:
+  name: "${device_name}"
+  platform: ESP32
+  board: esp32dev
+
+wifi:
+  networks:
+    - ssid: ${wifi_home2_ssid}
+      password: ${wifi_home2_password}
+    - ssid: ${wifi_home1_ssid}
+      password: ${wifi_home1_password}
+  ap:
+    ssid: "${device_name} fallback"
+    password: ${wifi_fallback_password}
+
+captive_portal:
+
+logger:
+  #level: INFO
+
+ota:
+  password: ${ota_pw}
+
+api:
+
+web_server:
+  port: 80
+
+#time:
+#  - platform: homeassistant
+
+sensor:
+  - platform: uptime
+    name: "${device_friendly_name} ESP32 Uptime"
+    update_interval: 60s
+    device_class: duration
+  - platform: wifi_signal
+    name: "${device_friendly_name} ESP32 WiFi Signal"
+    update_interval: 60s
+
+# https://esphome.io/components/esp32_camera.html#configuration-for-ai-thinker-camera
+esp32_camera:
+  name: "${device_friendly_name}"
+  external_clock:
+    pin: GPIO0
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO26
+    scl: GPIO27
+  data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+  vsync_pin: GPIO25
+  href_pin: GPIO23
+  pixel_clock_pin: GPIO22
+  power_down_pin: GPIO32
+  # Image settings
+  max_framerate: 5 fps    # default: 10 fps, max 60
+  idle_framerate: 0.2 fps # default: 0.1 fps - framerate for 'picture' in HA dashboard
+  resolution: 800x600     # default: 640x480 (VGA) - higher res requires more memory
+  jpeg_quality: 10        # 10 (best) to 63 (worst)
+  vertical_flip: false
+  horizontal_mirror: false
+
+
+#switch:
+#  - platform: gpio
+#    name: "${device_friendly_name} Flash"
+#    pin: 4
+#    #inverted: True
+#  - platform: restart
+#    name: "${device_friendly_name} Restart"
+#    id: restart_switch
+
+output:
+  - platform: ledc
+    pin: GPIO4
+    channel: 2 # channel 1 is used for esp32_camera
+    id: led
+light:
+  - platform: monochromatic
+    output: led
+    name: ${device_friendly_name} Blitzlicht
