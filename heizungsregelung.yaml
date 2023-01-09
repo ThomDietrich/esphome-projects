@@ -2,14 +2,6 @@ substitutions:
   device_name: heizungsregelung
   device_friendly_name: Heizungsregelung
 
-  # secrets
-  ota_pw: !secret ota_pw
-  wifi_home1_ssid: !secret wifi_home1_ssid
-  wifi_home1_password: !secret wifi_home1_password
-  wifi_home2_ssid: !secret wifi_home2_ssid
-  wifi_home2_password: !secret wifi_home2_password
-  wifi_fallback_pw: !secret wifi_fallback_password
-
 # AZ-Delivery ESP-32 Dev Kit C V4
 # https://www.az-delivery.de/en/products/esp-32-dev-kit-c-v4
 # https://cdn.shopify.com/s/files/1/1509/1638/files/ESP-32_DevKit_C_V4_Datenblatt_AZ-Delivery_Vertriebs_GmbH_24ec770f-c65e-4bd3-92c9-cd64b4d070b8.pdf?v=1615364587
@@ -18,102 +10,42 @@ substitutions:
 # https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
 esphome:
   name: ${device_name}
-  comment: Blaaa
-  platform: ESP32
-  board: esp32dev
-  platformio_options:
+  comment: ${device_friendly_name}
+  #platform: ESP32
+  #board: esp32dev
+  #platformio_options:
     #platform: espressif32
-    platform: espressif32@3.5.0
-    board: az-delivery-devkit-v4
-    board_build.mcu: esp32
-    board_build.f_cpu: 240000000L
-    upload_protocol: esptool
+    #platform: espressif32@3.5.0
+    #board: az-delivery-devkit-v4
+    #board_build.mcu: esp32
+    #board_build.f_cpu: 240000000L
+    #upload_protocol: esptool
+  min_version: '2022.11'
 
-wifi:
-  networks:
-    - ssid: ${wifi_home1_ssid}
-      password: ${wifi_home1_password}
-  ap:
-    ssid: "${device_name} fallback"
-    password: ${wifi_fallback_password}
-  # Explicitly use IP address for connection
-  #use_address: 192.168.23.231
+esp32:
+  board: az-delivery-devkit-v4
+  framework:
+    type: arduino
 
-captive_portal:
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  include_1: !include include/heizungsregelung_i2c.yaml
+  include_2: !include include/heizungsregelung_spi.yaml
+  include_3: !include include/heizungsregelung_ds18b20.yaml
+  include_4: !include include/heizungsregelung_em10_pwm.yaml
+  include_5: !include include/heizungsregelung_pulse.yaml
+  include_6: !include include/heizungsregelung_relais.yaml
 
-logger:
-  # Get detailed output from max31865
-  #level: VERY_VERBOSE
-  #logs:
-  #  # Silence unrelated chatty components
-  #  api: DEBUG
-  #  api.connection: DEBUG
-  #  api.service: DEBUG
-  #  app: DEBUG
-  #  scheduler: DEBUG
-  #  sensor.filter: DEBUG
-  #  sensor: DEBUG
+# Explicitly use IP address for connection
+#wifi:
+#  use_address: 192.168.23.187
 
-ota:
-  password: ${ota_pw}
-
-web_server:
-  port: 80
-
-###############################################################################
-# I2C für BME280
-# https://esphome.io/components/i2c.html
-i2c:
-  sda: GPIO22
-  scl: GPIO21
-  scan: true
-
-###############################################################################
-# SPI für PT1000 über MAX31865
-spi:
-  clk_pin: GPIO14
-  miso_pin: GPIO12
-  mosi_pin: GPIO13
-
-###############################################################################
-# PWM zu 0..10V Modul (EM10): Hilfsvariable um den Sollwert in Prozent (PWM) definieren zu können
-globals:
-  - id: gastherme_sollwert_pwm
-    type: int
-    #restore_value: yes
-    initial_value: '30'  # 0..100
-
-# Counter für Liter durch den Flusssensor
-  - id: volumenmessung_heizung_imp
-    type: int
-    #restore_value: yes
-    initial_value: '0'  # 0..100
-
-# PWM zu 0..10V Modul (EM10): Home Assistant Service um den Sollwert in Prozent (PWM) vorgeben zu können
-api:
-  services:
-    - service: gastherme_sollwert_pwm_set  # Wird erweitert um "esphome.heizungsregelung_"
-      variables:
-        percentage: int
-      then:  # TODO: publish_state Zeile erforderlich?
-        - lambda: |-
-            id(gastherme_sollwert_pwm) = percentage;
-            id(gastherme_sollwert_sensor).publish_state(percentage);
-
-###############################################################################
 # https://esphome.io/components/status_led.html
 status_led:
   pin: GPIO19  # Rote LED
 
-###############################################################################
-# https://esphome.io/components/button/restart.html
-button:
-  - platform: restart
-    name: "${device_friendly_name} ESP32 Neustart"
-
-###############################################################################
 output:
-
   # LEDs in Frontblende
   # https://esphome.io/components/output/gpio.html
   - id: green_led_output
@@ -123,19 +55,6 @@ output:
   #  platform: gpio
   #  pin: GPIO19
 
-  ###############################################################################
-
-  # PWM zu 0..10V Modul (EM10): Pin Konfiguration für die Ausgabe
-  # Das Modul trägt den namen ledc aber ermöglicht das generelle Schreiben eines PWM Signals
-  - platform: ledc
-    pin: GPIO27
-    frequency: 1220 Hz
-    id: heiz_sollwert_pwm_output
-    inverted: False
-    min_power: 0.00
-    max_power: 1.00
-
-
 light:
   # https://esphome.io/components/light/binary.html
   # https://esphome.io/components/light/index.html
@@ -143,8 +62,6 @@ light:
     name: "${device_friendly_name} Abdeckung Status-LED gruen"
     output: green_led_output
     restore_mode: ALWAYS_OFF
-
-###############################################################################
 
 binary_sensor:
   - platform: gpio
@@ -167,265 +84,3 @@ binary_sensor:
     filters:
       - delayed_on: 100ms
       - delayed_off: 100ms
-
-###############################################################################
-# https://esphome.io/components/binary_sensor/status.html
-  - platform: status
-    name: "${device_friendly_name} ESP32 Status"
-
-###############################################################################
-# 230V Relais
-switch:
-  # Relais 1
-  - platform: gpio
-    name: "${device_friendly_name} Kesselkreis Umwaelzpumpe"
-    pin:
-      number: GPIO4
-      inverted: true
-    restore_mode: ALWAYS_OFF
-
-  # Relais 2
-  - platform: gpio
-    name: "${device_friendly_name} Solarkreis Umwaelzpumpe"
-    pin:
-      number: GPIO0
-      inverted: true
-    restore_mode: ALWAYS_OFF
-
-  # Relais 3
-  - platform: gpio
-    name: "${device_friendly_name} Relais 3 ungenutzt"
-    pin:
-      number: GPIO2
-      inverted: true
-    restore_mode: ALWAYS_OFF
-
-  # Relais 4
-  - platform: gpio
-    name: "${device_friendly_name} Warmwasserbereitung Anforderung"
-    pin:
-      number: GPIO15
-      inverted: true
-    restore_mode: ALWAYS_OFF
-
-###############################################################################
-# DS18B20 Temperatursensoren Pin
-# https://esphome.io/components/sensor/dallas.html
-dallas:
-  - pin: GPIO32
-    update_interval: 15s
-###############################################################################
-sensor:
-
-  # Uptime sensor in seconds
-  # https://esphome.io/components/sensor/uptime.html
-  - platform: uptime
-    name: "${device_friendly_name} ESP32 Uptime"
-    update_interval: 60s
-    device_class: duration
-
-  # PWM zu 0..10V Modul (EM10): Entity importiert von Home Assistant um den Sollwert in Prozent (PWM) vorgeben zu können
-  # Diese Entität muss in Home Assistant definiert werden!
-  # TODO: Dies ist eine Alternative zum oben definierten Service. Werden beide benötigt?
-  # https://esphome.io/components/sensor/homeassistant.html
-  - platform: homeassistant
-    entity_id: input_number.heizungsregelung_gastherme_sollwert_pwm_prozent
-    id: ha_heat_set_input
-    internal: true
-    unit_of_measurement: "%"
-    accuracy_decimals: 0
-    on_value:
-      then:  # TODO: publish_state Zeile erforderlich?
-        - lambda: |-
-            id(gastherme_sollwert_pwm) = x;
-            id(gastherme_sollwert_sensor).publish_state(x);
-
-  # PWM zu 0..10V Modul (EM10):
-  # Sensor welcher eingestellten Sollwert in Prozent (PMW) rückliefert
-  # Jede Änderung schreibt den Wert auf den GPIO
-  - platform: template
-    name: "${device_friendly_name} Gastherme Sollwert (PWM level)"
-    id: gastherme_sollwert_sensor
-    lambda: 'return id(gastherme_sollwert_pwm);'
-    update_interval: 60s
-    unit_of_measurement: "%"
-    accuracy_decimals: 0
-    icon: "mdi:pulse"
-    on_value:
-      then:
-        - lambda: |-
-            id(heiz_sollwert_pwm_output).set_level(x/100);
-
-  # DS18B20 Temperatursensoren
-  # https://esphome.io/components/sensor/dallas.html
-  - platform: dallas
-    address: 0xd33c97f6491fd728
-    name: "${device_friendly_name} Solarkreis Ruecklauf"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer-chevron-down
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0x540316839e33ff28
-    name: "${device_friendly_name} Warmwasserspeicher unten"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0x060416846ab7ff28
-    name: "${device_friendly_name} Warmwasserspeicher oben"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0x2500000cf8822e28
-    name: "${device_friendly_name} Heizkreis Vorlauf"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer-chevron-up
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0xaa041684630cff28
-    name: "${device_friendly_name} Heizkreis Ruecklauf"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0x4400000cf8ea0528
-    name: "${device_friendly_name} Gastherme Vorlauf"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0x9500000cf8984828
-    name: "${device_friendly_name} Gastherme Ruecklauf Warmwasserbereitung"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0x45000005fa787a28
-    name: "${device_friendly_name} Pufferspeicher blau 550 Liter"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0xd6000005faf54928
-    name: "${device_friendly_name} Pufferspeicher grau 600 Liter"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0xc400000cf8624528
-    name: "${device_friendly_name} Holzkessel Vorlauf"
-    id: holzkessel_vor
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  - platform: dallas
-    address: 0xd900000cf8d4ca28
-    name: "${device_friendly_name} Holzkessel Ruecklauf"
-    id: holzkessel_rueck
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
-
-  # Differenz
-  #- platform: template
-  #  name: "${device_friendly_name} Holzkessel Differenz"
-  #  id: holzkessel_diff
-  #  unit_of_measurement: "°C"
-  #  update_interval: 10s
-  #  lambda: |-
-  #    return (id(holzkessel_rueck).state - id(holzkessel_vor).state);
-
-  # S0 energy meter
-  #- platform: pulse_meter
-  #  name: "${device_friendly_name} Leistungsaufnahme meter"
-  #  id: s0_energy_meter
-  #  pin: GPIO35
-  #  unit_of_measurement: "W"
-  #  state_class: measurement
-  #  device_class: power
-  #  icon: mdi:flash-outline
-  #  accuracy_decimals: 2
-  #  internal_filter: 100ms
-  #  filters:
-  #    # multiply value = (60 / imp value) * 1000
-  #    # - multiply: 120
-  #    - lambda: return x * ((120.0 / ${pulse_rate}) * 1000.0);
-  #  timeout:
-  #    minutes: 60
-
-    #total:
-    #  name: "${device_friendly_name} Energieverbrauch meter"
-    #  unit_of_measurement: "kWh"
-    #  accuracy_decimals: 5
-    #  filters:
-    #    - multiply: 0.001
-
-  - platform: pulse_meter
-    pin: GPIO39
-    name: "Pulse Meter 39 Leistung"
-    internal_filter: 50ms
-    accuracy_decimals: 3
-    timeout:
-      minutes: 5
-    internal_filter_mode: EDGE
-
-  #- platform: pulse_meter
-  #  pin: GPIO34
-  #  name: "Pulse Meter 34 Heizung"
-  #  internal_filter: 50ms
-  #  accuracy_decimals: 1
-  #  timeout:
-  #    seconds: 30
-  #  internal_filter_mode: PULSE
-  #- platform: pulse_meter
-  #  pin: GPIO35
-  #  name: "Pulse Meter 35 Warmwasser"
-  #  internal_filter: 50ms
-  #  accuracy_decimals: 1
-  #  timeout:
-  #    seconds: 30
-
-  #- platform: pulse_counter
-  #  pin: GPIO34
-  #  name: "Pulse Counter 34 Heizung"
-  #  accuracy_decimals: 1
-  #  update_interval: 10s
-
-  - platform: pulse_counter
-    pin: GPIO35
-    name: "Pulse Counter 35 Warmwasser"
-    accuracy_decimals: 1
-    update_interval: 10s
