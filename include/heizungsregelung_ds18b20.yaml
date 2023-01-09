@@ -37,6 +37,7 @@ sensor:
   - platform: dallas
     address: 0x2500000cf8822e28
     name: "${device_friendly_name} Heizkreis Vorlauf"
+    id: heizkreis_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer-chevron-up
@@ -46,6 +47,7 @@ sensor:
   - platform: dallas
     address: 0xaa041684630cff28
     name: "${device_friendly_name} Heizkreis Ruecklauf"
+    id: heizkreis_rl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
@@ -55,6 +57,7 @@ sensor:
   - platform: dallas
     address: 0x4400000cf8ea0528
     name: "${device_friendly_name} Gastherme Vorlauf"
+    id: gastherme_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
@@ -64,6 +67,7 @@ sensor:
   - platform: dallas
     address: 0x9500000cf8984828
     name: "${device_friendly_name} Gastherme Ruecklauf Warmwasserbereitung"
+    id: gastherme_rl_wwb
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
@@ -90,8 +94,8 @@ sensor:
 
   - platform: dallas
     address: 0xc400000cf8624528
-    name: "${device_friendly_name} Holzkessel Vorlauf"
-    id: holzkessel_vor
+    name: "${device_friendly_name} Kessel Vorlauf"
+    id: kessel_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
@@ -100,19 +104,57 @@ sensor:
 
   - platform: dallas
     address: 0xd900000cf8d4ca28
-    name: "${device_friendly_name} Holzkessel Ruecklauf"
-    id: holzkessel_rueck
+    name: "${device_friendly_name} Kessel Ruecklauf"
+    id: kessel_rl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
     filters:
       - filter_out: 85
 
-  # Differenz
-  #- platform: template
-  #  name: "${device_friendly_name} Holzkessel Differenz"
-  #  id: holzkessel_diff
-  #  unit_of_measurement: "°C"
-  #  update_interval: 10s
-  #  lambda: |-
-  #    return (id(holzkessel_rueck).state - id(holzkessel_vor).state);
+  - platform: dallas
+    address: 0x35030594972efa28
+    name: "${device_friendly_name} Kesselpufferkreis Vorlauf"
+    id: kesselpufferkreis_vl
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  - platform: dallas
+    address: 0x490305949758b128
+    name: "${device_friendly_name} Kesselpufferkreis Ruecklauf"
+    id: kesselpufferkreis_rl
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: mdi:thermometer
+    filters:
+      - filter_out: 85
+
+  #############################################################################
+  # Temperaturdifferenz
+
+  - platform: template
+    name: "${device_friendly_name} Heizkreis Differenz"
+    id: holzkessel_diff
+    unit_of_measurement: "K"
+    #update_interval: 10s
+    lambda: |-
+      return (id(heizkreis_rl).state - id(heizkreis_vl).state);
+
+  - platform: template
+    name: "${device_friendly_name} Kessel Differenz"
+    id: holzkessel_diff
+    unit_of_measurement: "K"
+    #update_interval: 10s
+    lambda: |-
+      return (id(kessel_rl).state - id(kessel_vl).state);
+
+  - platform: template
+    name: "${device_friendly_name} Kesselpufferkreis Differenz"
+    id: holzkessel_diff
+    unit_of_measurement: "K"
+    #update_interval: 10s
+    lambda: |-
+      return (id(kesselpufferkreis_rl).state - id(kesselpufferkreis_vl).state);
