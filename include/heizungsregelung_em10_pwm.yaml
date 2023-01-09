@@ -1,4 +1,3 @@
-###############################################################################
 # PWM zu 0..10V Modul (EM10): Hilfsvariable um den Sollwert in Prozent (PWM) definieren zu können
 globals:
   - id: gastherme_sollwert_pwm
@@ -18,7 +17,6 @@ api:
             id(gastherme_sollwert_sensor).publish_state(percentage);
 
 # PWM zu 0..10V Modul (EM10): Pin Konfiguration für die Ausgabe
-# Das Modul trägt den namen ledc aber ermöglicht das generelle Schreiben eines PWM Signals
 output:
   - platform: ledc
     pin: GPIO27
@@ -33,20 +31,20 @@ sensor:
   # Diese Entität muss in Home Assistant definiert werden!
   # TODO: Dies ist eine Alternative zum oben definierten Service. Werden beide benötigt?
   # https://esphome.io/components/sensor/homeassistant.html
-  - platform: homeassistant
-    entity_id: input_number.heizungsregelung_gastherme_sollwert_pwm_prozent
-    id: ha_heat_set_input
-    internal: true
-    unit_of_measurement: "%"
-    accuracy_decimals: 0
-    on_value:
-      then:  # TODO: publish_state Zeile erforderlich?
-        - lambda: |-
-            id(gastherme_sollwert_pwm) = x;
-            id(gastherme_sollwert_sensor).publish_state(x);
+  #- platform: homeassistant
+  #  entity_id: input_number.heizungsregelung_gastherme_sollwert_pwm_prozent
+  #  id: ha_heat_set_input
+  #  internal: true
+  #  unit_of_measurement: "%"
+  #  accuracy_decimals: 0
+  #  on_value:
+  #    then:  # TODO: publish_state Zeile erforderlich?
+  #      - lambda: |-
+  #          id(gastherme_sollwert_pwm) = x;
+  #          id(gastherme_sollwert_sensor).publish_state(x);
 
   # PWM zu 0..10V Modul (EM10):
-  # Sensor welcher eingestellten Sollwert in Prozent (PMW) rückliefert
+  # Sensor welcher eingestellten Sollwert in Prozent (PMW) rückliefert (feedback loop)
   # Jede Änderung schreibt den Wert auf den GPIO
   - platform: template
     name: "${device_friendly_name} Gastherme Sollwert (PWM level)"
