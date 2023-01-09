@@ -57,11 +57,11 @@ sensor:
   #  timeout:
   #    seconds: 30
 
-  #- platform: pulse_counter
-  #  pin: GPIO34
-  #  name: "${device_friendly_name} Pulse Counter 34 Heizung"
-  #  accuracy_decimals: 1
-  #  update_interval: 10s
+  - platform: pulse_counter
+    pin: GPIO34
+    name: "${device_friendly_name} Pulse Counter 34 Heizung"
+    accuracy_decimals: 1
+    update_interval: 10s
 
   - platform: pulse_counter
     pin: GPIO35
