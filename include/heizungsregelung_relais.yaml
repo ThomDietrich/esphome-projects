@@ -1,7 +1,7 @@
 switch:
   # Relais 1
   - platform: gpio
-    name: "${device_friendly_name} Kesselkreis Umwaelzpumpe"
+    name: "${device_friendly_name} Kesselpufferkreis Umwaelzpumpe"
     pin:
       number: GPIO4
       inverted: true
