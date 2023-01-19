@@ -9,6 +9,7 @@ spi:
 sensor:
   - platform: max31865
     name: "${device_friendly_name} Kessel Abgas"
+    id: kessel_abgas
     cs_pin: GPIO5
     reference_resistance: 4002 Ω
     rtd_nominal_resistance: 1000 Ω
@@ -22,6 +23,7 @@ sensor:
 
   - platform: max31865
     name: "${device_friendly_name} Sonnenkollektor"
+    id: sonnenkollektor
     cs_pin: GPIO17
     reference_resistance: 4002 Ω
     rtd_nominal_resistance: 1000 Ω
