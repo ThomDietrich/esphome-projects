@@ -137,7 +137,7 @@ sensor:
 
   - platform: template
     name: "${device_friendly_name} Heizkreis Differenz"
-    id: holzkessel_diff
+    id: heizkreis_diff
     unit_of_measurement: "K"
     #update_interval: 10s
     lambda: |-
@@ -145,7 +145,7 @@ sensor:
 
   - platform: template
     name: "${device_friendly_name} Kessel Differenz"
-    id: holzkessel_diff
+    id: kessel_diff
     unit_of_measurement: "K"
     #update_interval: 10s
     lambda: |-
@@ -153,7 +153,7 @@ sensor:
 
   - platform: template
     name: "${device_friendly_name} Kesselpufferkreis Differenz"
-    id: holzkessel_diff
+    id: kesselpufferkreis_diff
     unit_of_measurement: "K"
     #update_interval: 10s
     lambda: |-

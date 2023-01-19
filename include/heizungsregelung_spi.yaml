@@ -8,7 +8,7 @@ spi:
 # https://esphome.io/components/sensor/max31865.html
 sensor:
   - platform: max31865
-    name: "${device_friendly_name} Holzkessel Abgas"
+    name: "${device_friendly_name} Kessel Abgas"
     cs_pin: GPIO5
     reference_resistance: 4002 Ω
     rtd_nominal_resistance: 1000 Ω
