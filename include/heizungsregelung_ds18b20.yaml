@@ -139,7 +139,7 @@ sensor:
     name: "${device_friendly_name} Heizkreis Differenz"
     id: heizkreis_diff
     unit_of_measurement: "K"
-    #update_interval: 10s
+    update_interval: 15s
     lambda: |-
       return (id(heizkreis_rl).state - id(heizkreis_vl).state);
 
@@ -147,7 +147,7 @@ sensor:
     name: "${device_friendly_name} Kessel Differenz"
     id: kessel_diff
     unit_of_measurement: "K"
-    #update_interval: 10s
+    update_interval: 15s
     lambda: |-
       return (id(kessel_rl).state - id(kessel_vl).state);
 
@@ -155,6 +155,6 @@ sensor:
     name: "${device_friendly_name} Kesselpufferkreis Differenz"
     id: kesselpufferkreis_diff
     unit_of_measurement: "K"
-    #update_interval: 10s
+    update_interval: 15s
     lambda: |-
       return (id(kesselpufferkreis_rl).state - id(kesselpufferkreis_vl).state);
