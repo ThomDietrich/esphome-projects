@@ -1,4 +1,3 @@
-# I2C für BME280
 # https://esphome.io/components/i2c.html
 i2c:
   sda: GPIO22

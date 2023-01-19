@@ -30,8 +30,8 @@ esp32:
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
-  include_1: !include include/heizungsregelung_i2c.yaml
-  include_2: !include include/heizungsregelung_spi.yaml
+  include_1: !include include/heizungsregelung_i2c_enclosure.yaml
+  include_2: !include include/heizungsregelung_spi_pt1000.yaml
   include_3: !include include/heizungsregelung_ds18b20.yaml
   include_4: !include include/heizungsregelung_em10_pwm.yaml
   include_5: !include include/heizungsregelung_pulse.yaml
