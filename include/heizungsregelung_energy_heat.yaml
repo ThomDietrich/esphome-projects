@@ -1,0 +1,133 @@
+
+# Zenner Warmwasserzähler mit Impulsausgang 0,25 Liter
+
+globals:
+  - id: global_heizkreis_volumen_l
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+  - id: global_heizkreis_energie_kwh
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+  - id: global_wwb_volumen_l
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+  - id: global_wwb_energie_kwh
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+binary_sensor:
+  # https://esphome.io/components/binary_sensor/gpio.html
+  - platform: gpio
+    #name: ${device_friendly_name} Heizkreis Volumenstrommessung Sensor
+    id: intern_heizkreis_gpio_tick
+    pin: GPIO34
+    icon: mdi:square-wave
+    internal: true
+    entity_category: diagnostic
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_release:
+      - globals.set:
+          id: global_heizkreis_volumen_l
+          value: !lambda |-
+            return id(global_heizkreis_volumen_l) + 0.25;  // 0.25 Liter pro Impuls
+      - if:
+          condition:
+            lambda: |-
+              return !isnan(id(heizkreis_diff).state);
+          then:
+            - globals.set:
+                id: global_heizkreis_energie_kwh
+                # Siehe auch:
+                #   - https://www.endenergie.de/
+                value: !lambda |-
+                  const int m_g = 248;  // Bezugsmenge des Wassers (0.25 Liter pro Impuls * 990g/l = 248g)
+                  const float c_wh_kgk = 1.1625;  // Spezifische Wärmekapazität Wasser in Wh/(kg·K)
+                  const float k_k = id(heizkreis_diff).state;  // Zugeführte Wärme in Kelvin
+                  // Ergebnis: Wärmeenergie Q in Kilowatt
+                  return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
+      - component.update: sensor_heizkreis_wasser
+      - component.update: sensor_heizkreis_energie
+
+  - platform: gpio
+    #name: ${device_friendly_name} Warmwasser Volumenstrommessung Sensor
+    id: intern_wwb_gpio_tick
+    pin: GPIO35
+    icon: mdi:square-wave
+    internal: true
+    entity_category: diagnostic
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_release:
+      - globals.set:
+          id: global_wwb_volumen_l
+          value: !lambda |-
+            return id(global_wwb_volumen_l) + 0.25;  // 0.25 Liter pro Impuls
+      - if:
+          condition:
+            lambda: |-
+              return !isnan(id(heizkreis_diff).state);
+          then:
+            - globals.set:
+                id: global_wwb_energie_kwh
+                # Siehe auch:
+                #   - https://www.endenergie.de/
+                value: !lambda |-
+                  const int m_g = 248;  // Bezugsmenge des Wassers (0.25 Liter pro Impuls * 990g/l = 248g)
+                  const float c_wh_kgk = 1.1625;  // Spezifische Wärmekapazität Wasser in Wh/(kg·K)
+                  const float k_k = id(heizkreis_diff).state;  // Zugeführte Wärme in Kelvin
+                  // Ergebnis: Wärmeenergie Q in Kilowatt
+                  return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
+      - component.update: sensor_wwb_wasser
+      - component.update: sensor_wwb_energie
+
+sensor:
+  - platform: template
+    name: ${device_friendly_name} Heizkreis Volumen
+    id: sensor_heizkreis_wasser
+    state_class: total
+    device_class: water
+    icon: mdi:waves-arrow-right
+    unit_of_measurement: l
+    accuracy_decimals: 1
+    lambda: return id(global_heizkreis_volumen_l);
+    update_interval: 60s
+
+  - platform: template
+    name: ${device_friendly_name} Heizkreis Energie
+    id: sensor_heizkreis_energie
+    state_class: total
+    device_class: energy
+    icon: mdi:home-lightning-bolt-outline
+    unit_of_measurement: kWh
+    accuracy_decimals: 2
+    lambda: return id(global_heizkreis_energie_kwh);
+    update_interval: 60s
+
+  - platform: template
+    name: ${device_friendly_name} Warmwasser Volumen
+    id: sensor_wwb_wasser
+    state_class: total
+    device_class: water
+    icon: mdi:waves-arrow-right
+    unit_of_measurement: l
+    accuracy_decimals: 1
+    lambda: return id(global_wwb_volumen_l);
+    update_interval: 60s
+
+  - platform: template
+    name: ${device_friendly_name} Warmwasser Energie
+    id: sensor_wwb_energie
+    state_class: total
+    device_class: energy
+    icon: mdi:home-lightning-bolt-outline
+    unit_of_measurement: kWh
+    accuracy_decimals: 2
+    lambda: return id(global_wwb_energie_kwh);
+    update_interval: 60s
