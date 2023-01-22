@@ -93,8 +93,8 @@ sensor:
     id: sensor_heizkreis_wasser
     state_class: total
     device_class: water
+    unit_of_measurement: L
     icon: mdi:waves-arrow-right
-    unit_of_measurement: l
     accuracy_decimals: 1
     lambda: return id(global_heizkreis_volumen_l);
     update_interval: 60s
@@ -104,8 +104,8 @@ sensor:
     id: sensor_heizkreis_energie
     state_class: total
     device_class: energy
-    icon: mdi:home-lightning-bolt-outline
     unit_of_measurement: kWh
+    icon: mdi:home-lightning-bolt-outline
     accuracy_decimals: 2
     lambda: return id(global_heizkreis_energie_kwh);
     update_interval: 60s
@@ -115,8 +115,8 @@ sensor:
     id: sensor_wwb_wasser
     state_class: total
     device_class: water
+    unit_of_measurement: L
     icon: mdi:waves-arrow-right
-    unit_of_measurement: l
     accuracy_decimals: 1
     lambda: return id(global_wwb_volumen_l);
     update_interval: 60s
@@ -126,8 +126,8 @@ sensor:
     id: sensor_wwb_energie
     state_class: total
     device_class: energy
-    icon: mdi:home-lightning-bolt-outline
     unit_of_measurement: kWh
+    icon: mdi:home-lightning-bolt-outline
     accuracy_decimals: 2
     lambda: return id(global_wwb_energie_kwh);
     update_interval: 60s
