@@ -32,11 +32,12 @@ packages:
   general: !include common/general.yaml
   include_1: !include include/heizungsregelung_i2c_enclosure.yaml
   include_2: !include include/heizungsregelung_relais.yaml
-  include_3: !include include/heizungsregelung_spi_pt1000.yaml
-  include_4: !include include/heizungsregelung_ds18b20.yaml
-  include_5: !include include/heizungsregelung_em10_pwm.yaml
-  include_6: !include include/heizungsregelung_energy_heat.yaml
-  include_7: !include include/heizungsregelung_energy_electric.yaml
+  include_3: !include include/heizungsregelung_em10_pwm.yaml
+  include_4: !include include/heizungsregelung_temp_pt1000_spi.yaml
+  include_5: !include include/heizungsregelung_temp_ds18b20.yaml
+  include_6: !include include/heizungsregelung_temp_diff.yaml
+  include_7: !include include/heizungsregelung_energy_heat.yaml
+  include_8: !include include/heizungsregelung_energy_electric.yaml
 
 # Explicitly use IP address for connection
 #wifi:
