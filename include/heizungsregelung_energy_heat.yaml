@@ -51,8 +51,8 @@ binary_sensor:
                   const float k_k = id(heizkreis_diff).state;  // Zugeführte Wärme in Kelvin
                   // Ergebnis: Wärmeenergie Q in Kilowatt
                   return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
-      - component.update: sensor_heizkreis_wasser
-      - component.update: sensor_heizkreis_energie
+      #- component.update: sensor_heizkreis_wasser
+      #- component.update: sensor_heizkreis_energie
 
   - platform: gpio
     #name: ${device_friendly_name} Warmwasser Volumenstrommessung Sensor
@@ -84,8 +84,8 @@ binary_sensor:
                   const float k_k = id(heizkreis_diff).state;  // Zugeführte Wärme in Kelvin
                   // Ergebnis: Wärmeenergie Q in Kilowatt
                   return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
-      - component.update: sensor_wwb_wasser
-      - component.update: sensor_wwb_energie
+      #- component.update: sensor_wwb_wasser
+      #- component.update: sensor_wwb_energie
 
 sensor:
   - platform: template

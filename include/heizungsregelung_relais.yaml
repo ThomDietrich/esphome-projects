@@ -31,3 +31,15 @@ switch:
       number: GPIO15
       inverted: true
     restore_mode: ALWAYS_OFF
+
+    # Update relevant flow sensors
+    on_turn_on:
+      - component.update: sensor_heizkreis_wasser
+      - component.update: sensor_heizkreis_energie
+      - component.update: sensor_wwb_wasser
+      - component.update: sensor_wwb_energie
+    on_turn_off:
+      - component.update: sensor_heizkreis_wasser
+      - component.update: sensor_heizkreis_energie
+      - component.update: sensor_wwb_wasser
+      - component.update: sensor_wwb_energie
