@@ -14,11 +14,7 @@ sensor:
     unit_of_measurement: "K"
     update_interval: 60s
     lambda: |-
-      if (id(wwb_anforderung).state) {
-        return 0.0;
-      } else {
-        return (id(heizkreis_vl).state - id(heizkreis_rl).state);
-      }
+      return (id(heizkreis_vl).state - id(heizkreis_rl).state);
 
   - platform: template
     name: "${device_friendly_name} Warmwasser Differenz"
@@ -26,11 +22,7 @@ sensor:
     unit_of_measurement: "K"
     update_interval: 60s
     lambda: |-
-      if (id(wwb_anforderung).state) {
-        return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
-      } else {
-        return 0.0;
-      }
+      return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
 
   - platform: template
     name: "${device_friendly_name} Kessel Differenz"
