@@ -27,6 +27,7 @@ switch:
   # Relais 4
   - platform: gpio
     name: "${device_friendly_name} Warmwasserbereitung Anforderung"
+    id: wwb_anforderung
     pin:
       number: GPIO15
       inverted: true
@@ -34,12 +35,16 @@ switch:
 
     # Update relevant flow sensors
     on_turn_on:
+      - component.update: heizkreis_diff
       - component.update: sensor_heizkreis_wasser
       - component.update: sensor_heizkreis_energie
+      - component.update: warmwasser_diff
       - component.update: sensor_wwb_wasser
       - component.update: sensor_wwb_energie
     on_turn_off:
+      - component.update: heizkreis_diff
       - component.update: sensor_heizkreis_wasser
       - component.update: sensor_heizkreis_energie
+      - component.update: warmwasser_diff
       - component.update: sensor_wwb_wasser
       - component.update: sensor_wwb_energie
