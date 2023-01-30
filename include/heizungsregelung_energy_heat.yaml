@@ -1,5 +1,14 @@
+# Zenner Warmwasserzähler
 
-# Zenner Warmwasserzähler mit Impulsausgang 0,25 Liter
+# Volumenstrom: 0,25 Liter pro Impuls
+#
+# Energieverbrauch (Wärmeenergie Q in Kilowatt):
+#   - m_g: Bezugsmenge Wasser 0.25 Liter * 990g/l = 248g pro Impuls
+#   - c_wh_kgk: Spezifische Wärmekapazität Wasser = 1.1625 Wh/(kg·K)
+#   - k_k: Zugeführte Wärme in Kelvin
+#
+# Siehe auch: https://www.endenergie.de/
+#
 
 globals:
   - id: global_heizkreis_volumen_l
@@ -35,7 +44,7 @@ binary_sensor:
       - globals.set:
           id: global_heizkreis_volumen_l
           value: !lambda |-
-            return id(global_heizkreis_volumen_l) + 0.25;  // 0.25 Liter pro Impuls
+            return id(global_heizkreis_volumen_l) + 0.25;
       - if:
           condition:
             lambda: |-
@@ -43,13 +52,10 @@ binary_sensor:
           then:
             - globals.set:
                 id: global_heizkreis_energie_kwh
-                # Siehe auch:
-                #   - https://www.endenergie.de/
                 value: !lambda |-
-                  const int m_g = 248;  // Bezugsmenge des Wassers (0.25 Liter pro Impuls * 990g/l = 248g)
-                  const float c_wh_kgk = 1.1625;  // Spezifische Wärmekapazität Wasser in Wh/(kg·K)
-                  const float k_k = id(heizkreis_diff).state;  // Zugeführte Wärme in Kelvin
-                  // Ergebnis: Wärmeenergie Q in Kilowatt
+                  const int m_g = 248;
+                  const float c_wh_kgk = 1.1625;
+                  const float k_k = id(heizkreis_diff).state;
                   return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
       #- component.update: sensor_heizkreis_wasser
       #- component.update: sensor_heizkreis_energie
@@ -68,21 +74,18 @@ binary_sensor:
       - globals.set:
           id: global_wwb_volumen_l
           value: !lambda |-
-            return id(global_wwb_volumen_l) + 0.25;  // 0.25 Liter pro Impuls
+            return id(global_wwb_volumen_l) + 0.25;
       - if:
           condition:
             lambda: |-
-              return !isnan(id(heizkreis_diff).state);
+              return !isnan(id(warmwasser_diff).state);
           then:
             - globals.set:
                 id: global_wwb_energie_kwh
-                # Siehe auch:
-                #   - https://www.endenergie.de/
                 value: !lambda |-
-                  const int m_g = 248;  // Bezugsmenge des Wassers (0.25 Liter pro Impuls * 990g/l = 248g)
-                  const float c_wh_kgk = 1.1625;  // Spezifische Wärmekapazität Wasser in Wh/(kg·K)
-                  const float k_k = id(heizkreis_diff).state;  // Zugeführte Wärme in Kelvin
-                  // Ergebnis: Wärmeenergie Q in Kilowatt
+                  const int m_g = 248;
+                  const float c_wh_kgk = 1.1625;
+                  const float k_k = id(warmwasser_diff).state;
                   return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
       #- component.update: sensor_wwb_wasser
       #- component.update: sensor_wwb_energie

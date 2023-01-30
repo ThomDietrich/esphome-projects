@@ -17,6 +17,14 @@ sensor:
       return (id(heizkreis_vl).state - id(heizkreis_rl).state);
 
   - platform: template
+    name: "${device_friendly_name} Warmwasser Differenz"
+    id: warmwasser_diff
+    unit_of_measurement: "K"
+    update_interval: 60s
+    lambda: |-
+      return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
+
+  - platform: template
     name: "${device_friendly_name} Kessel Differenz"
     id: kessel_diff
     unit_of_measurement: "K"
