@@ -11,6 +11,7 @@ substitutions:
 esphome:
   name: ${device_name}
   comment: ${device_friendly_name}
+  friendly_name: ${device_friendly_name}
   #platform: ESP32
   #board: esp32dev
   #platformio_options:
@@ -61,13 +62,13 @@ light:
   # https://esphome.io/components/light/binary.html
   # https://esphome.io/components/light/index.html
   - platform: binary
-    name: "${device_friendly_name} Abdeckung Status-LED gruen"
+    name: "Abdeckung Status-LED gruen"
     output: green_led_output
     restore_mode: ALWAYS_OFF
 
 #binary_sensor:
 #  - platform: gpio
-#    name: "${device_friendly_name} Gastherme Stoermeldung"
+#    name: "Gastherme Stoermeldung"
 #    pin:
 #      number: GPIO25
 #      mode: INPUT_PULLUP
@@ -77,7 +78,7 @@ light:
 #      - delayed_on: 100ms
 #      - delayed_off: 100ms
 #  - platform: gpio
-#    name: "${device_friendly_name} Wassereinbruch Alarm"
+#    name: "Wassereinbruch Alarm"
 #    pin:
 #      number: GPIO26
 #      mode: INPUT_PULLUP

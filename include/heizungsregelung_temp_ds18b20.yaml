@@ -9,7 +9,7 @@ sensor:
   # https://esphome.io/components/sensor/dallas.html
   - platform: dallas
     address: 0xd33c97f6491fd728
-    name: "${device_friendly_name} Solarkreis Ruecklauf"
+    name: "Solarkreis Ruecklauf"
     id: solarkreis_rl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -21,7 +21,7 @@ sensor:
 
   - platform: dallas
     address: 0x540316839e33ff28
-    name: "${device_friendly_name} Warmwasserspeicher unten"
+    name: "Warmwasserspeicher unten"
     id: warmwasserspeicher_unten
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -33,7 +33,7 @@ sensor:
 
   - platform: dallas
     address: 0xa25469481f64ff28
-    name: "${device_friendly_name} Warmwasserspeicher oben"
+    name: "Warmwasserspeicher oben"
     id: warmwasserspeicher_oben
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -43,7 +43,7 @@ sensor:
 
   - platform: dallas
     address: 0x2500000cf8822e28
-    name: "${device_friendly_name} Heizkreis Vorlauf"
+    name: "Heizkreis Vorlauf"
     id: heizkreis_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -54,8 +54,8 @@ sensor:
       - component.update: heizkreis_diff
 
   - platform: dallas
-    address: 0xaa041684630cff28
-    name: "${device_friendly_name} Heizkreis Ruecklauf"
+    address: 0x94626a481f64ff28
+    name: "Heizkreis Ruecklauf"
     id: heizkreis_rl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -67,7 +67,7 @@ sensor:
 
   - platform: dallas
     address: 0x4400000cf8ea0528
-    name: "${device_friendly_name} Gastherme Vorlauf"
+    name: "Gastherme Vorlauf"
     id: gastherme_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -79,7 +79,7 @@ sensor:
 
   - platform: dallas
     address: 0x9500000cf8984828
-    name: "${device_friendly_name} Gastherme Ruecklauf Warmwasserbereitung"
+    name: "Gastherme Ruecklauf Warmwasserbereitung"
     id: gastherme_rl_wwb
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -91,7 +91,7 @@ sensor:
 
   - platform: dallas
     address: 0x45000005fa787a28
-    name: "${device_friendly_name} Pufferspeicher blau 550 Liter"
+    name: "Pufferspeicher blau 550 Liter"
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
@@ -100,7 +100,7 @@ sensor:
 
   - platform: dallas
     address: 0xd6000005faf54928
-    name: "${device_friendly_name} Pufferspeicher grau 600 Liter"
+    name: "Pufferspeicher grau 600 Liter"
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer
@@ -109,7 +109,7 @@ sensor:
 
   - platform: dallas
     address: 0xc400000cf8624528
-    name: "${device_friendly_name} Kessel Vorlauf"
+    name: "Kessel Vorlauf"
     id: kessel_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -121,7 +121,7 @@ sensor:
 
   - platform: dallas
     address: 0xd900000cf8d4ca28
-    name: "${device_friendly_name} Kessel Ruecklauf"
+    name: "Kessel Ruecklauf"
     id: kessel_rl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -133,7 +133,7 @@ sensor:
 
   - platform: dallas
     address: 0x0ebe6d481f64ff28
-    name: "${device_friendly_name} Kesselpufferkreis Vorlauf"
+    name: "Kesselpufferkreis Vorlauf"
     id: kesselpufferkreis_vl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -145,7 +145,7 @@ sensor:
 
   - platform: dallas
     address: 0xe73f69481f64ff28
-    name: "${device_friendly_name} Kesselpufferkreis Ruecklauf"
+    name: "Kesselpufferkreis Ruecklauf"
     id: kesselpufferkreis_rl
     unit_of_measurement: "°C"
     accuracy_decimals: 1
@@ -157,7 +157,7 @@ sensor:
 
   - platform: dallas
     address: 0x7c186d481f64ff28
-    name: "${device_friendly_name} Warmwasserspeicher Abfluss"
+    name: "Warmwasserspeicher Abfluss"
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     icon: mdi:thermometer

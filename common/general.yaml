@@ -25,16 +25,16 @@ logger:
 binary_sensor:
   # https://esphome.io/components/binary_sensor/status.html
   - platform: status
-    name: "${device_friendly_name} ESP Device Status"
+    name: "ESP Device Status"
 
 button:
   # https://esphome.io/components/button/restart.html
   - platform: restart
-    name: "${device_friendly_name} ESP Device Restart"
+    name: "ESP Device Restart"
 
 sensor:
   # https://esphome.io/components/sensor/uptime.html
   - platform: uptime
-    name: "${device_friendly_name} ESP Device Uptime"
+    name: "ESP Device Uptime"
     update_interval: 60s
     device_class: duration

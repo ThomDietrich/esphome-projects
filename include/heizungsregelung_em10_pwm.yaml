@@ -20,7 +20,7 @@ globals:
 # Sensor um den Sollwert in Prozent (0..100 PMW) rückzuliefert (feedback loop)
 sensor:
   - platform: template
-    name: "${device_friendly_name} Gastherme Sollwert (PWM level)"
+    name: "Gastherme Sollwert (PWM level)"
     id: gastherme_sollwert_sensor
     icon: "mdi:pulse"
     unit_of_measurement: "%"

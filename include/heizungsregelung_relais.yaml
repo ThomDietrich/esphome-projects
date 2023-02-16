@@ -1,7 +1,7 @@
 switch:
   # Relais 1
   - platform: gpio
-    name: "${device_friendly_name} Kesselpufferkreis Umwaelzpumpe"
+    name: "Kesselpufferkreis Umwaelzpumpe"
     pin:
       number: GPIO4
       inverted: true
@@ -9,7 +9,7 @@ switch:
 
   # Relais 2
   - platform: gpio
-    name: "${device_friendly_name} Solarkreis Umwaelzpumpe"
+    name: "Solarkreis Umwaelzpumpe"
     pin:
       number: GPIO0
       inverted: true
@@ -17,7 +17,7 @@ switch:
 
   # Relais 3
   - platform: gpio
-    name: "${device_friendly_name} Relais 3 ungenutzt"
+    name: "Relais 3 ungenutzt"
     pin:
       number: GPIO2
       inverted: true
@@ -26,7 +26,7 @@ switch:
 
   # Relais 4
   - platform: gpio
-    name: "${device_friendly_name} Warmwasserbereitung Anforderung"
+    name: "Warmwasserbereitung Anforderung"
     id: wwb_anforderung
     pin:
       number: GPIO15

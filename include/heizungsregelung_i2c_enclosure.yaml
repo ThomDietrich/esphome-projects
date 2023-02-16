@@ -9,11 +9,11 @@ i2c:
 sensor:
   - platform: sht3xd
     temperature:
-      name: "${device_friendly_name} Gehäuse Temperatur"
+      name: "Gehäuse Temperatur"
       unit_of_measurement: "°C"
       accuracy_decimals: 1
     humidity:
-      name: "${device_friendly_name} Gehäuse Luftfeuchte"
+      name: "Gehäuse Luftfeuchte"
       unit_of_measurement: "%"
       accuracy_decimals: 1
     address: 0x44

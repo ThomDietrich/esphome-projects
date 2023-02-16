@@ -11,7 +11,8 @@ substitutions:
   wifi_fallback_pw: !secret wifi_fallback_password
 
 esphome:
-  name: "${device_name}"
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
   platform: ESP32
   board: esp32dev
 
@@ -43,11 +44,11 @@ web_server:
 
 sensor:
   - platform: uptime
-    name: "${device_friendly_name} ESP32 Uptime"
+    name: "ESP32 Uptime"
     update_interval: 60s
     device_class: duration
   - platform: wifi_signal
-    name: "${device_friendly_name} ESP32 WiFi Signal"
+    name: "ESP32 WiFi Signal"
     update_interval: 60s
 
 # https://esphome.io/components/esp32_camera.html#configuration-for-ai-thinker-camera
@@ -75,11 +76,11 @@ esp32_camera:
 
 #switch:
 #  - platform: gpio
-#    name: "${device_friendly_name} Flash"
+#    name: "Flash"
 #    pin: 4
 #    #inverted: True
 #  - platform: restart
-#    name: "${device_friendly_name} Restart"
+#    name: "Restart"
 #    id: restart_switch
 
 output:

@@ -1,12 +1,13 @@
 substitutions:
   device_name: epaper-display-awf1877-oben
-  device_friendly_name: ePaper Display AWF1877
+  device_friendly_name: ePaper Display AWF1877 oben
 
 esphome:
   name: ${device_name}
   #name: epaper-display-awf1877-unten
   #name: epaper-display-ha
   comment: ${device_friendly_name}
+  friendly_name: ${device_friendly_name}
   platform: esp32
   board: pico32
   on_boot:

@@ -1,6 +1,6 @@
 sensor:
   - platform: pulse_meter
-    name: "${device_friendly_name} Pulse Meter 39 Leistung"
+    name: "Pulse Meter 39 Leistung"
     pin: GPIO39
     internal_filter: 50ms
     accuracy_decimals: 3
