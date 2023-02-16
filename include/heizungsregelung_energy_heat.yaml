@@ -31,7 +31,7 @@ globals:
 binary_sensor:
   # https://esphome.io/components/binary_sensor/gpio.html
   - platform: gpio
-    #name: ${device_friendly_name} Heizkreis Volumenstrommessung Sensor
+    #name: Heizkreis Volumenstrommessung Sensor
     id: intern_heizkreis_gpio_tick
     pin: GPIO34
     icon: mdi:square-wave
@@ -61,7 +61,7 @@ binary_sensor:
       #- component.update: sensor_heizkreis_energie
 
   - platform: gpio
-    #name: ${device_friendly_name} Warmwasser Volumenstrommessung Sensor
+    #name: Warmwasser Volumenstrommessung Sensor
     id: intern_wwb_gpio_tick
     pin: GPIO35
     icon: mdi:square-wave
@@ -92,7 +92,7 @@ binary_sensor:
 
 sensor:
   - platform: template
-    name: ${device_friendly_name} Heizkreis Volumen
+    name: Heizkreis Volumen
     id: sensor_heizkreis_wasser
     state_class: total
     device_class: water
@@ -103,7 +103,7 @@ sensor:
     update_interval: 60s
 
   - platform: template
-    name: ${device_friendly_name} Heizkreis Energie
+    name: Heizkreis Energie
     id: sensor_heizkreis_energie
     state_class: total
     device_class: energy
@@ -114,7 +114,7 @@ sensor:
     update_interval: 60s
 
   - platform: template
-    name: ${device_friendly_name} Warmwasser Volumen
+    name: Warmwasser Volumen
     id: sensor_wwb_wasser
     state_class: total
     device_class: water
@@ -125,7 +125,7 @@ sensor:
     update_interval: 60s
 
   - platform: template
-    name: ${device_friendly_name} Warmwasser Energie
+    name: Warmwasser Energie
     id: sensor_wwb_energie
     state_class: total
     device_class: energy
