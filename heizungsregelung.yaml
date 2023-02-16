@@ -65,24 +65,24 @@ light:
     output: green_led_output
     restore_mode: ALWAYS_OFF
 
-binary_sensor:
-  - platform: gpio
-    name: "${device_friendly_name} Gastherme Stoermeldung"
-    pin:
-      number: GPIO25
-      mode: INPUT_PULLUP
-      inverted: false
-    device_class: problem
-    filters:
-      - delayed_on: 100ms
-      - delayed_off: 100ms
-  - platform: gpio
-    name: "${device_friendly_name} Wassereinbruch Alarm"
-    pin:
-      number: GPIO26
-      mode: INPUT_PULLUP
-      inverted: false
-    device_class: problem
-    filters:
-      - delayed_on: 100ms
-      - delayed_off: 100ms
+#binary_sensor:
+#  - platform: gpio
+#    name: "${device_friendly_name} Gastherme Stoermeldung"
+#    pin:
+#      number: GPIO25
+#      mode: INPUT_PULLUP
+#      inverted: false
+#    device_class: problem
+#    filters:
+#      - delayed_on: 100ms
+#      - delayed_off: 100ms
+#  - platform: gpio
+#    name: "${device_friendly_name} Wassereinbruch Alarm"
+#    pin:
+#      number: GPIO26
+#      mode: INPUT_PULLUP
+#      inverted: false
+#    device_class: problem
+#    filters:
+#      - delayed_on: 100ms
+#      - delayed_off: 100ms
