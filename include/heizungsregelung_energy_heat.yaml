@@ -86,7 +86,7 @@ binary_sensor:
                   const int m_g = 248;
                   const float c_wh_kgk = 1.1625;
                   const float k_k = id(warmwasser_diff).state;
-                  return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
+                  return id(global_wwb_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
       #- component.update: sensor_wwb_wasser
       #- component.update: sensor_wwb_energie
 
