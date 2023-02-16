@@ -4,6 +4,7 @@ sensor:
     name: "${device_friendly_name} Solarkreis Differenz"
     id: solarkreis_diff
     unit_of_measurement: "K"
+    accuracy_decimals: 1
     update_interval: 60s
     lambda: |-
       return (id(sonnenkollektor).state - id(warmwasserspeicher_unten).state);
@@ -12,6 +13,7 @@ sensor:
     name: "${device_friendly_name} Heizkreis Differenz"
     id: heizkreis_diff
     unit_of_measurement: "K"
+    accuracy_decimals: 1
     update_interval: 60s
     lambda: |-
       return (id(heizkreis_vl).state - id(heizkreis_rl).state);
@@ -20,6 +22,7 @@ sensor:
     name: "${device_friendly_name} Warmwasser Differenz"
     id: warmwasser_diff
     unit_of_measurement: "K"
+    accuracy_decimals: 1
     update_interval: 60s
     lambda: |-
       return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
@@ -28,6 +31,7 @@ sensor:
     name: "${device_friendly_name} Kessel Differenz"
     id: kessel_diff
     unit_of_measurement: "K"
+    accuracy_decimals: 1
     update_interval: 60s
     lambda: |-
       return (id(kessel_vl).state - id(kessel_rl).state);
@@ -36,6 +40,7 @@ sensor:
     name: "${device_friendly_name} Kesselpufferkreis Differenz"
     id: kesselpufferkreis_diff
     unit_of_measurement: "K"
+    accuracy_decimals: 1
     update_interval: 60s
     lambda: |-
       return (id(kesselpufferkreis_vl).state - id(kesselpufferkreis_rl).state);
