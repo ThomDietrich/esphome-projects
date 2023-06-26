@@ -1,14 +1,6 @@
 substitutions:
-  device_name: taubenkamera
-  device_friendly_name: Taubenkamera
-
-  # secrets
-  ota_pw: !secret ota_pw
-  wifi_home1_ssid: !secret wifi_home1_ssid
-  wifi_home1_password: !secret wifi_home1_password
-  wifi_home2_ssid: !secret wifi_home2_ssid
-  wifi_home2_password: !secret wifi_home2_password
-  wifi_fallback_pw: !secret wifi_fallback_password
+  device_name: taubenkamera1
+  device_friendly_name: Taubenkamera1
 
 esphome:
   name: ${device_name}
@@ -16,28 +8,9 @@ esphome:
   platform: ESP32
   board: esp32dev
 
-wifi:
-  networks:
-    - ssid: ${wifi_home2_ssid}
-      password: ${wifi_home2_password}
-    - ssid: ${wifi_home1_ssid}
-      password: ${wifi_home1_password}
-  ap:
-    ssid: "${device_name} fallback"
-    password: ${wifi_fallback_password}
-
-captive_portal:
-
-logger:
-  #level: INFO
-
-ota:
-  password: ${ota_pw}
-
-api:
-
-web_server:
-  port: 80
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
 
 #time:
 #  - platform: homeassistant
@@ -66,22 +39,43 @@ esp32_camera:
   pixel_clock_pin: GPIO22
   power_down_pin: GPIO32
   # Image settings
-  max_framerate: 5 fps    # default: 10 fps, max 60
+  max_framerate: 2 fps    # default: 10 fps, max 60
   idle_framerate: 0.2 fps # default: 0.1 fps - framerate for 'picture' in HA dashboard
-  resolution: 800x600     # default: 640x480 (VGA) - higher res requires more memory
-  jpeg_quality: 10        # 10 (best) to 63 (worst)
+  # https://de.wikipedia.org/wiki/Bildaufl%C3%B6sung
+  # resolution: QQVGA # 160X120
+  # resolution: QCIF # 176X144
+  # resolution: HQVGA # 240X176
+  # resolution: QVGA # 320X240
+  # resolution: CIF # 400X296
+  # resolution: VGA # 640X480
+  resolution: SVGA # 800X600
+  # resolution: XGA # 1024X768
+  # resolution: SXGA # 1280X1024
+  # resolution: UXGA # 1600X1200
+  jpeg_quality: 24  # 10 (best) to 63 (worst)
   vertical_flip: false
   horizontal_mirror: false
 
-
-#switch:
-#  - platform: gpio
-#    name: "Flash"
-#    pin: 4
-#    #inverted: True
-#  - platform: restart
-#    name: "Restart"
-#    id: restart_switch
+  # Image settings
+  # (Optional, int): The contrast to apply to the picture, from -2 to 2. Defaults to 0.
+  contrast: 0
+  # (Optional, int): The brightness to apply to the picture, from -2 to 2. Defaults to 0.
+  brightness: 0
+  # (Optional, enum): The mode of gain control module. Defaults to auto (leave camera to automatically adjust sensor gain).
+  # manual: Gain can be manually set, with agc_value parameter. agc_gain_ceiling has no effect here
+  # auto: Camera manage sensor gain automatically. Maximum gain can be defined, thanks to agc_gain_ceiling parameter. agc_value has no effect here
+  agc_mode: auto
+  # (Optional, int): The gain value to apply to the picture (when aec_mode is set to manual), from 0 to 30. Defaults to 0.
+  agc_value: 0
+  # (Optional, enum): The maximum gain allowed, when agc_mode is set to auto. This parameter seems act as “ISO” setting. Defaults to 2x.
+  # 2x: Camera is less sensitive, picture is clean (without visible noise)
+  # 4x
+  # 8x
+  # 16x
+  # 32x
+  # 64x
+  # 128x: Camera is more sensitive, but picture contain lot of noise
+  agc_gain_ceiling: 2x
 
 output:
   - platform: ledc
