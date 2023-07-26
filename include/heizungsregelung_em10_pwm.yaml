@@ -15,7 +15,7 @@ globals:
   - id: gastherme_sollwert_pwm
     type: int
     #restore_value: yes
-    initial_value: '30'  # 0..100
+    #initial_value: '0'  # 0..100
 
 # Sensor um den Sollwert in Prozent (0..100 PMW) rückzuliefert (feedback loop)
 sensor:
