@@ -1,0 +1,209 @@
+substitutions:
+  device_name: taubenfutterspender
+  device_friendly_name: Taubenfutterspender
+
+# https://docs.m5stack.com/en/core/stamp_c3u
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  min_version: '2022.12'
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.mcu: esp32c3
+#    platform_packages:
+#      - platformio/framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git#2.0.5
+
+  on_boot:
+    - priority: 600
+      then:
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 0%
+            blue: 100%
+            brightness: 10%
+            transition_length: 0ms
+        - delay: 500ms
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 0%
+            blue: 100%
+            brightness: 100%
+            transition_length: 1500ms
+    - priority: 240
+      then:
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 100%
+            blue: 100%
+            brightness: 10%
+            transition_length: 500ms
+    - priority: 200
+      then:
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 100%
+            blue: 0%
+            brightness: 10%
+            transition_length: 500ms
+        - delay: 500ms
+        - light.turn_off:
+            id: on_board_led
+            transition_length: 500ms
+
+        - binary_sensor.template.publish:
+            id: sensor_servo_running
+            state: OFF
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: arduino
+    version: 2.0.5
+    #platform_version: 5.2.0
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+#time:
+#  - platform: homeassistant
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: on_board_led
+    # name: On-Board LED
+    rgb_order: GRB
+    pin: GPIO2
+    num_leds: 1
+    rmt_channel: 0
+    chipset: SK6812
+
+globals:
+  - id: global_volume_counter
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+sensor:
+  - platform: template
+    name: Foerderzähler
+    id: sensor_volume_counter
+    # state_class: total
+    # device_class: water
+    # unit_of_measurement: L
+    icon: mdi:factory
+    accuracy_decimals: 2
+    lambda: return id(global_volume_counter);
+    update_interval: 60s
+
+# https://esphome.io/components/output/ledc
+output:
+  - platform: ledc
+    pin: GPIO10
+    id: servo_pwm
+    frequency: 50 Hz
+
+# https://esphome.io/components/servo.html
+# Turnigy TGY-SM-4309R https://hobbyking.com/en_us/turnigy-tgy-sm-4309r-360-analog-metal-gear-robot-servo-8-7kg-57rpm-56g.html
+# http://rcsearch.info/hobbyking/i41212/#catalog
+servo:
+  - id: servo_control
+    output: servo_pwm
+    #min_level: 5.75% # Förderschraube darf sich nicht rückwärts drehen
+    min_level: 7.25%
+    idle_level: 7.25%
+    max_level: 8.75%
+    restore: false
+    transition_length: 1s
+
+binary_sensor:
+
+  - platform: template
+    name: Foerderschraube aktiv
+    id: sensor_servo_running
+
+  - platform: gpio
+    id: on_board_button
+    name: On-Board Button
+    pin:
+      number: GPIO9
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        - binary_sensor.template.publish:
+            id: sensor_servo_running
+            state: ON
+        - servo.write:
+            id: servo_control
+            level: 0.5
+        - delay: 5s
+        - servo.detach: servo_control
+        - globals.set:
+            id: global_volume_counter
+            value: !lambda |-
+              return id(global_volume_counter) + (0.5 * 5.0);
+        - component.update: sensor_volume_counter
+        - binary_sensor.template.publish:
+            id: sensor_servo_running
+            state: OFF
+
+# https://esphome.io/components/number/template.html
+number:
+  - platform: template
+    name: Servo Control Debug
+    icon: mdi:screw-round-top
+    mode: slider # slider, box
+    min_value: 0 # Förderschraube darf sich nicht rückwärts drehen
+    initial_value: 0
+    max_value: 100
+    step: 1
+    optimistic: false
+    set_action:
+      then:
+        - servo.write:
+            id: servo_control
+            level: !lambda 'return x / 100.0;'
+        - if:
+            condition:
+              lambda: 'return x > 0;'
+            then:
+              - binary_sensor.template.publish:
+                  id: sensor_servo_running
+                  state: ON
+            else:
+              - binary_sensor.template.publish:
+                  id: sensor_servo_running
+                  state: OFF
+
+# Home Assistant Services
+api:
+  services:
+    - service: run_auger_screw
+      variables:
+        runtime_seconds: float # 0..999
+        speed_percent: float # 0..100
+      then:
+        - binary_sensor.template.publish:
+            id: sensor_servo_running
+            state: ON
+        - servo.write:
+            id: servo_control
+            level: !lambda 'return speed_percent / 100.0;'
+        - delay: !lambda 'return runtime_seconds * 1000;'
+        - servo.detach: servo_control
+        - globals.set:
+            id: global_volume_counter
+            value: !lambda |-
+              return id(global_volume_counter) + (speed_percent / 100.0 * runtime_seconds);
+        - component.update: sensor_volume_counter
+        - binary_sensor.template.publish:
+            id: sensor_servo_running
+            state: OFF
