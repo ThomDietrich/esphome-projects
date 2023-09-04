@@ -3,6 +3,8 @@ sensor:
   - platform: template
     name: "Solarkreis Differenz"
     id: solarkreis_diff
+    state_class: measurement
+    device_class: temperature
     unit_of_measurement: "K"
     accuracy_decimals: 1
     update_interval: 60s
@@ -12,6 +14,8 @@ sensor:
   - platform: template
     name: "Heizkreis Differenz"
     id: heizkreis_diff
+    state_class: measurement
+    device_class: temperature
     unit_of_measurement: "K"
     accuracy_decimals: 1
     update_interval: 60s
@@ -21,6 +25,8 @@ sensor:
   - platform: template
     name: "Warmwasser Differenz"
     id: warmwasser_diff
+    state_class: measurement
+    device_class: temperature
     unit_of_measurement: "K"
     accuracy_decimals: 1
     update_interval: 60s
@@ -30,6 +36,8 @@ sensor:
   - platform: template
     name: "Kessel Differenz"
     id: kessel_diff
+    state_class: measurement
+    device_class: temperature
     unit_of_measurement: "K"
     accuracy_decimals: 1
     update_interval: 60s
@@ -39,6 +47,8 @@ sensor:
   - platform: template
     name: "Kesselpufferkreis Differenz"
     id: kesselpufferkreis_diff
+    state_class: measurement
+    device_class: temperature
     unit_of_measurement: "K"
     accuracy_decimals: 1
     update_interval: 60s
