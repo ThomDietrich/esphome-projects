@@ -59,20 +59,20 @@ esphome:
             id: sensor_servo_running
             state: OFF
 
+
 esp32:
   board: esp32-c3-devkitm-1
   variant: esp32c3
   framework:
     type: arduino
-    version: 2.0.5
-    #platform_version: 5.2.0
+    # version: 2.0.5
+    # platform_version: 5.2.0
+
 
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
 
-#time:
-#  - platform: homeassistant
 
 light:
   - platform: esp32_rmt_led_strip
@@ -84,23 +84,32 @@ light:
     rmt_channel: 0
     chipset: SK6812
 
+
 globals:
-  - id: global_volume_counter
+
+  - id: gram_per_sec
+    type: int
+    restore_value: no
+    initial_value: '25' # 500 Gramm in 20 Sekunden
+
+  - id: global_mass_total
     type: float
     restore_value: no
     initial_value: '0.0'
 
+
 sensor:
   - platform: template
-    name: Foerderzähler
-    id: sensor_volume_counter
-    # state_class: total
-    # device_class: water
-    # unit_of_measurement: L
-    icon: mdi:factory
-    accuracy_decimals: 2
-    lambda: return id(global_volume_counter);
-    update_interval: 60s
+    name: Foerdermenge total
+    id: sensor_mass_total
+    state_class: total
+    device_class: weight
+    unit_of_measurement: g
+    icon: mdi:scale
+    accuracy_decimals: 1
+    lambda: return id(global_mass_total);
+    update_interval: 3600s # fallback aside triggered update
+
 
 # https://esphome.io/components/output/ledc
 output:
@@ -108,6 +117,7 @@ output:
     pin: GPIO10
     id: servo_pwm
     frequency: 50 Hz
+
 
 # https://esphome.io/components/servo.html
 # Turnigy TGY-SM-4309R https://hobbyking.com/en_us/turnigy-tgy-sm-4309r-360-analog-metal-gear-robot-servo-8-7kg-57rpm-56g.html
@@ -122,15 +132,58 @@ servo:
     restore: false
     transition_length: 1s
 
-binary_sensor:
 
+script:
+  - id: script_run_auger_screw
+    parameters:
+      runtime_seconds: float # 0..999
+      speed_percent: float # 0..100
+    then:
+
+      # Signalisiere Beginn der Aktivität
+      - light.turn_on:
+          id: on_board_led
+          red: 60%
+          green: 50%
+          blue: 0%
+          brightness: 100%
+          transition_length: 500ms
+      - binary_sensor.template.publish:
+          id: sensor_servo_running
+          state: ON
+
+      # Servo für gegebene Dauer laufen lassen
+      - servo.write:
+          id: servo_control
+          level: !lambda 'return speed_percent / 100.0;'
+      - delay: !lambda 'return runtime_seconds * 1000;'
+      - servo.detach: servo_control
+
+      # Sensoren aktualisieren
+      - globals.set:
+          id: global_mass_total
+          # 500 Gramm in 20 Sekunden
+          value: !lambda |-
+            return id(global_mass_total) + (speed_percent / 100.0 * (id(gram_per_sec) * runtime_seconds));
+      - component.update: sensor_mass_total
+
+      # Signalisiere Ende der Aktivität
+      - binary_sensor.template.publish:
+          id: sensor_servo_running
+          state: OFF
+      - light.turn_off:
+          id: on_board_led
+          transition_length: 500ms
+
+
+binary_sensor:
   - platform: template
     name: Foerderschraube aktiv
     id: sensor_servo_running
 
   - platform: gpio
     id: on_board_button
-    name: On-Board Button
+    name: Gelber Taster am Gehäuse (gleicht On-Board Button)
     pin:
       number: GPIO9
       inverted: true
@@ -138,22 +191,34 @@ binary_sensor:
       - delayed_on: 50ms
     on_press:
       then:
-        - binary_sensor.template.publish:
-            id: sensor_servo_running
-            state: ON
-        - servo.write:
-            id: servo_control
-            level: 0.5
-        - delay: 5s
-        - servo.detach: servo_control
-        - globals.set:
-            id: global_volume_counter
-            value: !lambda |-
-              return id(global_volume_counter) + (0.5 * 5.0);
-        - component.update: sensor_volume_counter
-        - binary_sensor.template.publish:
-            id: sensor_servo_running
-            state: OFF
+        - script.execute:
+            id: script_run_auger_screw
+            runtime_seconds: 10
+            speed_percent: 100
+
+
+# Home Assistant Services
+api:
+  services:
+    - service: run_auger_screw
+      variables:
+        runtime_seconds: float # 0..999
+        speed_percent: float # 0..100
+      then:
+        - script.execute:
+            id: script_run_auger_screw
+            runtime_seconds: !lambda 'return runtime_seconds;'
+            speed_percent: !lambda 'return speed_percent;'
+
+    - service: produce_food_amount
+      variables:
+        mass_grams: float
+      then:
+        - script.execute:
+            id: script_run_auger_screw
+            runtime_seconds: !lambda 'return mass_grams / (1.0 * id(gram_per_sec));'
+            speed_percent: 100
+
 
 # https://esphome.io/components/number/template.html
 number:
@@ -182,28 +247,3 @@ number:
               - binary_sensor.template.publish:
                   id: sensor_servo_running
                   state: OFF
-
-# Home Assistant Services
-api:
-  services:
-    - service: run_auger_screw
-      variables:
-        runtime_seconds: float # 0..999
-        speed_percent: float # 0..100
-      then:
-        - binary_sensor.template.publish:
-            id: sensor_servo_running
-            state: ON
-        - servo.write:
-            id: servo_control
-            level: !lambda 'return speed_percent / 100.0;'
-        - delay: !lambda 'return runtime_seconds * 1000;'
-        - servo.detach: servo_control
-        - globals.set:
-            id: global_volume_counter
-            value: !lambda |-
-              return id(global_volume_counter) + (speed_percent / 100.0 * runtime_seconds);
-        - component.update: sensor_volume_counter
-        - binary_sensor.template.publish:
-            id: sensor_servo_running
-            state: OFF
