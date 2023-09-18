@@ -7,5 +7,5 @@ wifi:
     - ssid: !secret wifi_home3_ssid
       password: !secret wifi_home3_pw
   ap:
-    ssid: "${device_name} fallback"
+    ssid: "${device_name}"
     password: !secret wifi_fallback_pw

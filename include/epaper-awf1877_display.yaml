@@ -1,6 +1,10 @@
+# Pins for ESP32 M5Stack Stamp-Pico
+# GND - GND
+# VCC - 3V3
+
 spi:
   clk_pin: GPIO18
-  mosi_pin: GPIO26
+  mosi_pin: GPIO26  # DIN
 
 display:
   - platform: waveshare_epaper

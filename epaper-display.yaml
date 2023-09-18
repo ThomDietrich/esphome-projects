@@ -1,11 +1,16 @@
+# esphome -s device_name epaper-display-awf1877-oben -s device_friendly_name "ePaper Display AWF1877 oben" run epaper-display.yaml
+# esphome -s device_name epaper-display-awf1877-unten -s device_friendly_name "ePaper Display AWF1877 unten" run epaper-display.yaml
+
 substitutions:
-  device_name: epaper-display-awf1877-oben
-  device_friendly_name: ePaper Display AWF1877 oben
+  device_name: epaper-display-default
+  device_friendly_name: ePaper Display Default
+  #device_name: epaper-display-awf1877-unten
+  #device_friendly_name: ePaper Display AWF1877 unten
+
+# Project based on https://github.com/maxmacstn/HA-ePaper-Display
 
 esphome:
   name: ${device_name}
-  #name: epaper-display-awf1877-unten
-  #name: epaper-display-ha
   comment: ${device_friendly_name}
   friendly_name: ${device_friendly_name}
   platform: esp32
@@ -23,10 +28,10 @@ packages:
   include_2: !include include/epaper-awf1877_homeassistant.yaml
   include_3: !include include/epaper-awf1877_display.yaml
 
-wifi:
-  ap:
-    ssid: "epaper display fallback"
-  #use_address: 192.168.23.187
+#wifi:
+#  ap:
+#    ssid: "epaper display fallback"
+#  use_address: 192.168.23.204
 
 sensor:
   - platform: wifi_signal
