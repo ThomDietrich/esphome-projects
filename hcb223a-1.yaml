@@ -1,0 +1,352 @@
+substitutions:
+  device_name: hcb223a-1
+  device_friendly_name: HCB223A-1
+
+  # Desk: Sanodesk EC4
+  # Controller: LoctekMotion HCB223A-1
+  # Similar product https://en.loctek.com/Desk-Frames/Dual-Motors/ET268
+  min_height: "60.0" # cm
+  max_height: "125.0" # cm
+
+# https://docs.m5stack.com/en/core/stamp_c3u
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  min_version: '2022.12'
+  platformio_options:
+    board_build.flash_mode: dio
+    board_build.mcu: esp32c3
+#    platform_packages:
+#      - platformio/framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git#2.0.5
+
+  includes:
+    - desk_height_sensor.h
+
+
+# Hardware setup
+#
+# Controller - RJ45/T568B          - ESP32
+# -------------------------------------------
+# GND        - Pin 7 (white-brown) - GND
+# 5V supply  - Pin 8 (brown)       - 5V in
+# TX         - Pin 6 (green)       - GPIO21
+# RX         - Pin 5 (white-blue)  - GPIO20
+# PIN20      - Pin 4 (blue)        - GPIO 9
+
+
+  on_boot:
+    - priority: 600
+      then:
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 0%
+            blue: 100%
+            brightness: 10%
+            transition_length: 0ms
+        - delay: 500ms
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 0%
+            blue: 100%
+            brightness: 100%
+            transition_length: 1500ms
+    - priority: 240
+      then:
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 100%
+            blue: 100%
+            brightness: 10%
+            transition_length: 500ms
+    - priority: 200
+      then:
+        - light.turn_on:
+            id: on_board_led
+            red: 0%
+            green: 100%
+            blue: 0%
+            brightness: 10%
+            transition_length: 500ms
+        - delay: 500ms
+        - light.turn_off:
+            id: on_board_led
+            transition_length: 500ms
+    - priority: -10
+      then:
+        - switch.turn_on: switch_alarm
+
+
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: arduino
+    # version: 2.0.5
+    # platform_version: 5.2.0
+
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: on_board_led
+    # name: On-Board LED
+    rgb_order: GRB
+    pin: GPIO2
+    num_leds: 1
+    rmt_channel: 0
+    chipset: SK6812
+
+
+logger:
+  baud_rate: 0
+
+
+uart:
+  - id: desk_uart
+    baud_rate: 9600
+    tx_pin: GPIO21
+    rx_pin: GPIO20
+
+sensor:
+  - platform: custom
+    lambda: |-
+      auto desk_height_sensor = new DeskHeightSensor(id(desk_uart));
+      App.register_component(desk_height_sensor);
+      return {desk_height_sensor};
+    sensors:
+      id: desk_height
+      name: Desk Height
+      unit_of_measurement: cm
+      accuracy_decimals: 1
+      icon: mdi:counter
+      state_class: measurement
+      on_value_range:
+      - below: ${min_height}
+        then:
+          - switch.turn_off: switch_down
+      - above: ${max_height}
+        then:
+          - switch.turn_off: switch_up
+      on_value:
+        then:
+          - component.update: set_desk_height
+          - cover.template.publish:
+              id: desk_cover
+              position: !lambda |-
+                  // The sensor outputs values from min_height (cm) to max_height (cm)
+                  // We need to translate this to 0 - 1 scale.
+                  float position = (float(x) - float(${min_height})) / (float(${max_height}) - float(${min_height}));
+                  return position;
+
+
+switch:
+  - platform: gpio
+    name: Serial Control Pull-Up  # "PIN20" of desk controller
+    pin:
+      number: GPIO9
+      mode: OUTPUT
+    restore_mode: ALWAYS_ON
+    entity_category: config
+    internal: true
+
+  - platform: uart
+    name: Up
+    id: switch_up
+    icon: mdi:arrow-up-bold
+    data: [0x9b, 0x06, 0x02, 0x01, 0x00, 0xfc, 0xa0, 0x9d]
+    uart_id: desk_uart
+    send_every: 108ms
+
+  - platform: uart
+    name: Down
+    id: switch_down
+    icon: mdi:arrow-down-bold
+    data: [0x9b, 0x06, 0x02, 0x02, 0x00, 0x0c, 0xa0, 0x9d]
+    uart_id: desk_uart
+    send_every: 108ms
+
+  ### Also wakes controller up
+  - platform: uart
+    name: Alarm off
+    id: switch_alarm
+    icon: mdi:alarm
+    data: [0x9b, 0x06, 0x02, 0x40, 0x00, 0xAC, 0x90, 0x9d]
+    uart_id: desk_uart
+    send_every: 108ms
+    on_turn_on:
+      - delay: 3000ms
+      - switch.turn_off: switch_alarm
+    entity_category: config
+
+  ### No locking function on HCB223A-1, but will wake controller up
+  #
+  # - platform: uart
+  #   name: Child Lock
+  #   id: switch_child_lock
+  #   icon: mdi:account-lock
+  #   data: [0x9b, 0x06, 0x02, 0x20, 0x00, 0xac, 0xb8, 0x9d]
+  #   uart_id: desk_uart
+  #   send_every: 108ms
+  #   on_turn_on:
+  #     - delay: 5000ms
+  #     - switch.turn_off: switch_child_lock
+  #   entity_category: "config"
+
+button:
+  - platform: template
+    name: Preset 1
+    icon: mdi:numeric-1-box
+    on_press:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x04, 0x00, 0xac, 0xa3, 0x9d]
+
+  - platform: template
+    name: Preset 2
+    icon: mdi:numeric-2-box
+    on_press:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x08, 0x00, 0xac, 0xa6, 0x9d]
+
+  - platform: template
+    name: Preset 3
+    icon: mdi:numeric-3-box
+    on_press:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x10, 0x00, 0xac, 0xac, 0x9d]
+
+  - platform: template
+    name: Preset 4
+    icon: mdi:numeric-4-box
+    on_press:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x00, 0x01, 0xac, 0x60, 0x9d]
+
+  ### Unclear function on HCB223A-1
+  #
+  # - platform: template
+  #   name: Memory
+  #   id: button_m
+  #   icon: mdi:alpha-m-box
+  #   entity_category: "config"
+  #   on_press:
+  #     - uart.write:
+  #         id: desk_uart
+  #         data: [0x9b, 0x06, 0x02, 0x20, 0x00, 0xac, 0xb8, 0x9d]
+
+  ### No effect on HCB223A-1
+  #
+  # - platform: template
+  #   name: Wake Screen
+  #   id: button_wake_screen
+  #   icon: mdi:gesture-tap-button
+  #   entity_category: config
+  #   on_press:
+  #     - uart.write:
+  #         id: desk_uart
+  #         data: [0x9b, 0x06, 0x02, 0x00, 0x00, 0x6c, 0xa1, 0x9d]
+
+  - platform: template
+    name: Alarm
+    id: button_alarm
+    icon: mdi:alarm
+    on_press:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x40, 0x00, 0xAC, 0x90, 0x9d]
+    entity_category: config
+
+
+cover:
+  - platform: template
+    id: desk_cover
+    icon: mdi:desk
+    name: Desk
+    device_class: blind # makes it easier to integrate with Google/Alexa
+    has_position: true
+    position_action:
+      - logger.log:
+          format: "Requesting position change to: %f "
+          args: [ 'pos' ]
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return pos > id(desk_cover).position;
+          then:
+            - logger.log: "Position should move up"
+            - cover.open: desk_cover
+            - cover.template.publish:
+                id: desk_cover
+                current_operation: OPENING
+            - wait_until:
+                lambda: |-
+                  return id(desk_cover).position  >= pos;
+            - cover.stop: desk_cover
+          else:
+            - logger.log: "Position should move down"
+            - cover.close: desk_cover
+            - cover.template.publish:
+                id: desk_cover
+                current_operation: CLOSING
+            - wait_until:
+                lambda: |-
+                  return id(desk_cover).position <= pos;
+            - cover.stop: desk_cover
+    stop_action:
+      - switch.turn_off: switch_up
+      - switch.turn_off: switch_down
+    open_action:
+      - switch.turn_off: switch_down
+      - switch.turn_on: switch_up
+    close_action:
+      - switch.turn_off: switch_up
+      - switch.turn_on: switch_down
+    optimistic: false
+
+number:
+  - platform: template
+    name: Desk Height
+    id: set_desk_height
+    min_value: ${min_height}
+    max_value: ${max_height}
+    icon: "mdi:counter"
+    unit_of_measurement: "cm"
+    device_class: "distance"
+    step: 0.1
+    lambda: !lambda |-
+      return id(desk_height).state;
+    #update_interval: 0ms # update in every loop() iteration
+    update_interval: 999s
+    set_action:
+      - logger.log:
+          format: "Requesting position change to: %x "
+          args: [ 'x' ]
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x > id(desk_height).state;
+          then:
+            - logger.log: "Position should move up"
+            - cover.open: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_height).state  >= x;
+            - cover.stop: desk_cover
+          else:
+            - logger.log: "Position should move down"
+            - cover.close: desk_cover
+            - wait_until:
+                lambda: |-
+                  return id(desk_height).state <= x;
+            - cover.stop: desk_cover
