@@ -198,19 +198,19 @@
   /* FOOTER */
   //it.strftime(365, 295, id(font_footer), TextAlign::BASELINE_RIGHT , "%d. %b  %H:%M", id(homeassistant_time).now());
 
-  if(id(wifisignal).has_state()) {
+  if(id(wifi_signal_db).has_state()) {
     int x = 380;
     int y = 297;
-    if (id(wifisignal).state >= -50) {
+    if (id(wifi_signal_db).state >= -50) {
       //Excellent
       it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤨");
-    } else if (id(wifisignal).state  >= -60) {
+    } else if (id(wifi_signal_db).state  >= -60) {
       //Good
       it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤥");
-    } else if (id(wifisignal).state  >= -75) {
+    } else if (id(wifi_signal_db).state  >= -75) {
       //Fair
       it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤢");
-    } else if (id(wifisignal).state  >= -100) {
+    } else if (id(wifi_signal_db).state  >= -100) {
       //Weak
       it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤟");
     } else {

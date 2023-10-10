@@ -1,11 +1,9 @@
-# esphome -s device_name epaper-display-awf1877-oben -s device_friendly_name "ePaper Display AWF1877 oben" run epaper-display.yaml
-# esphome -s device_name epaper-display-awf1877-unten -s device_friendly_name "ePaper Display AWF1877 unten" run epaper-display.yaml
+# esphome -s device_name epaper-display-oben -s device_friendly_name "ePaper Display oben" run epaper-display.yaml
+# esphome -s device_name epaper-display-unten -s device_friendly_name "ePaper Display unten" run epaper-display.yaml
 
 substitutions:
   device_name: epaper-display-default
   device_friendly_name: ePaper Display Default
-  #device_name: epaper-display-awf1877-unten
-  #device_friendly_name: ePaper Display AWF1877 unten
 
 # Project based on https://github.com/maxmacstn/HA-ePaper-Display
 
@@ -24,22 +22,15 @@ esphome:
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
-  include_1: !include include/epaper-awf1877_fonts.yaml
-  include_2: !include include/epaper-awf1877_homeassistant.yaml
-  include_3: !include include/epaper-awf1877_display.yaml
+  include_1: !include include/epaper_display_fonts.yaml
+  include_2: !include include/epaper_display_homeassistant.yaml
+  include_3: !include include/epaper_display_screen.yaml
 
-#wifi:
-#  ap:
-#    ssid: "epaper display fallback"
-#  use_address: 192.168.23.204
+# wifi:
+#   use_address: 192.168.23.204
 
 sensor:
-  - platform: wifi_signal
-    name: "ePaper Display WiFi Signal"
-    id: wifisignal
-    update_interval: 60s
-
   - platform: template
-    name: "ePaper Display Last Update"
+    name: "Last Content Update"
     device_class: timestamp
     id: epaperdisplay_last_update

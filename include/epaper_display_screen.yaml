@@ -16,4 +16,4 @@ display:
     model: 4.20in
     update_interval: 30min
 
-    lambda: !include epaper-awf1877_display-content.yaml
+    lambda: !include epaper_display_screen_content.yaml

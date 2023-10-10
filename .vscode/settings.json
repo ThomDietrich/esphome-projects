@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "epaper-awf1877_display-content.yaml": "cpp"
+        "*.yaml": "esphome",
+        "epaper_display_screen_content.yaml": "cpp",
     }
 }
