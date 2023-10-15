@@ -1,0 +1,41 @@
+sensor:
+  # https://esphome.io/components/sensor/adc.html
+
+  - platform: adc
+    name: "Klingel Messsignal"
+    id: adc_klingel_v
+    internal: true
+    pin: 39
+    attenuation: auto
+    update_interval: 50ms
+    accuracy_decimals: 2
+    filters:
+      - median:
+          window_size: 5
+          send_every: 3
+
+
+binary_sensor:
+  # https://esphome.io/components/binary_sensor/template.html
+
+  - platform: template
+    name: "Klingel"
+    lambda: |-
+      return id(adc_klingel_v).state > float(${klingel_schwellwert_1});
+    filters:
+      - delayed_off: 5s
+
+  - platform: template
+    name: "Klingel unten"
+    lambda: |-
+      return id(adc_klingel_v).state > float(${klingel_schwellwert_1}) && id(adc_klingel_v).state < float(${klingel_schwellwert_2});
+    filters:
+      - delayed_off: 5s
+
+  - platform: template
+    name: "Klingel oben"
+    lambda: |-
+      return id(adc_klingel_v).state > float(${klingel_schwellwert_2});
+    filters:
+      - delayed_off: 5s
+

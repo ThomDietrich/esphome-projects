@@ -1,0 +1,79 @@
+output:
+  - platform: gpio
+    id: relay1
+    pin: 25
+
+  - platform: gpio
+    id: relay2
+    pin: 26
+
+
+light:
+  - platform: binary
+    id: flur_oben_deckenlicht
+    name: Flur oben Deckenlicht
+    output: relay1
+
+  - platform: binary
+    id: flur_unten_deckenlicht
+    name: Flur unten Deckenlicht
+    output: relay2
+
+
+switch:
+
+#   - platform: gpio
+#     name: Flur oben Deckenlicht
+#     id: relay1
+#     pin: 25
+#     restore_mode: ALWAYS_OFF # Kann nicht modifiziert werden (Astra Controller Verhalten)
+
+#   - platform: gpio
+#     name: Flur unten Deckenlicht
+#     id: relay2
+#     pin: 26
+#     restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    name: Relay 3
+    id: relay3
+    pin: 33
+    restore_mode: ALWAYS_OFF
+    disabled_by_default: true
+
+  - platform: gpio
+    name: Relay 4
+    id: relay4
+    pin: 32
+    restore_mode: ALWAYS_OFF
+    disabled_by_default: true
+
+
+binary_sensor:
+  # https://esphome.io/components/binary_sensor/gpio.html
+
+  - platform: gpio
+    name: "Flur oben Lichttaster Gruppe Stromstoßschalter"
+    internal: true
+    pin:
+      number: 13
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    on_state:
+      then:
+        - light.toggle: flur_oben_deckenlicht
+
+  - platform: gpio
+    name: "Flur unten Lichttaster Gruppe Stromstoßschalter"
+    internal: true
+    pin:
+      number: 14
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+    on_state:
+      then:
+        - light.toggle: flur_unten_deckenlicht

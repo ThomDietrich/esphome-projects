@@ -1,0 +1,60 @@
+substitutions:
+  device_name: haus-uv-astra
+  device_friendly_name: Haus UV Astra
+
+  klingel_schwellwert_1: "2.65"  # V
+  klingel_schwellwert_2: "2.80"  # V
+
+
+# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
+# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
+
+# ASTRA BR4G8AL
+# https://rocketcontroller.com/product/astra-controller-4-relays-16a-8-gpio-input-dc-power-led-br4g8al/
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+
+  on_boot:
+    priority: -100
+    then:
+      - rtttl.play: 'scale_up:d=32,o=5,b=100:c,c#,d#,e,f#,g#,a#,b'
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  include_1: !include include/haus_uv_astra_relays.yaml
+  include_2: !include include/haus_uv_astra_klingel.yaml
+
+# wifi:
+#   use_address: 192.168.23.33
+
+################################################################################
+
+status_led:
+  pin:
+    number: 4
+    inverted: true
+
+rtttl:
+  output: rtttl_out
+
+output:
+  - platform: ledc
+    pin: 12
+    id: rtttl_out
+
+api:
+  services:
+    - service: play_rtttl
+      variables:
+        song_str: string
+      then:
+        - rtttl.play:
+            rtttl: !lambda 'return song_str;'
