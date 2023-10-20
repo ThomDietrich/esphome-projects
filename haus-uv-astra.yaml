@@ -2,10 +2,6 @@ substitutions:
   device_name: haus-uv-astra
   device_friendly_name: Haus UV Astra
 
-  klingel_schwellwert_1: "2.65"  # V
-  klingel_schwellwert_2: "2.80"  # V
-
-
 # https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
 # https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
 
@@ -15,11 +11,6 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-
-  on_boot:
-    priority: -100
-    then:
-      - rtttl.play: 'scale_up:d=32,o=5,b=100:c,c#,d#,e,f#,g#,a#,b'
 
 esp32:
   board: esp32dev
