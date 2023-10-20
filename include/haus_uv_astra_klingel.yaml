@@ -11,12 +11,21 @@ sensor:
     internal: true
     pin: 39
     attenuation: auto
-    update_interval: 25ms
+    update_interval: 50ms
+    accuracy_decimals: 2
+
+  - platform: adc
+    name: "Klingel Messsignal (Filter)"
+    id: adc_klingel_v_filtered
+    internal: true
+    pin: 39
+    attenuation: auto
+    update_interval: 20ms
     accuracy_decimals: 2
     filters:
       - median:
           window_size: 5
-          send_every: 4
+          send_every: 3
 
 
 binary_sensor:
@@ -32,14 +41,14 @@ binary_sensor:
   - platform: template
     name: "Klingel unten"
     lambda: |-
-      return id(adc_klingel_v).state > float(${klingel_schwellwert_1}) && id(adc_klingel_v).state < float(${klingel_schwellwert_2});
+      return id(adc_klingel_v_filtered).state > float(${klingel_schwellwert_1}) && id(adc_klingel_v_filtered).state < float(${klingel_schwellwert_2});
     filters:
       - delayed_off: 5s
 
   - platform: template
     name: "Klingel oben"
     lambda: |-
-      return id(adc_klingel_v).state > float(${klingel_schwellwert_2});
+      return id(adc_klingel_v_filtered).state > float(${klingel_schwellwert_2});
     filters:
       - delayed_off: 5s
 
