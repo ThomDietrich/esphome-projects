@@ -1,0 +1,19 @@
+# switch:
+#   - platform: gpio
+#     pin:
+#       number: GPIO15
+#       inverted: false
+#       drive_strength: 20mA
+#     name: Flur Nachtlicht
+
+output:
+  - platform: ledc
+    id: nacht_led
+    pin: 15
+
+light:
+  - platform: monochromatic
+    output: nacht_led
+    name: Flur Nachtlicht
+    restore_mode: ALWAYS_OFF
+

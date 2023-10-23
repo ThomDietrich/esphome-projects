@@ -1,6 +1,8 @@
 substitutions:
   klingel_schwellwert_1: "2.65"  # V
   klingel_schwellwert_2: "2.75"  # V
+  #
+  klingel_schwellwert_abs: "2.70"  # V
 
 sensor:
   # https://esphome.io/components/sensor/adc.html
@@ -34,7 +36,7 @@ binary_sensor:
   - platform: template
     name: "Klingel"
     lambda: |-
-      return id(adc_klingel_v).state > float(${klingel_schwellwert_1});
+      return id(adc_klingel_v).state > float(${klingel_schwellwert_abs});
     filters:
       - delayed_off: 5s
 

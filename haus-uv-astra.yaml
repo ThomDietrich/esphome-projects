@@ -22,6 +22,7 @@ packages:
   general: !include common/general.yaml
   include_1: !include include/haus_uv_astra_relays.yaml
   include_2: !include include/haus_uv_astra_klingel.yaml
+  include_3: !include include/haus_uv_astra_nachtlicht.yaml
 
 # wifi:
 #   use_address: 192.168.23.33
