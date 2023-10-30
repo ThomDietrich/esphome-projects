@@ -110,6 +110,20 @@ sensor:
     lambda: return id(global_mass_total);
     update_interval: 3600s # fallback aside triggered update
 
+  - platform: hx711
+    name: HX711 Value
+    id: sensor_load_cell
+    dout_pin: GPIO7
+    clk_pin: GPIO8
+    update_interval: 5s
+    # filters:
+    #   - calibrate_linear:
+    #       - 120 -> 0
+    #       - 810 -> 1
+    # state_class: total
+    # device_class: weight
+    # unit_of_measurement: g
+    # accuracy_decimals: 1
 
 # https://esphome.io/components/output/ledc
 output:
