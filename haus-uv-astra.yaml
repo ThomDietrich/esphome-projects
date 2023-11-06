@@ -29,6 +29,12 @@ packages:
 
 ################################################################################
 
+logger:
+  logs:
+    # By default, every reading will be printed to the UART, which is very slow
+    # This will disable printing the readings but keep other helpful messages
+    sensor: INFO
+
 status_led:
   pin:
     number: 4

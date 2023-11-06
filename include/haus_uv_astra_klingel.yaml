@@ -4,53 +4,43 @@ substitutions:
   #
   klingel_schwellwert_abs: "2.70"  # V
 
+  klingel_schwellwert_neu: "2.75"  # V
+
 sensor:
   # https://esphome.io/components/sensor/adc.html
 
   - platform: adc
-    name: "Klingel Messsignal"
-    id: adc_klingel_v
-    internal: true
-    pin: 39
-    attenuation: auto
-    update_interval: 50ms
-    accuracy_decimals: 2
-
-  - platform: adc
-    name: "Klingel Messsignal (Filter)"
-    id: adc_klingel_v_filtered
-    internal: true
+    name: "Klingel Messsignal neu"
+    id: adc_klingel_v_neu
+    internal: false
     pin: 39
     attenuation: auto
     update_interval: 20ms
     accuracy_decimals: 2
     filters:
       - median:
-          window_size: 5
+          window_size: 3
           send_every: 3
+      - max:
+          window_size: 10
+          send_every: 10
 
+  - platform: adc
+    name: "Klingel Messsignal roh"
+    id: adc_klingel_v
+    internal: false
+    pin: 39
+    attenuation: auto
+    update_interval: 20ms
+    accuracy_decimals: 2
 
 binary_sensor:
   # https://esphome.io/components/binary_sensor/template.html
 
   - platform: template
     name: "Klingel"
+    icon: mdi:bell-ring
     lambda: |-
-      return id(adc_klingel_v).state > float(${klingel_schwellwert_abs});
+      return id(adc_klingel_v_neu).state > float(${klingel_schwellwert_neu});
     filters:
-      - delayed_off: 5s
-
-  - platform: template
-    name: "Klingel unten"
-    lambda: |-
-      return id(adc_klingel_v_filtered).state > float(${klingel_schwellwert_1}) && id(adc_klingel_v_filtered).state < float(${klingel_schwellwert_2});
-    filters:
-      - delayed_off: 5s
-
-  - platform: template
-    name: "Klingel oben"
-    lambda: |-
-      return id(adc_klingel_v_filtered).state > float(${klingel_schwellwert_2});
-    filters:
-      - delayed_off: 5s
-
+      - delayed_off: 10s
