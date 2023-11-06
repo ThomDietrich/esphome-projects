@@ -1,32 +1,46 @@
 substitutions:
-  device_name: taubenkamera1
-  device_friendly_name: Taubenkamera1
+  device_name: taubenkamera
+  device_friendly_name: Taubenkamera
 
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
-  platform: ESP32
+
+esp32:
   board: esp32dev
+  framework:
+    type: arduino
 
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
 
+# wifi:
+#   use_address: 192.168.23.15
+
 #time:
 #  - platform: homeassistant
 
-sensor:
-  - platform: uptime
-    name: "ESP32 Uptime"
-    update_interval: 60s
-    device_class: duration
-  - platform: wifi_signal
-    name: "ESP32 WiFi Signal"
-    update_interval: 60s
+output:
+  - platform: ledc
+    id: flash_led
+    pin: GPIO4
+    channel: 2  # channel 1 is used for esp32_camera
+
+light:
+  - platform: monochromatic
+    output: flash_led
+    name: Blitzlicht
+
+status_led:
+  pin:
+    number: GPIO33
+    inverted: true
 
 # https://esphome.io/components/esp32_camera.html#configuration-for-ai-thinker-camera
+# https://github.com/AlexxIT/go2rtc/issues/292
 esp32_camera:
-  name: "${device_friendly_name}"
+  name: Videobild
   external_clock:
     pin: GPIO0
     frequency: 20MHz
@@ -76,13 +90,3 @@ esp32_camera:
   # 64x
   # 128x: Camera is more sensitive, but picture contain lot of noise
   agc_gain_ceiling: 2x
-
-output:
-  - platform: ledc
-    pin: GPIO4
-    channel: 2 # channel 1 is used for esp32_camera
-    id: led
-light:
-  - platform: monochromatic
-    output: led
-    name: ${device_friendly_name} Blitzlicht
