@@ -349,7 +349,7 @@ number:
     lambda: !lambda |-
       return id(desk_height).state;
     #update_interval: 0ms # update in every loop() iteration
-    update_interval: 999s
+    update_interval: never
     set_action:
       - logger.log:
           format: "Requesting position change to: %x "
