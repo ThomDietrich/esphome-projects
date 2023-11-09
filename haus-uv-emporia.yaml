@@ -1,24 +1,28 @@
 substitutions:
-  device_name: haus-uv-vue2
-  device_friendly_name: Haus UV Emporia Vue 2
-  circuit_01: DG (21)
-  circuit_02: OG Neubau Beleuchtung (22)
-  circuit_03: OG Altbau (ausser gr. Kinderzimmer) (23)
-  circuit_04: OG Gr. Kinderzimmer (24)
-  circuit_05: OG Badezimmer Steckdosen (25)
-  circuit_06: OG Neubau Steckdosen (außer Badezimmer) (26)
-  circuit_07: UG Kueche Herd L1 (37)
-  circuit_08: UG Kueche Herd L2 (38)
-  circuit_09: UG Kueche Herd L3 (39)
-  circuit_10: KG Neubau Steckdosen (ausser Heizung und Netzwerk) (40)
-  circuit_11: UG Neubau Steckdosen (ausser Bad und Vorbau) (41)
-  circuit_12: UG Neubau Beleuchtung, Vorbau Steckdosen (42)
-  circuit_13: UG Badezimmer Steckdosen (43)
-  circuit_14: KG Neubau Heizung und Netzwerk (44)
-  circuit_15: KG Neubau Beleuchtung (45)
-  circuit_16: UG Altbau (46)
-  circuit_balance: Unbemessene Sicherungen (17, 18, 19, 20, 27, 33, 34, 35, 47, 48)
-  circuit_herd: UG Kueche Herd (37, 38, 39)
+  device_name: haus-uv
+  device_friendly_name: Haus UV
+  circuit_01: DG (21B)
+  circuit_02: OG Neubau Beleuchtung (22C)
+  circuit_03: OG Altbau (ausser gr. Kinderzimmer) (23A)
+  circuit_04: OG Gr. Kinderzimmer (24B)
+  circuit_05: OG Bad Steckdosen (25A)
+  circuit_06: OG Neubau Steckdosen (außer Bad) (26B)
+  circuit_07: UG Kueche Herd L1 (37A)
+  circuit_08: UG Kueche Herd L2 (38B)
+  circuit_09: UG Kueche Herd L3 (39C)
+  circuit_10: KG Neubau Steckdosen (ausser Heizung und Netzwerk) (40A)
+  circuit_11: UG Neubau Steckdosen (ausser Bad und Vorbau) (41B)
+  circuit_12: UG Neubau Beleuchtung, Vorbau Steckdosen (42C)
+  circuit_13: UG Bad Steckdosen (43A)
+  circuit_14: KG Neubau Heizung und Netzwerk (44B)
+  circuit_15: KG Neubau Beleuchtung (45C)
+  circuit_16: UG Altbau (46A)
+  group_total: Total
+  group_balance: Unbemessene Sicherungen (17A, 18B, 19C, 20A, 27, 33A, 34B, 35C, 47B, 48)
+  group_herd: UG Kueche Herd (37A, 38B, 39C)
+  group_og: OG Total
+  group_ug: UG Total
+  group_kg: KG Total
 
 
 # https://github.com/emporia-vue-local/esphome
@@ -38,7 +42,7 @@ packages:
   general: !include common/general.yaml
 
 # wifi:
-#   use_address: 192.168.23.192  # manual IP overwrite
+#   use_address: 192.168.23.193  # manual IP overwrite
 
 ################################################################################
 
@@ -118,8 +122,7 @@ time:
     lambda: 'return max(-x, 0.0f);'
   - &pos
     # filter out any values below 0.
-    #lambda: 'return max(x, 0.0f);'
-    lambda: 'return x;'
+    lambda: 'return max(x, 0.0f);'
   - &abs
     # take the absolute value of the value
     lambda: 'return abs(x);'
@@ -166,12 +169,12 @@ sensor:
         input: "A"  # Verify the CT going to this device input also matches the phase/leg
         power:
           id: phase_a_power
-          filters: [*invert]
+          filters: [*pos]
       - phase_id: phase_b
         input: "B"  # Verify the CT going to this device input also matches the phase/leg
         power:
           id: phase_b_power
-          filters: [*invert]
+          filters: [*pos]
       - phase_id: phase_c
         input: "C"  # Verify the CT going to this device input also matches the phase/leg
         power:
@@ -199,29 +202,10 @@ sensor:
         - component.update: total_power
         - component.update: balance_power
         - component.update: ug_kueche_herd_power
-  # The copy sensors filter and send the power state to HA
-  - { platform: copy, name: "L1 Power", source_id: phase_a_power, filters: *throttle_avg }
-  - { platform: copy, name: "L2 Power", source_id: phase_b_power, filters: *throttle_avg }
-  - { platform: copy, name: "L3 Power", source_id: phase_c_power, filters: *throttle_avg }
-  - { platform: copy, name: "Total Power", source_id: total_power, filters: *throttle_avg }
-  - { platform: copy, name: "${circuit_balance} Power", source_id: balance_power, filters: *throttle_avg }
-  - { platform: copy, source_id:  cir1, name: "${circuit_01} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir2, name: "${circuit_02} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir3, name: "${circuit_03} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir4, name: "${circuit_04} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir5, name: "${circuit_05} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir6, name: "${circuit_06} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir7, name: "${circuit_07} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir8, name: "${circuit_08} Power", filters: *throttle_avg }
-  - { platform: copy, source_id:  cir9, name: "${circuit_09} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir10, name: "${circuit_10} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir11, name: "${circuit_11} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir12, name: "${circuit_12} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir13, name: "${circuit_13} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir14, name: "${circuit_14} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir15, name: "${circuit_15} Power", filters: *throttle_avg }
-  - { platform: copy, source_id: cir16, name: "${circuit_16} Power", filters: *throttle_avg }
-  - { platform: copy, name: "${circuit_herd} Power", source_id: ug_kueche_herd_power, filters: *throttle_avg }
+        - component.update: og_sum_power
+        - component.update: ug_sum_power
+        - component.update: kg_sum_power
+
   - platform: template
     lambda: return id(phase_a_power).state + id(phase_b_power).state + id(phase_c_power).state;
     update_interval: never   # will be updated after all power sensors update via on_update trigger
@@ -229,12 +213,7 @@ sensor:
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
-  - platform: total_daily_energy
-    name: "Total Daily Energy"
-    power_id: total_power
-    accuracy_decimals: 0
-    restore: false
-    filters: *throttle_time
+
   - platform: template
     lambda: !lambda |-
       return max(0.0f, id(total_power).state -
@@ -259,28 +238,55 @@ sensor:
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
-  - platform: total_daily_energy
-    name: "${circuit_balance} Daily Energy"
-    power_id: balance_power
-    accuracy_decimals: 0
-    restore: false
-    filters: *throttle_time
-  - { power_id:  cir1, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_01} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir2, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_02} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir3, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_03} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir4, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_04} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir5, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_05} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir6, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_06} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir7, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_07} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir8, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_08} Daily Energy", filters: *throttle_time }
-  - { power_id:  cir9, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_09} Daily Energy", filters: *throttle_time }
-  - { power_id: cir10, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_10} Daily Energy", filters: *throttle_time }
-  - { power_id: cir11, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_11} Daily Energy", filters: *throttle_time }
-  - { power_id: cir12, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_12} Daily Energy", filters: *throttle_time }
-  - { power_id: cir13, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_13} Daily Energy", filters: *throttle_time }
-  - { power_id: cir14, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_14} Daily Energy", filters: *throttle_time }
-  - { power_id: cir15, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_15} Daily Energy", filters: *throttle_time }
-  - { power_id: cir16, platform: total_daily_energy, accuracy_decimals: 0, restore: false, name: "${circuit_16} Daily Energy", filters: *throttle_time }
+
+  # The copy sensors filter and send the power state to HA
+  - { platform: copy, source_id: phase_a_power, name: "L1 Power", filters: *throttle_avg }
+  - { platform: copy, source_id: phase_b_power, name: "L2 Power", filters: *throttle_avg }
+  - { platform: copy, source_id: phase_c_power, name: "L3 Power", filters: *throttle_avg }
+
+  - { platform: copy, source_id: total_power, name: "${group_total} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: balance_power, name: "${group_balance} Power", filters: *throttle_avg }
+
+  - { platform: copy, source_id:  cir1, name: "${circuit_01} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir2, name: "${circuit_02} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir3, name: "${circuit_03} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir4, name: "${circuit_04} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir5, name: "${circuit_05} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir6, name: "${circuit_06} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir7, name: "${circuit_07} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir8, name: "${circuit_08} Power", filters: *throttle_avg }
+  - { platform: copy, source_id:  cir9, name: "${circuit_09} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir10, name: "${circuit_10} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir11, name: "${circuit_11} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir12, name: "${circuit_12} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir13, name: "${circuit_13} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir14, name: "${circuit_14} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir15, name: "${circuit_15} Power", filters: *throttle_avg }
+  - { platform: copy, source_id: cir16, name: "${circuit_16} Power", filters: *throttle_avg }
+
+  # Daily energy
+
+  - { platform: total_daily_energy, power_id: total_power, name: "${group_total} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: balance_power, name: "${group_balance} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+
+  - { platform: total_daily_energy, power_id:  cir1, name: "${circuit_01} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir2, name: "${circuit_02} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir3, name: "${circuit_03} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir4, name: "${circuit_04} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir5, name: "${circuit_05} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir6, name: "${circuit_06} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir7, name: "${circuit_07} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir8, name: "${circuit_08} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id:  cir9, name: "${circuit_09} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir10, name: "${circuit_10} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir11, name: "${circuit_11} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir12, name: "${circuit_12} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir13, name: "${circuit_13} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir14, name: "${circuit_14} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir15, name: "${circuit_15} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+  - { platform: total_daily_energy, power_id: cir16, name: "${circuit_16} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+
+  # Additional sensors
 
   - platform: template
     lambda: !lambda |-
@@ -290,9 +296,58 @@ sensor:
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
+  - { platform: copy, name: "${group_herd} Power", source_id: ug_kueche_herd_power, filters: *throttle_avg }
   - platform: total_daily_energy
-    name: "${circuit_herd} Daily Energy"
+    name: "${group_herd} Daily Energy"
     power_id: ug_kueche_herd_power
+    accuracy_decimals: 0
+    restore: false
+    filters: *throttle_time
+
+  - platform: template
+    lambda: !lambda |-
+      return max(0.0f, id(cir2).state + id(cir3).state + id(cir4).state + id(cir5).state + id(cir6).state);
+    update_interval: never   # will be updated after all power sensors update via on_update trigger
+    id: og_sum_power
+    device_class: power
+    state_class: measurement
+    unit_of_measurement: "W"
+  - { platform: copy, name: "${group_og} Power", source_id: og_sum_power, filters: *throttle_avg }
+  - platform: total_daily_energy
+    name: "${group_og} Daily Energy"
+    power_id: og_sum_power
+    accuracy_decimals: 0
+    restore: false
+    filters: *throttle_time
+
+  - platform: template
+    lambda: !lambda |-
+      return max(0.0f, id(cir7).state + id(cir8).state + id(cir9).state + id(cir11).state + id(cir12).state + id(cir13).state + id(cir16).state);
+    update_interval: never   # will be updated after all power sensors update via on_update trigger
+    id: ug_sum_power
+    device_class: power
+    state_class: measurement
+    unit_of_measurement: "W"
+  - { platform: copy, name: "${group_ug} Power", source_id: ug_sum_power, filters: *throttle_avg }
+  - platform: total_daily_energy
+    name: "${group_ug} Daily Energy"
+    power_id: ug_sum_power
+    accuracy_decimals: 0
+    restore: false
+    filters: *throttle_time
+
+  - platform: template
+    lambda: !lambda |-
+      return max(0.0f, id(cir10).state + id(cir14).state + id(cir15).state);
+    update_interval: never   # will be updated after all power sensors update via on_update trigger
+    id: kg_sum_power
+    device_class: power
+    state_class: measurement
+    unit_of_measurement: "W"
+  - { platform: copy, name: "${group_kg} Power", source_id: kg_sum_power, filters: *throttle_avg }
+  - platform: total_daily_energy
+    name: "${group_kg} Daily Energy"
+    power_id: kg_sum_power
     accuracy_decimals: 0
     restore: false
     filters: *throttle_time
