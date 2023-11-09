@@ -289,65 +289,46 @@ sensor:
   # Additional sensors
 
   - platform: template
+    id: ug_kueche_herd_power
     lambda: !lambda |-
       return max(0.0f, id(cir7).state + id(cir8).state + id(cir9).state);
     update_interval: never   # will be updated after all power sensors update via on_update trigger
-    id: ug_kueche_herd_power
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
   - { platform: copy, name: "${group_herd} Power", source_id: ug_kueche_herd_power, filters: *throttle_avg }
-  - platform: total_daily_energy
-    name: "${group_herd} Daily Energy"
-    power_id: ug_kueche_herd_power
-    accuracy_decimals: 0
-    restore: false
-    filters: *throttle_time
+  - { platform: total_daily_energy, power_id: ug_kueche_herd_power, name: "${group_herd} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
 
   - platform: template
+    id: og_sum_power
     lambda: !lambda |-
       return max(0.0f, id(cir2).state + id(cir3).state + id(cir4).state + id(cir5).state + id(cir6).state);
     update_interval: never   # will be updated after all power sensors update via on_update trigger
-    id: og_sum_power
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
   - { platform: copy, name: "${group_og} Power", source_id: og_sum_power, filters: *throttle_avg }
-  - platform: total_daily_energy
-    name: "${group_og} Daily Energy"
-    power_id: og_sum_power
-    accuracy_decimals: 0
-    restore: false
-    filters: *throttle_time
+  - { platform: total_daily_energy, power_id: og_sum_power, name: "${group_og} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+
 
   - platform: template
+    id: ug_sum_power
     lambda: !lambda |-
       return max(0.0f, id(cir7).state + id(cir8).state + id(cir9).state + id(cir11).state + id(cir12).state + id(cir13).state + id(cir16).state);
     update_interval: never   # will be updated after all power sensors update via on_update trigger
-    id: ug_sum_power
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
   - { platform: copy, name: "${group_ug} Power", source_id: ug_sum_power, filters: *throttle_avg }
-  - platform: total_daily_energy
-    name: "${group_ug} Daily Energy"
-    power_id: ug_sum_power
-    accuracy_decimals: 0
-    restore: false
-    filters: *throttle_time
+  - { platform: total_daily_energy, power_id: ug_sum_power, name: "${group_ug} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
 
   - platform: template
+    id: kg_sum_power
     lambda: !lambda |-
       return max(0.0f, id(cir10).state + id(cir14).state + id(cir15).state);
     update_interval: never   # will be updated after all power sensors update via on_update trigger
-    id: kg_sum_power
     device_class: power
     state_class: measurement
     unit_of_measurement: "W"
   - { platform: copy, name: "${group_kg} Power", source_id: kg_sum_power, filters: *throttle_avg }
-  - platform: total_daily_energy
-    name: "${group_kg} Daily Energy"
-    power_id: kg_sum_power
-    accuracy_decimals: 0
-    restore: false
-    filters: *throttle_time
+  - { platform: total_daily_energy, power_id: kg_sum_power, name: "${group_kg} Daily Energy", accuracy_decimals: 0, restore: false, filters: *throttle_time }
