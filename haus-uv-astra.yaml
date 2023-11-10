@@ -48,6 +48,12 @@ output:
     pin: 12
     id: rtttl_out
 
+button:
+  - platform: template
+    name: "Two Beeps"
+    on_press:
+      - rtttl.play: "two short:d=4,o=5,b=100:16e6,16e6"
+
 api:
   services:
     - service: play_rtttl
