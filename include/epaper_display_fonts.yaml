@@ -76,7 +76,7 @@ font:
 
   - id: font_wetter_mittel
     file: 'fonts/Roboto-Regular.ttf'
-    size: 22
+    size: 23
     glyphs: [
       ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
       '&', '@',  '%', '°', '/', 'º', 'µ', '³',
@@ -110,6 +110,7 @@ font:
       '󰸂', # mdi-thermometer-chevron-down
       '󰖎', # mdi-water-percent
       '󰆫', # mdi-cup-water
+      '󰾒', # mdi-water-boiler
       ]
 
   - id: mdi_wetter_gross

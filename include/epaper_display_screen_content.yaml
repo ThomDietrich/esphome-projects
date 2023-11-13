@@ -1,25 +1,24 @@
 |-
   id(epaperdisplay_last_update).publish_state(id(homeassistant_time).now().timestamp);
 
+
+  //  +---> x (0..400)
+  //  |
+  //  V
+  //  y (0..300)
+  //
+
   /////////////////////////////////////////////////////////////////////////
-  it.print(10, 10, id(font_header), TextAlign::LEFT, "WETTER");
+  //it.print(10, 10, id(font_header), TextAlign::LEFT, "WETTER");
   //it.strftime(10, 10, id(font_header), TextAlign::LEFT , "%a %d. %b", id(homeassistant_time).now()); // english
-  it.print(400-10, 10, id(font_header), TextAlign::RIGHT, "POS");
-  it.filled_rectangle(98, 10+11, 245, 3); // horizontal 1
-
-  if (id(datumsstempel).state == "unknown" || id(datumsstempel).state == "") {
-    it.print(10, 175, id(font_header), TextAlign::LEFT, "KALENDER");
-  } else {
-    it.printf(10, 175, id(font_header), TextAlign::LEFT, "%s", id(datumsstempel).state.c_str());
-  }
-
-  it.filled_rectangle(120, 175+11, 172, 3); // horizontal 2
+  //it.print(400-10, 10, id(font_header), TextAlign::RIGHT, "POS");
+  //it.filled_rectangle(98, 10+11, 245, 3); // horizontal 1
 
   /////////////////////////////////////////////////////////////////////////
   /* Block 1 - WETTER */
   int b1_x_start = 15;
   int b1_x_end = 300;
-  int b1_y_start = 50;
+  int b1_y_start = 30;
 
   // Current temperature
   if (isnan(id(temperature).state)) {
@@ -45,9 +44,10 @@
   it.print(b1_x_end-20, b1_y_start+35+1, id(mdi_wetter_klein), TextAlign::BASELINE_CENTER, "󰆫"); //rain
 
   // Forecast
+  int b1b_y_start = b1_y_start+35;
   auto forecast_cond = id(forecast_condition).state;
   if (forecast_cond == "unknown" || forecast_cond == "") {
-    it.print(b1_x_start, b1_y_start+55, id(mdi_wetter_gross), TextAlign::TOP_LEFT, "󰨹");  // mdi-cloud-question
+    it.print(b1_x_start, b1b_y_start, id(mdi_wetter_gross), TextAlign::TOP_LEFT, "󰨹");  // mdi-cloud-question
   } else {
     auto cond_icon = "󰨹";  // mdi-cloud-question
     if (forecast_cond == "Klare Nacht") {
@@ -82,16 +82,27 @@
       cond_icon = "󰖞";  // mdi-weather-windy-variant
     }
 
-    it.print(b1_x_start, b1_y_start+55, id(mdi_wetter_gross), TextAlign::TOP_LEFT, cond_icon);
-    it.printf(b1_x_start+65, b1_y_start+55, id(font_wetter_mittel), TextAlign::TOP_LEFT, "%s %s", id(forecast_tagesstempel).state.c_str(), forecast_cond.c_str());
-    //it.printf(b1_x_start+65, b1_y_start+55+30, id(font_wetter_mittel), TextAlign::TOP_LEFT, "%.0f..%.0f°C, %.0fmm, %d%%", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, int(id(forecast_precip_prob).state));
-    it.printf(b1_x_start+65, b1_y_start+55+30, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.0f..%.0f°C, %.0fmm, %dkWh", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, int(id(forecast_solar_production).state));
+    it.print(b1_x_start, b1b_y_start, id(mdi_wetter_gross), TextAlign::TOP_LEFT, cond_icon);
+    it.printf(b1_x_start+70, b1b_y_start+15, id(font_wetter_mittel), TextAlign::TOP_LEFT, "%s %s", id(forecast_tagesstempel).state.c_str(), forecast_cond.c_str());
+    it.printf(b1_x_start+40, b1b_y_start+50, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.0f bis %.0f°C, %.1fmm/%.0f%%", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, id(forecast_precip_prob).state);
+    it.printf(b1_x_start+40, b1b_y_start+50+27, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.1fkm/h %s, %.0fkWh", id(forecast_wind_speed).state, id(forecast_wind_bearing).state.c_str(), id(forecast_solar_production).state);
   }
 
   /////////////////////////////////////////////////////////////////////////
+  // Zeichne horizontale Trennlinie
+  if (id(datumsstempel).state == "unknown" || id(datumsstempel).state == "") {
+    it.print(10, 180, id(font_header), TextAlign::LEFT, "KALENDER");
+  } else {
+    it.printf(10, 180, id(font_header), TextAlign::LEFT, "%s", id(datumsstempel).state.c_str());
+  }
+
+  it.filled_rectangle(120, 180+11, 172, 3); // horizontal 2
+
+
+  /////////////////////////////////////////////////////////////////////////
   /* Block 3 - KALENDER */
-  int y_start_c = 228;
-  int y_sep_c = 30;
+  int y_start_c = 230;
+  int y_sep_c = 28;
   int cal_index = 0;
   if (id(opstate_waschmaschine).state == "Active") {
     it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
@@ -130,18 +141,32 @@
   }
 
   /////////////////////////////////////////////////////////////////////////
-  /* Lösche rechten Bereich */
-  it.filled_rectangle(295, 30, 400-295, 300-30, COLOR_OFF);
-  //it.filled_rectangle(300, 30, 3, 245); // vertikale Linie
-  it.filled_rectangle(300, 30, 3, 300-30-10); // vertikale Linie
+  /* Lösche rechten Bereich und zeichne vertikale Trennlinie */
+  it.filled_rectangle(295, 0, 400-295, 300, COLOR_OFF);
+  it.filled_rectangle(300, 15, 3, 300-15-8); // vertikale Linie
 
   /////////////////////////////////////////////////////////////////////////
-  /* Block 2 - POSITION */
-  int b2_x_start = 300+3+20;
-  int b2_y_start = 85;
+  /* Block 5 - WEITERE DATEN */
+  int b5_x_start = 310;
+  int b5_y_start = 36;
+
+  // Current temperature
+  if (isnan(id(heizung_warmwasser).state)) {
+    it.print(b5_x_start+25, b5_y_start, id(font_wetter_mittel), TextAlign::BASELINE_LEFT, " - ºC");
+  } else {
+    it.printf(b5_x_start+25, b5_y_start, id(font_wetter_mittel), TextAlign::BASELINE_LEFT, "%.0fºC", id(heizung_warmwasser).state);
+  }
+  it.print(b5_x_start+10, b5_y_start, id(mdi_wetter_klein), TextAlign::BASELINE_CENTER, "󰾒"); // mdi-water-boiler
+
+  /////////////////////////////////////////////////////////////////////////
+  it.filled_rectangle(300+10, 100, 400-300-10-10, 3); // horizontal
+  /////////////////////////////////////////////////////////////////////////
+  /* Block 2 - HARRY POTTER UHR */
+  int b2_x_start = 300+3+23;
+  int b2_y_start = 140;
   int b2_x_end = 395;
   int xsep = 25;
-  int ysep = 42; // 52
+  int ysep = 37;
   int y_text_shift = -5;
 
 
@@ -198,23 +223,23 @@
   /* FOOTER */
   //it.strftime(365, 295, id(font_footer), TextAlign::BASELINE_RIGHT , "%d. %b  %H:%M", id(homeassistant_time).now());
 
-  if(id(wifi_signal_db).has_state()) {
-    int x = 380;
-    int y = 297;
-    if (id(wifi_signal_db).state >= -50) {
-      //Excellent
-      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤨");
-    } else if (id(wifi_signal_db).state  >= -60) {
-      //Good
-      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤥");
-    } else if (id(wifi_signal_db).state  >= -75) {
-      //Fair
-      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤢");
-    } else if (id(wifi_signal_db).state  >= -100) {
-      //Weak
-      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤟");
-    } else {
-      //Unlikely working signal
-      it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤫");
-    }
-  }
+  // if(id(wifi_signal_db).has_state()) {
+  //   int x = 380;
+  //   int y = 297;
+  //   if (id(wifi_signal_db).state >= -50) {
+  //     //Excellent
+  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤨");
+  //   } else if (id(wifi_signal_db).state  >= -60) {
+  //     //Good
+  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤥");
+  //   } else if (id(wifi_signal_db).state  >= -75) {
+  //     //Fair
+  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤢");
+  //   } else if (id(wifi_signal_db).state  >= -100) {
+  //     //Weak
+  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤟");
+  //   } else {
+  //     //Unlikely working signal
+  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤫");
+  //   }
+  // }

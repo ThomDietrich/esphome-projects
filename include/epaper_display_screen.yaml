@@ -6,6 +6,10 @@ spi:
   clk_pin: GPIO18
   mosi_pin: GPIO26  # DIN
 
+# https://www.waveshare.com/product/displays/e-paper/4.2inch-e-paper-module-b.htm
+# This is an E-Ink display module, 4.2inch, 400x300 resolution, with embedded controller,
+# communicating via SPI interface, supports red, black, and white three-color display.
+
 display:
   - platform: waveshare_epaper
     id: epaperdisplay

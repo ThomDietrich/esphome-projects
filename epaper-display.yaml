@@ -9,10 +9,10 @@ substitutions:
 
 esphome:
   name: ${device_name}
-  comment: ${device_friendly_name}
   friendly_name: ${device_friendly_name}
   platform: esp32
   board: pico32
+
   on_boot:
     priority: -10
     then:

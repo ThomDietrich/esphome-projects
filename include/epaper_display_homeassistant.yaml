@@ -37,12 +37,20 @@ sensor:
     id: forecast_precip_prob
 
   - platform: homeassistant
+    entity_id: sensor.dwd_forecast_wind_speed
+    id: forecast_wind_speed
+
+  - platform: homeassistant
     entity_id: sensor.epaper_forecast_solar_production
     id: forecast_solar_production
 
   - platform: homeassistant
     entity_id: sensor.waste_collection_next_tage
     id: muell_entsorgung_tage
+
+  - platform: homeassistant
+    entity_id: sensor.heizungsregelung_warmwasserspeicher_oben
+    id: heizung_warmwasser
 
 text_sensor:
   - platform: homeassistant
@@ -60,6 +68,10 @@ text_sensor:
   - platform: homeassistant
     entity_id: sensor.dwd_forecast_condition
     id: forecast_condition
+
+  - platform: homeassistant
+    entity_id: sensor.dwd_forecast_wind_bearing
+    id: forecast_wind_bearing
 
   - platform: homeassistant
     entity_id: sensor.epaper_display_position_werner
