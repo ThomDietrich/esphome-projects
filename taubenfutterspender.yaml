@@ -105,7 +105,6 @@ sensor:
   - platform: template
     name: Foerdermenge total
     id: sensor_mass_total
-    state_class: total
     device_class: weight
     unit_of_measurement: g
     icon: mdi:scale
