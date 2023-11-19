@@ -1,6 +1,7 @@
 substitutions:
   device_name: hcb223a-1
   device_friendly_name: HCB223A-1
+  device_area: Kinderzimmer
 
   # Desk: Sanodesk EC4
   # Controller: LoctekMotion HCB223A-1
@@ -13,6 +14,7 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
   min_version: '2022.12'
   platformio_options:
     board_build.flash_mode: dio

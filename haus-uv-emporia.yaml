@@ -1,6 +1,7 @@
 substitutions:
   device_name: haus-uv
   device_friendly_name: Haus UV
+  device_area: Flur
   circuit_01: DG (21B)
   circuit_02: OG Neubau Beleuchtung (22C)
   circuit_03: OG Altbau (ausser gr. Kinderzimmer) (23A)
@@ -30,6 +31,7 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
 
 esp32:
   board: esp32dev

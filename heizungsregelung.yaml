@@ -1,6 +1,7 @@
 substitutions:
   device_name: heizungsregelung
   device_friendly_name: Heizungsregelung
+  device_area: Keller
 
 # AZ-Delivery ESP-32 Dev Kit C V4
 # https://www.az-delivery.de/en/products/esp-32-dev-kit-c-v4
@@ -12,6 +13,7 @@ esphome:
   name: ${device_name}
   comment: ${device_friendly_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
   #platform: ESP32
   #board: esp32dev
   #platformio_options:

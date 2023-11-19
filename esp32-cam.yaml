@@ -1,10 +1,12 @@
 substitutions:
   device_name: taubenkamera
   device_friendly_name: Taubenkamera
+  device_area: Hof
 
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
 
 esp32:
   board: esp32dev

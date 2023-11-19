@@ -1,6 +1,7 @@
 substitutions:
   device_name: haus-uv-astra
   device_friendly_name: Haus UV Astra
+  device_area: Flur
 
 # https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
 # https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
@@ -11,6 +12,7 @@ substitutions:
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
 
 esp32:
   board: esp32dev

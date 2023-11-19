@@ -1,15 +1,17 @@
-# esphome -s device_name epaper-display-oben -s device_friendly_name "ePaper Display oben" run epaper-display.yaml
-# esphome -s device_name epaper-display-unten -s device_friendly_name "ePaper Display unten" run epaper-display.yaml
+# esphome -s device_name epaper-display-oben -s device_friendly_name "ePaper Display oben" -s device_area "kitchen" run epaper-display.yaml
+# esphome -s device_name epaper-display-unten -s device_friendly_name "ePaper Display unten" -s device_area "Untere Etage" run epaper-display.yaml
 
 substitutions:
   device_name: epaper-display-default
   device_friendly_name: ePaper Display Default
+  device_area: default
 
 # Project based on https://github.com/maxmacstn/HA-ePaper-Display
 
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
   platform: esp32
   board: pico32
 
@@ -18,6 +20,11 @@ esphome:
     then:
       - delay: 15s
       - component.update: epaperdisplay
+
+# TRY THIS
+# logger:
+#   level: DEBUG
+#   hardware_uart: USB_SERIAL_JTAG
 
 packages:
   wifi: !include common/wifi.yaml

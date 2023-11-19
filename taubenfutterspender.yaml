@@ -1,12 +1,14 @@
 substitutions:
   device_name: taubenfutterspender
   device_friendly_name: Taubenfutterspender
+  device_area: Hof
 
 # https://docs.m5stack.com/en/core/stamp_c3u
 
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
+  area: ${device_area}
   min_version: '2022.12'
   platformio_options:
     board_build.flash_mode: dio
