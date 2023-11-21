@@ -1,0 +1,23 @@
+
+output:
+  - platform: ledc
+    pin: ${rtttl_out_pin}
+    id: rtttl_out_buzzer
+
+rtttl:
+  output: rtttl_out_buzzer
+
+button:
+  - platform: template
+    name: "Two Beeps"
+    on_press:
+      - rtttl.play: "two short:d=4,o=5,b=100:16e6,16e6"
+
+api:
+  services:
+    - service: play_rtttl
+      variables:
+        song_str: string
+      then:
+        - rtttl.play:
+            rtttl: !lambda 'return song_str;'

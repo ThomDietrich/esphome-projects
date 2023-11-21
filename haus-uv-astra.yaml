@@ -3,6 +3,8 @@ substitutions:
   device_friendly_name: Haus UV Astra
   device_area: Flur
 
+  rtttl_out_pin: GPIO12
+
 # https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
 # https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
 
@@ -25,6 +27,7 @@ packages:
   include_1: !include include/haus_uv_astra_relays.yaml
   include_2: !include include/haus_uv_astra_klingel.yaml
   include_3: !include include/haus_uv_astra_nachtlicht.yaml
+  include_4: !include include/rtttl_out.yaml
 
 # wifi:
 #   use_address: 192.168.23.33
@@ -41,26 +44,3 @@ status_led:
   pin:
     number: 4
     inverted: true
-
-rtttl:
-  output: rtttl_out
-
-output:
-  - platform: ledc
-    pin: 12
-    id: rtttl_out
-
-button:
-  - platform: template
-    name: "Two Beeps"
-    on_press:
-      - rtttl.play: "two short:d=4,o=5,b=100:16e6,16e6"
-
-api:
-  services:
-    - service: play_rtttl
-      variables:
-        song_str: string
-      then:
-        - rtttl.play:
-            rtttl: !lambda 'return song_str;'
