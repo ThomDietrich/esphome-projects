@@ -6,6 +6,8 @@ substitutions:
   device_friendly_name: ePaper Display Default
   device_area: default
 
+  status_led_pin: GPIO27
+
 # Project based on https://github.com/maxmacstn/HA-ePaper-Display
 
 esphome:
@@ -16,7 +18,7 @@ esphome:
   board: pico32
 
   on_boot:
-    priority: -10
+    - priority: -10
     then:
       - delay: 15s
       - component.update: epaperdisplay
@@ -29,6 +31,7 @@ esphome:
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
+  status_led: !include include/on_board_status_led_sk6812.yaml
   include_1: !include include/epaper_display_fonts.yaml
   include_2: !include include/epaper_display_homeassistant.yaml
   include_3: !include include/epaper_display_screen.yaml

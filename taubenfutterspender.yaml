@@ -3,6 +3,8 @@ substitutions:
   device_friendly_name: Taubenfutterspender
   device_area: Hof
 
+  status_led_pin: GPIO2
+
 # https://docs.m5stack.com/en/core/stamp_c3u
 
 esphome:
@@ -17,46 +19,6 @@ esphome:
 #      - platformio/framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git#2.0.5
 
   on_boot:
-    - priority: 600
-      then:
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 0%
-            blue: 100%
-            brightness: 10%
-            transition_length: 0ms
-        - delay: 500ms
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 0%
-            blue: 100%
-            brightness: 100%
-            transition_length: 1500ms
-    - priority: 240
-      then:
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 100%
-            blue: 100%
-            brightness: 10%
-            transition_length: 500ms
-    - priority: 200
-      then:
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 100%
-            blue: 0%
-            brightness: 10%
-            transition_length: 500ms
-        - delay: 500ms
-        - light.turn_off:
-            id: on_board_led
-            transition_length: 500ms
-
         - binary_sensor.template.publish:
             id: sensor_servo_running
             state: OFF
@@ -77,21 +39,10 @@ esp32:
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
-
-
-light:
-  - platform: esp32_rmt_led_strip
-    id: on_board_led
-    # name: On-Board LED
-    rgb_order: GRB
-    pin: GPIO2
-    num_leds: 1
-    rmt_channel: 0
-    chipset: SK6812
+  status_led: !include include/on_board_status_led_sk6812.yaml
 
 
 globals:
-
   - id: gram_per_sec
     type: int
     restore_value: no

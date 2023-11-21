@@ -3,13 +3,24 @@ substitutions:
   device_friendly_name: HCB223A-1
   device_area: Kinderzimmer
 
+  status_led_pin: GPIO2
+
   # Desk: Sanodesk EC4
   # Controller: LoctekMotion HCB223A-1
   # Similar product https://en.loctek.com/Desk-Frames/Dual-Motors/ET268
   min_height: "60.0" # cm
   max_height: "125.0" # cm
 
+# Hardware setup
 # https://docs.m5stack.com/en/core/stamp_c3u
+#
+# Controller - RJ45/T568B          - ESP32
+# -------------------------------------------
+# GND        - Pin 7 (white-brown) - GND
+# 5V supply  - Pin 8 (brown)       - 5V in
+# TX         - Pin 6 (green)       - GPIO21
+# RX         - Pin 5 (white-blue)  - GPIO20
+# PIN20      - Pin 4 (blue)        - GPIO 9
 
 esphome:
   name: ${device_name}
@@ -22,65 +33,13 @@ esphome:
 #    platform_packages:
 #      - platformio/framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git#2.0.5
 
-  includes:
-    - desk_height_sensor.h
-
-
-# Hardware setup
-#
-# Controller - RJ45/T568B          - ESP32
-# -------------------------------------------
-# GND        - Pin 7 (white-brown) - GND
-# 5V supply  - Pin 8 (brown)       - 5V in
-# TX         - Pin 6 (green)       - GPIO21
-# RX         - Pin 5 (white-blue)  - GPIO20
-# PIN20      - Pin 4 (blue)        - GPIO 9
-
-
   on_boot:
-    - priority: 600
-      then:
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 0%
-            blue: 100%
-            brightness: 10%
-            transition_length: 0ms
-        - delay: 500ms
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 0%
-            blue: 100%
-            brightness: 100%
-            transition_length: 1500ms
-    - priority: 240
-      then:
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 100%
-            blue: 100%
-            brightness: 10%
-            transition_length: 500ms
-    - priority: 200
-      then:
-        - light.turn_on:
-            id: on_board_led
-            red: 0%
-            green: 100%
-            blue: 0%
-            brightness: 10%
-            transition_length: 500ms
-        - delay: 500ms
-        - light.turn_off:
-            id: on_board_led
-            transition_length: 500ms
     - priority: -10
       then:
         - switch.turn_on: switch_alarm
 
+  includes:
+    - desk_height_sensor.h
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -94,21 +53,11 @@ esp32:
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
+  status_led: !include include/on_board_status_led_sk6812.yaml
 
 
 # wifi:
 #   use_address: 192.168.23.33
-
-
-light:
-  - platform: esp32_rmt_led_strip
-    id: on_board_led
-    # name: On-Board LED
-    rgb_order: GRB
-    pin: GPIO2
-    num_leds: 1
-    rmt_channel: 0
-    chipset: SK6812
 
 
 logger:
@@ -120,6 +69,7 @@ uart:
     baud_rate: 9600
     tx_pin: GPIO21
     rx_pin: GPIO20
+
 
 sensor:
   - platform: custom
