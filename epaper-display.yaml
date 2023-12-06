@@ -19,9 +19,9 @@ esphome:
 
   on_boot:
     - priority: -10
-    then:
-      - delay: 15s
-      - component.update: epaperdisplay
+      then:
+        - delay: 15s
+        - component.update: epaperdisplay
 
 # TRY THIS
 # logger:

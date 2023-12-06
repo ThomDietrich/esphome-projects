@@ -100,7 +100,7 @@ sensor:
     icon: mdi:waves-arrow-right
     accuracy_decimals: 1
     lambda: return id(global_heizkreis_volumen_l);
-    update_interval: 60s
+    update_interval: 10s
 
   - platform: template
     name: Heizkreis Energie
@@ -111,7 +111,7 @@ sensor:
     icon: mdi:home-lightning-bolt-outline
     accuracy_decimals: 2
     lambda: return id(global_heizkreis_energie_kwh);
-    update_interval: 60s
+    update_interval: 10s
 
   - platform: template
     name: Warmwasser Volumen
@@ -122,7 +122,7 @@ sensor:
     icon: mdi:waves-arrow-right
     accuracy_decimals: 1
     lambda: return id(global_wwb_volumen_l);
-    update_interval: 60s
+    update_interval: 10s
 
   - platform: template
     name: Warmwasser Energie
@@ -133,4 +133,4 @@ sensor:
     icon: mdi:home-lightning-bolt-outline
     accuracy_decimals: 2
     lambda: return id(global_wwb_energie_kwh);
-    update_interval: 60s
+    update_interval: 10s

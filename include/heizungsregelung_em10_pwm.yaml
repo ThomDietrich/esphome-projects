@@ -1,6 +1,6 @@
-# PWM zu 0..10V Modul (EM10)
+# Temperatur zu Spannung zu PWM%
+# Für 0..10V Modul (EM10) zur Gastherme Temperatursteuerung
 
-# Pin für PWM Ausgabe (Input: 0..1)
 output:
   - platform: ledc
     pin: GPIO27
@@ -10,35 +10,60 @@ output:
     min_power: 0.00
     max_power: 1.00
 
-# Interne Hilfsvariable um den Sollwert in Prozent (0..100 PWM) zu setzen
-globals:
-  - id: gastherme_sollwert_pwm
-    type: int
-    #restore_value: yes
-    #initial_value: '0'  # 0..100
+esphome:
+  on_boot:
+    - priority: 500
+      # When hardware initialized
+      # Failsafe temperature, approx. 30°C = 20% PWM
+      then:
+        - lambda: |-
+            id(heiz_sollwert_pwm_output).set_level(0.2);
 
-# Sensor um den Sollwert in Prozent (0..100 PMW) rückzuliefert (feedback loop)
 sensor:
   - platform: template
-    name: "Gastherme Sollwert (PWM level)"
-    id: gastherme_sollwert_sensor
-    icon: "mdi:pulse"
+    name: "Gastherme Sollwert (Temperatur)"
+    id: gastherme_sollwert_degc_sensor
+    icon: "mdi:thermometer-chevron-up"
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    name: "Gastherme Sollwert (Spannung)"
+    id: gastherme_sollwert_volt_sensor
+    icon: "mdi:power-plug-outline"
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    name: "Gastherme Sollwert (PWM)"
+    id: gastherme_sollwert_pwm_sensor
+    icon: "mdi:timelapse"
     unit_of_measurement: "%"
     accuracy_decimals: 0
-    update_interval: 60s
-    lambda: 'return id(gastherme_sollwert_pwm);'
-    on_value:
-      then:
-        - lambda: |-
-            id(gastherme_sollwert_pwm) = x;
-            id(heiz_sollwert_pwm_output).set_level(x/100);
+    update_interval: never
 
-# Home Assistant Service um den Sollwert in Prozent (0..100 PWM) vorzugeben
 api:
   services:
-    - service: gastherme_sollwert_pwm_set  # Wird erweitert um "esphome.heizungsregelung_"
+    - service: gastherme_solltemperatur_set  # Wird erweitert um "esphome.heizungsregelung_"
       variables:
-        percentage: int
+        temperature: float
       then:
         - lambda: |-
-            id(gastherme_sollwert_sensor).publish_state(percentage);
+            double degc = 1.0 * temperature;
+            double volt = degc * 0.1253 - 1.2751;
+            double pwm_pct = (volt - 0.4535) * 10.05;
+
+            id(gastherme_sollwert_degc_sensor).publish_state(
+              min(90.0, max(0.0, degc))
+            );
+            id(gastherme_sollwert_volt_sensor).publish_state(
+              min(10.0, max(0.0, volt))
+            );
+            id(gastherme_sollwert_pwm_sensor).publish_state(
+              min(100.0, max(0.0, pwm_pct))
+            );
+            id(heiz_sollwert_pwm_output).set_level(
+              min(1.0, max(0.0, pwm_pct / 100.0))
+            );
