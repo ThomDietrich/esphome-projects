@@ -21,7 +21,7 @@ esphome:
 
 sensor:
   - platform: template
-    name: "Gastherme Sollwert (Temperatur)"
+    name: "Gastherme Sollwert ESP (Temperatur)"
     id: gastherme_sollwert_degc_sensor
     icon: "mdi:thermometer-chevron-up"
     unit_of_measurement: "°C"
@@ -29,7 +29,7 @@ sensor:
     update_interval: never
 
   - platform: template
-    name: "Gastherme Sollwert (Spannung)"
+    name: "Gastherme Sollwert ESP (Spannung)"
     id: gastherme_sollwert_volt_sensor
     icon: "mdi:power-plug-outline"
     unit_of_measurement: "V"
@@ -37,7 +37,7 @@ sensor:
     update_interval: never
 
   - platform: template
-    name: "Gastherme Sollwert (PWM)"
+    name: "Gastherme Sollwert ESP (PWM)"
     id: gastherme_sollwert_pwm_sensor
     icon: "mdi:timelapse"
     unit_of_measurement: "%"
