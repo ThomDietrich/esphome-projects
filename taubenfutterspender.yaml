@@ -21,6 +21,7 @@ esphome:
   on_boot:
     - priority: -10
       then:
+        - servo.detach: servo_control
         - binary_sensor.template.publish:
             id: sensor_servo_running
             state: OFF
@@ -45,42 +46,21 @@ packages:
 
 
 globals:
-  - id: gram_per_sec
-    type: int
+  - id: global_mass_before_last_run
+    type: float
     restore_value: no
-    initial_value: '25' # 500 Gramm in 20 Sekunden
+    initial_value: '0.0'
 
-  - id: global_mass_total
+  - id: global_mass_last_run
     type: float
     restore_value: no
     initial_value: '0.0'
 
 
-sensor:
-  - platform: template
-    name: Foerdermenge total
-    id: sensor_mass_total
-    device_class: weight
-    unit_of_measurement: g
-    icon: mdi:scale
-    accuracy_decimals: 1
-    lambda: return id(global_mass_total);
-    update_interval: 3600s # fallback aside triggered update
+time:
+  - platform: homeassistant
+    id: homeassistant_time
 
-  - platform: hx711
-    name: HX711 Value
-    id: sensor_load_cell
-    dout_pin: GPIO7
-    clk_pin: GPIO8
-    update_interval: 5s
-    # filters:
-    #   - calibrate_linear:
-    #       - 120 -> 0
-    #       - 810 -> 1
-    # state_class: total
-    # device_class: weight
-    # unit_of_measurement: g
-    # accuracy_decimals: 1
 
 # https://esphome.io/components/output/ledc
 output:
@@ -89,14 +69,13 @@ output:
     id: servo_pwm
     frequency: 50 Hz
 
-
 # https://esphome.io/components/servo.html
 # Turnigy TGY-SM-4309R https://hobbyking.com/en_us/turnigy-tgy-sm-4309r-360-analog-metal-gear-robot-servo-8-7kg-57rpm-56g.html
 # http://rcsearch.info/hobbyking/i41212/#catalog
 servo:
   - id: servo_control
     output: servo_pwm
-    #min_level: 5.75% # Förderschraube darf sich nicht rückwärts drehen
+    #min_level: 5.75%  # Förderschraube darf sich nicht rückwärts drehen
     min_level: 7.25%
     idle_level: 7.25%
     max_level: 8.75%
@@ -104,11 +83,67 @@ servo:
     transition_length: 1s
 
 
+sensor:
+  - platform: template
+    name: Futtermenge letzte Ausgabe
+    id: sensor_mass_last_run
+    icon: mdi:scale
+    lambda: return id(global_mass_last_run);
+    update_interval: 3600s # fallback aside triggered update
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+
+  - platform: hx711
+    name: Futtermenge Vorrat
+    id: sensor_load_mass
+    dout_pin: GPIO7
+    clk_pin: GPIO8
+    update_interval: 5s
+    filters:
+      - calibrate_linear:
+          - 92000 -> 0
+          - 608000 -> 5000
+      - lambda: if (x < 25) return 0; else return x;
+      - delta: 5  # grams difference
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+
+  - platform: template
+    name: Letzte Ausgabe
+    device_class: timestamp
+    id: sensor_last_run
+
+
+binary_sensor:
+  - platform: template
+    name: Foerderschraube Aktiv
+    id: sensor_servo_running
+    # Wird durch actions gesetzt
+
+  - platform: gpio
+    name: Gelber Gehaeuse-Taster (identisch zu On-Board-Taster)
+    internal: true
+    pin:
+      number: GPIO9
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        - script.execute:
+            id: script_run_auger_screw
+            timeout_seconds: 8
+            mass_gram: 9999
+
+
 script:
   - id: script_run_auger_screw
+    mode: single
     parameters:
-      runtime_seconds: float # 0..999
-      speed_percent: float # 0..100
+      timeout_seconds: float  # Maximale Laufzeit in Sekunden
+      mass_gram: float  # Ziel Futtermenge (Wird aufgrund des Nachlaufens geringfügig übersteuern)
     then:
 
       # Signalisiere Beginn der Aktivität
@@ -123,20 +158,32 @@ script:
           id: sensor_servo_running
           state: ON
 
-      # Servo für gegebene Dauer laufen lassen
+      # Merke Vorratsmenge vor der Ausgabe
+      - globals.set:
+          id: global_mass_before_last_run
+          value: !lambda 'return id(sensor_load_mass).state;'
+
+      # Servo für gegebene Menge/Dauer laufen lassen
       - servo.write:
           id: servo_control
-          level: !lambda 'return speed_percent / 100.0;'
-      - delay: !lambda 'return runtime_seconds * 1000;'
+          level: 1.0
+      - wait_until:
+          condition:
+            lambda: 'return id(global_mass_before_last_run) - id(sensor_load_mass).state >= mass_gram;'
+          timeout: !lambda 'return timeout_seconds * 1000;'
       - servo.detach: servo_control
 
-      # Sensoren aktualisieren
+      # Auslaufen lassen
+      - delay: 1s
+
+      # Verarbeite Vorratsmenge nach der Ausgabe (Sensoren aktualisieren)
       - globals.set:
-          id: global_mass_total
-          # 500 Gramm in 20 Sekunden
+          id: global_mass_last_run
           value: !lambda |-
-            return id(global_mass_total) + (speed_percent / 100.0 * (id(gram_per_sec) * runtime_seconds));
-      - component.update: sensor_mass_total
+            return id(global_mass_before_last_run) - id(sensor_load_mass).state;
+      - component.update: sensor_mass_last_run
+      - lambda: |-
+          id(sensor_last_run).publish_state(id(homeassistant_time).now().timestamp);
 
       # Signalisiere Ende der Aktivität
       - binary_sensor.template.publish:
@@ -147,54 +194,24 @@ script:
           transition_length: 500ms
 
 
-binary_sensor:
-  - platform: template
-    name: Foerderschraube aktiv
-    id: sensor_servo_running
-
-  - platform: gpio
-    id: on_board_button
-    name: Gelber Taster am Gehäuse (gleicht On-Board Button)
-    pin:
-      number: GPIO9
-      inverted: true
-    filters:
-      - delayed_on: 50ms
-    on_press:
-      then:
-        - script.execute:
-            id: script_run_auger_screw
-            runtime_seconds: 10
-            speed_percent: 100
-
-
 # Home Assistant Services
 api:
   services:
-    - service: run_auger_screw
+    - service: futter_ausgeben
       variables:
-        runtime_seconds: float # 0..999
-        speed_percent: float # 0..100
+        timeout_seconds: float
+        mass_gram: float
       then:
         - script.execute:
             id: script_run_auger_screw
-            runtime_seconds: !lambda 'return runtime_seconds;'
-            speed_percent: !lambda 'return speed_percent;'
-
-    - service: produce_food_amount
-      variables:
-        mass_grams: float
-      then:
-        - script.execute:
-            id: script_run_auger_screw
-            runtime_seconds: !lambda 'return mass_grams / (1.0 * id(gram_per_sec));'
-            speed_percent: 100
+            timeout_seconds: !lambda 'return timeout_seconds;'
+            mass_gram: !lambda 'return mass_gram;'
 
 
 # https://esphome.io/components/number/template.html
 number:
   - platform: template
-    name: Servo Control Debug
+    name: Foerderschraube manuelle Kontrolle
     icon: mdi:screw-round-top
     mode: slider # slider, box
     min_value: 0 # Förderschraube darf sich nicht rückwärts drehen
@@ -204,17 +221,24 @@ number:
     optimistic: false
     set_action:
       then:
-        - servo.write:
-            id: servo_control
-            level: !lambda 'return x / 100.0;'
         - if:
             condition:
               lambda: 'return x > 0;'
             then:
-              - binary_sensor.template.publish:
-                  id: sensor_servo_running
-                  state: ON
+              - servo.write:
+                  id: servo_control
+                  level: !lambda 'return x / 100.0;'
             else:
-              - binary_sensor.template.publish:
-                  id: sensor_servo_running
-                  state: OFF
+              - servo.detach: servo_control
+
+
+button:
+  - platform: template
+    name: Foerderschraube Notstop
+    on_press:
+      - script.stop: script_run_auger_screw
+      - servo.detach: servo_control
+      - light.turn_off: on_board_led
+      - binary_sensor.template.publish:
+          id: sensor_servo_running
+          state: OFF
