@@ -102,9 +102,10 @@ sensor:
     update_interval: 5s
     filters:
       - calibrate_linear:
-          - 92000 -> 0
+          - 90000 -> 0
           - 608000 -> 5000
-      - lambda: if (x < 25) return 0; else return x;
+      - lambda: if (x < 0.0 & x > -300.0) return 0.0; else return x;
+      # - lambda: if (x > 0.0 & x < 25.0) return 0.0; else return x;
       - delta: 5  # grams difference
     device_class: weight
     unit_of_measurement: g
@@ -134,7 +135,7 @@ binary_sensor:
       then:
         - script.execute:
             id: script_run_auger_screw
-            timeout_seconds: 8
+            timeout_sec: 8
             mass_gram: 9999
 
 
@@ -142,7 +143,7 @@ script:
   - id: script_run_auger_screw
     mode: single
     parameters:
-      timeout_seconds: float  # Maximale Laufzeit in Sekunden
+      timeout_sec: float  # Maximale Laufzeit in Sekunden
       mass_gram: float  # Ziel Futtermenge (Wird aufgrund des Nachlaufens geringfügig übersteuern)
     then:
 
@@ -162,6 +163,11 @@ script:
       - globals.set:
           id: global_mass_before_last_run
           value: !lambda 'return id(sensor_load_mass).state;'
+      # Lösche bisherigen Wert für bessere Anzeige in HA
+      - globals.set:
+          id: global_mass_last_run
+          value: '0.0'
+      - component.update: sensor_mass_last_run
 
       # Servo für gegebene Menge/Dauer laufen lassen
       - servo.write:
@@ -170,11 +176,11 @@ script:
       - wait_until:
           condition:
             lambda: 'return id(global_mass_before_last_run) - id(sensor_load_mass).state >= mass_gram;'
-          timeout: !lambda 'return timeout_seconds * 1000;'
+          timeout: !lambda 'return timeout_sec * 1000;'
       - servo.detach: servo_control
 
       # Auslaufen lassen
-      - delay: 1s
+      - delay: 3s
 
       # Verarbeite Vorratsmenge nach der Ausgabe (Sensoren aktualisieren)
       - globals.set:
@@ -199,12 +205,12 @@ api:
   services:
     - service: futter_ausgeben
       variables:
-        timeout_seconds: float
+        timeout_sec: float
         mass_gram: float
       then:
         - script.execute:
             id: script_run_auger_screw
-            timeout_seconds: !lambda 'return timeout_seconds;'
+            timeout_sec: !lambda 'return timeout_sec;'
             mass_gram: !lambda 'return mass_gram;'
 
 
