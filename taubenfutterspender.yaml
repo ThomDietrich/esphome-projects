@@ -46,15 +46,23 @@ packages:
 
 
 globals:
-  - id: global_mass_before_last_run
+  - id: global_mass_gram_set
+    type: float
+    restore_value: no
+    initial_value: '-1.0'
+
+  - id: global_mass_remain_before_last_run
     type: float
     restore_value: no
     initial_value: '0.0'
 
-  - id: global_mass_last_run
-    type: float
+  - id: global_dt_last_run_start
+    type: long int
     restore_value: no
-    initial_value: '0.0'
+
+  - id: global_dt_last_run_stop
+    type: long int
+    restore_value: no
 
 
 time:
@@ -80,41 +88,64 @@ servo:
     idle_level: 7.25%
     max_level: 8.75%
     restore: false
-    transition_length: 1s
+    transition_length: 500ms
 
 
 sensor:
-  - platform: template
-    name: Futtermenge letzte Ausgabe
-    id: sensor_mass_last_run
-    icon: mdi:scale
-    lambda: return id(global_mass_last_run);
-    update_interval: 3600s # fallback aside triggered update
-    device_class: weight
-    unit_of_measurement: g
-    accuracy_decimals: 0
 
   - platform: hx711
     name: Futtermenge Vorrat
     id: sensor_load_mass
     dout_pin: GPIO7
     clk_pin: GPIO8
-    update_interval: 5s
+    update_interval: 250ms
     filters:
       - calibrate_linear:
           - 90000 -> 0
           - 608000 -> 5000
       - lambda: if (x < 0.0 & x > -300.0) return 0.0; else return x;
       # - lambda: if (x > 0.0 & x < 25.0) return 0.0; else return x;
-      - delta: 5  # grams difference
+      - delta: 25  # grams difference
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: sensor_pct_run
+            state: !lambda |-
+              if (id(global_mass_gram_set) < 0) {
+                return NAN;
+              } else {
+                return 100.0 / id(global_mass_gram_set) * x;
+              }
+
+  - platform: template
+    name: Futterausgabe Fortschritt
+    id: sensor_pct_run
+    icon: mdi:progress-helper
+    update_interval: 3600s  # fallback aside triggered update
+    unit_of_measurement: '%'
+    accuracy_decimals: 0
+
+  - platform: template
+    name: Futtermenge letzte Ausgabe
+    id: sensor_mass_gram_last_run
+    icon: mdi:scale
+    update_interval: 3600s  # fallback aside triggered update
     device_class: weight
     unit_of_measurement: g
     accuracy_decimals: 0
 
   - platform: template
     name: Letzte Ausgabe
-    device_class: timestamp
     id: sensor_last_run
+    device_class: timestamp
+
+  - platform: template
+    name: Letzte Ausgabedauer
+    id: sensor_last_run_seconds
+    unit_of_measurement: s
 
 
 binary_sensor:
@@ -159,37 +190,66 @@ script:
           id: sensor_servo_running
           state: ON
 
-      # Merke Vorratsmenge vor der Ausgabe
+      # Merke Zustand vor der Ausgabe
       - globals.set:
-          id: global_mass_before_last_run
+          id: global_mass_remain_before_last_run
           value: !lambda 'return id(sensor_load_mass).state;'
-      # Lösche bisherigen Wert für bessere Anzeige in HA
       - globals.set:
-          id: global_mass_last_run
-          value: '0.0'
-      - component.update: sensor_mass_last_run
+          id: global_mass_gram_set
+          value: !lambda 'return mass_gram;'
+
+      # Nulle bisherigen Wert für bessere Anzeige in HA
+      - sensor.template.publish:
+          id: sensor_pct_run
+          state: 0.0
+      - sensor.template.publish:
+          id: sensor_mass_gram_last_run
+          state: 0.0
+
+      - logger.log:
+          format: "Fuetterung beginnt: before %.1f mass_gram %.1f"
+          args: [ 'id(global_mass_remain_before_last_run)', 'mass_gram' ]
 
       # Servo für gegebene Menge/Dauer laufen lassen
+      - globals.set:
+          id: global_dt_last_run_start
+          value: !lambda 'return id(homeassistant_time).now().timestamp;'
       - servo.write:
           id: servo_control
-          level: 1.0
+          level: 100%
       - wait_until:
           condition:
-            lambda: 'return id(global_mass_before_last_run) - id(sensor_load_mass).state >= mass_gram;'
-          timeout: !lambda 'return timeout_sec * 1000;'
-      - servo.detach: servo_control
+            lambda: 'return (id(global_mass_remain_before_last_run) - id(sensor_load_mass).state) >= mass_gram;'
+          timeout: !lambda 'return timeout_sec * 1000.0;'
+      - servo.write:
+          id: servo_control
+          level: 0%
+      - globals.set:
+          id: global_dt_last_run_stop
+          value: !lambda 'return id(homeassistant_time).now().timestamp;'
 
       # Auslaufen lassen
       - delay: 3s
+      - servo.detach: servo_control
 
-      # Verarbeite Vorratsmenge nach der Ausgabe (Sensoren aktualisieren)
-      - globals.set:
-          id: global_mass_last_run
-          value: !lambda |-
-            return id(global_mass_before_last_run) - id(sensor_load_mass).state;
-      - component.update: sensor_mass_last_run
+      # Ausgabe, Sensoren aktualisieren
+      - sensor.template.publish:
+          id: sensor_last_run_seconds
+          state: !lambda |-
+            return difftime(id(global_dt_last_run_stop), id(global_dt_last_run_start));
+      - sensor.template.publish:
+          id: sensor_mass_gram_last_run
+          state: !lambda |-
+            return id(global_mass_remain_before_last_run) - id(sensor_load_mass).state;
       - lambda: |-
           id(sensor_last_run).publish_state(id(homeassistant_time).now().timestamp);
+      - globals.set:
+          id: global_mass_gram_set
+          value: '-1.0'
+
+      - logger.log:
+          format: "Fuetterung beendet: before %.1f now %.1f -> gegeben %.1f"
+          args: [ 'id(global_mass_remain_before_last_run)', 'id(sensor_load_mass).state', 'id(sensor_mass_gram_last_run).state' ]
 
       # Signalisiere Ende der Aktivität
       - binary_sensor.template.publish:
