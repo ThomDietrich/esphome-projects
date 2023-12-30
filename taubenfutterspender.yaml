@@ -117,7 +117,7 @@ sensor:
               if (id(global_mass_gram_set) < 0) {
                 return NAN;
               } else {
-                return 100.0 / id(global_mass_gram_set) * x;
+                return 100.0 / id(global_mass_gram_set) * (id(global_mass_remain_before_last_run) - x);
               }
 
   - platform: template
@@ -146,6 +146,11 @@ sensor:
     name: Letzte Ausgabedauer
     id: sensor_last_run_seconds
     unit_of_measurement: s
+
+  - platform: template
+    name: Letzte Ausgabegeschwindigkeit
+    id: sensor_last_run_speed_gps
+    unit_of_measurement: 'g/s'
 
 
 binary_sensor:
@@ -189,8 +194,11 @@ script:
       - binary_sensor.template.publish:
           id: sensor_servo_running
           state: ON
+      - logger.log:
+          format: "Fuetterung beginnt: before %.1f mass_gram %.1f"
+          args: [ 'id(global_mass_remain_before_last_run)', 'mass_gram' ]
 
-      # Merke Zustand vor der Ausgabe
+      # Merke Systemzustand vor der Ausgabe
       - globals.set:
           id: global_mass_remain_before_last_run
           value: !lambda 'return id(sensor_load_mass).state;'
@@ -206,9 +214,6 @@ script:
           id: sensor_mass_gram_last_run
           state: 0.0
 
-      - logger.log:
-          format: "Fuetterung beginnt: before %.1f mass_gram %.1f"
-          args: [ 'id(global_mass_remain_before_last_run)', 'mass_gram' ]
 
       # Servo für gegebene Menge/Dauer laufen lassen
       - globals.set:
@@ -234,6 +239,10 @@ script:
 
       # Ausgabe, Sensoren aktualisieren
       - sensor.template.publish:
+          id: sensor_last_run
+          state: !lambda |-
+            return id(global_dt_last_run_stop);
+      - sensor.template.publish:
           id: sensor_last_run_seconds
           state: !lambda |-
             return difftime(id(global_dt_last_run_stop), id(global_dt_last_run_start));
@@ -241,17 +250,20 @@ script:
           id: sensor_mass_gram_last_run
           state: !lambda |-
             return id(global_mass_remain_before_last_run) - id(sensor_load_mass).state;
-      - lambda: |-
-          id(sensor_last_run).publish_state(id(homeassistant_time).now().timestamp);
+      - sensor.template.publish:
+          id: sensor_last_run_speed_gps
+          state: !lambda |-
+            return id(sensor_mass_gram_last_run).state / id(sensor_last_run_seconds).state;
+
+      # Aufräumen (Verhindere unnötige Updates von 'sensor_pct_run')
       - globals.set:
           id: global_mass_gram_set
           value: '-1.0'
 
+      # Signalisiere Ende der Aktivität
       - logger.log:
           format: "Fuetterung beendet: before %.1f now %.1f -> gegeben %.1f"
           args: [ 'id(global_mass_remain_before_last_run)', 'id(sensor_load_mass).state', 'id(sensor_mass_gram_last_run).state' ]
-
-      # Signalisiere Ende der Aktivität
       - binary_sensor.template.publish:
           id: sensor_servo_running
           state: OFF
@@ -268,6 +280,7 @@ api:
         timeout_sec: float
         mass_gram: float
       then:
+        # TODO: sinnvolle Limits prüfen
         - script.execute:
             id: script_run_auger_screw
             timeout_sec: !lambda 'return timeout_sec;'
