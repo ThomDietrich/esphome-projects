@@ -11,7 +11,6 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
-  min_version: '2022.12'
   platformio_options:
     board_build.flash_mode: dio
     board_build.mcu: esp32c3
@@ -45,14 +44,18 @@ packages:
   status_led: !include include/on_board_status_led_sk6812.yaml
 
 
+# wifi:
+#   use_address: 192.168.23.106
+
+
 globals:
-  - id: global_mass_gram_set
-    type: float
+  - id: global_target_gram_set
+    type: int
     restore_value: no
     initial_value: '-1.0'
 
   - id: global_mass_remain_before_last_run
-    type: float
+    type: int
     restore_value: no
     initial_value: '0.0'
 
@@ -114,10 +117,10 @@ sensor:
         - sensor.template.publish:
             id: sensor_pct_run
             state: !lambda |-
-              if (id(global_mass_gram_set) < 0) {
+              if (id(global_target_gram_set) < 0) {
                 return NAN;
               } else {
-                return 100.0 / id(global_mass_gram_set) * (id(global_mass_remain_before_last_run) - x);
+                return 100.0 / id(global_target_gram_set) * (id(global_mass_remain_before_last_run) - x);
               }
 
   - platform: template
@@ -173,15 +176,26 @@ binary_sensor:
             id: script_run_auger_screw
             timeout_sec: 8
             mass_gram: 9999
+            mass_gram_corr: 0
 
 
 script:
   - id: script_run_auger_screw
     mode: single
     parameters:
-      timeout_sec: float  # Maximale Laufzeit in Sekunden
-      mass_gram: float  # Ziel Futtermenge (Wird aufgrund des Nachlaufens geringfügig übersteuern)
+      timeout_sec: int  # Maximale Laufzeit in Sekunden
+      mass_gram: int  # Ziel Futtermenge (Wird aufgrund des Nachlaufens geringfügig übersteuern)
+      mass_gram_corr: int  # Korrektur Futtermenge (Ausgleich des Übersteuerns)
     then:
+
+      # Check inputs
+      - if:
+          condition:
+            lambda: |-
+              return (timeout_sec <= 0) | (mass_gram - mass_gram_corr <= 0);
+          then:
+            - logger.log: "Cancelling 'script_run_auger_screw' due to parameters given"
+            - script.stop: script_run_auger_screw
 
       # Signalisiere Beginn der Aktivität
       - light.turn_on:
@@ -195,16 +209,18 @@ script:
           id: sensor_servo_running
           state: ON
       - logger.log:
-          format: "Fuetterung beginnt: before %.1f mass_gram %.1f"
-          args: [ 'id(global_mass_remain_before_last_run)', 'mass_gram' ]
+          format: "Fuetterung beginnt: before %d mass_gram %d minus %d"
+          args: [ 'id(global_mass_remain_before_last_run)', 'mass_gram', 'mass_gram_corr' ]
 
       # Merke Systemzustand vor der Ausgabe
       - globals.set:
           id: global_mass_remain_before_last_run
-          value: !lambda 'return id(sensor_load_mass).state;'
+          value: !lambda |-
+            return id(sensor_load_mass).state;
       - globals.set:
-          id: global_mass_gram_set
-          value: !lambda 'return mass_gram;'
+          id: global_target_gram_set
+          value: !lambda |-
+            return mass_gram - mass_gram_corr;
 
       # Nulle bisherigen Wert für bessere Anzeige in HA
       - sensor.template.publish:
@@ -214,27 +230,30 @@ script:
           id: sensor_mass_gram_last_run
           state: 0.0
 
-
       # Servo für gegebene Menge/Dauer laufen lassen
       - globals.set:
           id: global_dt_last_run_start
-          value: !lambda 'return id(homeassistant_time).now().timestamp;'
+          value: !lambda |-
+            return id(homeassistant_time).now().timestamp;
       - servo.write:
           id: servo_control
           level: 100%
       - wait_until:
           condition:
-            lambda: 'return (id(global_mass_remain_before_last_run) - id(sensor_load_mass).state) >= mass_gram;'
-          timeout: !lambda 'return timeout_sec * 1000.0;'
+            lambda: |-
+              return (id(global_mass_remain_before_last_run) - id(sensor_load_mass).state) >= id(global_target_gram_set);
+          timeout: !lambda |-
+            return timeout_sec * 1000.0;
       - servo.write:
           id: servo_control
           level: 0%
       - globals.set:
           id: global_dt_last_run_stop
-          value: !lambda 'return id(homeassistant_time).now().timestamp;'
+          value: !lambda |-
+            return id(homeassistant_time).now().timestamp;
 
       # Auslaufen lassen
-      - delay: 3s
+      - delay: 5s
       - servo.detach: servo_control
 
       # Ausgabe, Sensoren aktualisieren
@@ -253,16 +272,16 @@ script:
       - sensor.template.publish:
           id: sensor_last_run_speed_gps
           state: !lambda |-
-            return id(sensor_mass_gram_last_run).state / id(sensor_last_run_seconds).state;
+            return 1.0 * id(sensor_mass_gram_last_run).state / id(sensor_last_run_seconds).state;
 
       # Aufräumen (Verhindere unnötige Updates von 'sensor_pct_run')
       - globals.set:
-          id: global_mass_gram_set
+          id: global_target_gram_set
           value: '-1.0'
 
       # Signalisiere Ende der Aktivität
       - logger.log:
-          format: "Fuetterung beendet: before %.1f now %.1f -> gegeben %.1f"
+          format: "Fuetterung beendet: before %d now %d -> gegeben %d"
           args: [ 'id(global_mass_remain_before_last_run)', 'id(sensor_load_mass).state', 'id(sensor_mass_gram_last_run).state' ]
       - binary_sensor.template.publish:
           id: sensor_servo_running
@@ -277,14 +296,15 @@ api:
   services:
     - service: futter_ausgeben
       variables:
-        timeout_sec: float
-        mass_gram: float
+        timeout_sec: int
+        mass_gram: int
+        mass_gram_corr: int
       then:
-        # TODO: sinnvolle Limits prüfen
         - script.execute:
             id: script_run_auger_screw
             timeout_sec: !lambda 'return timeout_sec;'
             mass_gram: !lambda 'return mass_gram;'
+            mass_gram_corr: !lambda 'return mass_gram_corr;'
 
 
 # https://esphome.io/components/number/template.html
