@@ -1,0 +1,117 @@
+script:
+  - id: script_controlled_output
+    mode: single
+
+    parameters:
+      timeout_sec: int
+      target_g: int
+      offset_g: int
+
+    then:
+
+      # Check inputs and fail if no output possible
+      - if:
+          condition:
+            lambda: |-
+              return (timeout_sec <= 0) | (target_g - offset_g <= 0);
+          then:
+            - logger.log: "Cancelling 'script_controlled_output' due to parameters given."
+            - script.stop: script_controlled_output
+
+      # Indicate the beginning of the output process
+      - light.turn_on:
+          id: on_board_led
+          red: 60%
+          green: 50%
+          blue: 0%
+          brightness: 100%
+          transition_length: 500ms
+      - binary_sensor.template.publish:
+          id: sensor_servo_motor_active
+          state: ON
+      - logger.log:
+          format: "Output started. Remaining in storage = %dg; target output = %dg; offset = %dg"
+          args: [ 'id(sensor_storage_remaining_g).state', 'target_g', 'offset_g' ]
+
+      # Publish clean starting values
+      - sensor.template.publish:
+          id: sensor_output_progress_pct
+          state: 0.0
+      - sensor.template.publish:
+          id: sensor_last_run_output_g
+          state: 0.0
+
+      # Buffer relevant values
+      - globals.set:
+          id: global_storage_remaining_before_last_run_g
+          value: !lambda |-
+            return id(sensor_storage_remaining_g).state;
+      - globals.set:
+          id: global_output_target_corr_g
+          value: !lambda |-
+            return target_g - offset_g;
+
+      # Run servo motor until output target or timeout reached
+      - globals.set:
+          id: global_dt_last_run_start
+          value: !lambda |-
+            return id(homeassistant_time).now().timestamp;
+      - servo.write:
+          id: servo_motor
+          level: 100%
+      - wait_until:
+          condition:
+            lambda: |-
+              return (id(global_storage_remaining_before_last_run_g) - id(sensor_storage_remaining_g).state) >= id(global_output_target_corr_g);
+          timeout: !lambda |-
+            return timeout_sec * 1000.0;
+      - servo.write:
+          id: servo_motor
+          level: 0%
+      - globals.set:
+          id: global_dt_last_run_stop
+          value: !lambda |-
+            return id(homeassistant_time).now().timestamp;
+
+      # Give the process some time to settle
+      - delay: 5s
+      - servo.detach: servo_motor
+
+      # Publish all sensor values
+      - sensor.template.publish:
+          id: sensor_last_run_dt
+          state: !lambda |-
+            return id(global_dt_last_run_stop);
+      - sensor.template.publish:
+          id: sensor_last_run_duration_s
+          state: !lambda |-
+            return difftime(id(global_dt_last_run_stop), id(global_dt_last_run_start));
+      - sensor.template.publish:
+          id: sensor_last_run_output_g
+          state: !lambda |-
+            return id(global_storage_remaining_before_last_run_g) - id(sensor_storage_remaining_g).state;
+      - sensor.template.publish:
+          id: sensor_output_total_g
+          state: !lambda |-
+            return id(sensor_output_total_g).state + id(sensor_last_run_output_g).state;
+      - sensor.template.publish:
+          id: sensor_last_run_speed_gps
+          state: !lambda |-
+            return 1.0 * id(sensor_last_run_output_g).state / id(sensor_last_run_duration_s).state;
+
+      # Clean-up
+      # Prevent unnecessary updates of 'sensor_output_progress_pct' and publish 'unknown' in-between runs
+      - globals.set:
+          id: global_output_target_corr_g
+          value: '-1.0'
+
+      # Indicate the end of the output process
+      - logger.log:
+          format: "Output finished. Remaining in storage = %dg; output = %dg; duration = %ds"
+          args: [ 'id(sensor_storage_remaining_g).state', 'id(sensor_last_run_output_g).state', 'id(sensor_last_run_duration_s).state' ]
+      - binary_sensor.template.publish:
+          id: sensor_servo_motor_active
+          state: OFF
+      - light.turn_off:
+          id: on_board_led
+          transition_length: 500ms

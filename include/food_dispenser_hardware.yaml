@@ -1,0 +1,51 @@
+output:
+  - platform: ledc
+    pin: GPIO10
+    id: servo_pwm
+    frequency: 50 Hz
+
+# https://esphome.io/components/servo.html
+# Turnigy TGY-SM-4309R https://hobbyking.com/en_us/turnigy-tgy-sm-4309r-360-analog-metal-gear-robot-servo-8-7kg-57rpm-56g.html
+# http://rcsearch.info/hobbyking/i41212/#catalog
+servo:
+  - id: servo_motor
+    output: servo_pwm
+    #min_level: 5.75%
+    min_level: 7.25%  # Disallow backwards rotation
+    idle_level: 7.25%
+    max_level: 8.75%
+    restore: false
+    transition_length: 500ms
+
+sensor:
+  - platform: hx711
+    name: Storage
+    id: sensor_storage_remaining_g
+    dout_pin: GPIO7
+    clk_pin: GPIO8
+    update_interval: 250ms
+    filters:
+      - median:
+          window_size: 3
+          send_every: 1
+      - calibrate_linear:
+          # Attention: These need to be set once per new load cell
+          - 90000 -> 0
+          - 608000 -> 5000
+      - lambda: if (x < 0.0 & x > -300.0) return 0.0; else return x;
+      - delta: 25
+    icon: mdi:beer-outline
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+    on_value:
+      then:
+        - sensor.template.publish:
+            id: sensor_output_progress_pct
+            # Publish output progress in 0..100%, and 'unknown' in-between runs
+            state: !lambda |-
+              if (id(global_output_target_corr_g) < 0) {
+                return NAN;
+              } else {
+                return 100.0 / id(global_output_target_corr_g) * (id(global_storage_remaining_before_last_run_g) - x);
+              }
