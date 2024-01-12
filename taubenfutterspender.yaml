@@ -5,40 +5,9 @@ substitutions:
 
   status_led_pin: GPIO2
 
-# https://docs.m5stack.com/en/core/stamp_c3u
-
-esphome:
-  name: ${device_name}
-  friendly_name: ${device_friendly_name}
-  area: ${device_area}
-  platformio_options:
-    board_build.flash_mode: dio
-    board_build.mcu: esp32c3
-#    platform_packages:
-#      - platformio/framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git#2.0.5
-
-  on_boot:
-    - priority: -10
-      then:
-        - servo.detach: servo_control
-        - binary_sensor.template.publish:
-            id: sensor_servo_running
-            state: OFF
-
-
-esp32:
-  board: esp32-c3-devkitm-1
-  variant: esp32c3
-  framework:
-    type: arduino
-    # version: 2.0.5
-    # platform_version: 5.2.0
-    # TEST
-    # type: esp-idf
-    # version: recommended
-
 
 packages:
+  system: !include system/stamp_c3u.yaml
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml
@@ -46,6 +15,19 @@ packages:
 
 # wifi:
 #   use_address: 192.168.23.106
+
+
+esphome:
+  on_boot:
+    - priority: -10
+      then:
+        - servo.detach: servo_control
+        - binary_sensor.template.publish:
+            id: sensor_servo_running
+            state: OFF
+        - sensor.template.publish:
+            id: sensor_mass_gram_total
+            state: 0
 
 
 globals:
@@ -80,6 +62,7 @@ output:
     id: servo_pwm
     frequency: 50 Hz
 
+
 # https://esphome.io/components/servo.html
 # Turnigy TGY-SM-4309R https://hobbyking.com/en_us/turnigy-tgy-sm-4309r-360-analog-metal-gear-robot-servo-8-7kg-57rpm-56g.html
 # http://rcsearch.info/hobbyking/i41212/#catalog
@@ -95,6 +78,46 @@ servo:
 
 
 sensor:
+  - platform: template
+    name: Futterausgabe Fortschritt
+    id: sensor_pct_run
+    icon: mdi:progress-helper
+    unit_of_measurement: '%'
+    accuracy_decimals: 0
+
+  - platform: template
+    name: Futtermenge letzte Ausgabe
+    id: sensor_mass_gram_last_run
+    icon: mdi:scale
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+
+  - platform: template
+    name: Futtermenge Ausgabe Total
+    id: sensor_mass_gram_total
+    icon: mdi:scale
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+
+  - platform: template
+    name: Letzte Ausgabe
+    id: sensor_last_run
+    icon: mdi:timer-outline
+    device_class: timestamp
+
+  - platform: template
+    name: Letzte Ausgabedauer
+    id: sensor_last_run_seconds
+    icon: mdi:timer-cog-outline
+    unit_of_measurement: s
+
+  - platform: template
+    name: Letzte Ausgabegeschwindigkeit
+    id: sensor_last_run_speed_gps
+    icon: mdi:speedometer
+    unit_of_measurement: 'g/s'
 
   - platform: hx711
     name: Futtermenge Vorrat
@@ -103,12 +126,16 @@ sensor:
     clk_pin: GPIO8
     update_interval: 250ms
     filters:
+      - median:
+          window_size: 3
+          send_every: 1
       - calibrate_linear:
           - 90000 -> 0
           - 608000 -> 5000
       - lambda: if (x < 0.0 & x > -300.0) return 0.0; else return x;
       # - lambda: if (x > 0.0 & x < 25.0) return 0.0; else return x;
       - delta: 25  # grams difference
+    icon: mdi:beer-outline
     device_class: weight
     unit_of_measurement: g
     accuracy_decimals: 0
@@ -122,38 +149,6 @@ sensor:
               } else {
                 return 100.0 / id(global_target_gram_set) * (id(global_mass_remain_before_last_run) - x);
               }
-
-  - platform: template
-    name: Futterausgabe Fortschritt
-    id: sensor_pct_run
-    icon: mdi:progress-helper
-    update_interval: 3600s  # fallback aside triggered update
-    unit_of_measurement: '%'
-    accuracy_decimals: 0
-
-  - platform: template
-    name: Futtermenge letzte Ausgabe
-    id: sensor_mass_gram_last_run
-    icon: mdi:scale
-    update_interval: 3600s  # fallback aside triggered update
-    device_class: weight
-    unit_of_measurement: g
-    accuracy_decimals: 0
-
-  - platform: template
-    name: Letzte Ausgabe
-    id: sensor_last_run
-    device_class: timestamp
-
-  - platform: template
-    name: Letzte Ausgabedauer
-    id: sensor_last_run_seconds
-    unit_of_measurement: s
-
-  - platform: template
-    name: Letzte Ausgabegeschwindigkeit
-    id: sensor_last_run_speed_gps
-    unit_of_measurement: 'g/s'
 
 
 binary_sensor:
@@ -187,7 +182,6 @@ script:
       mass_gram: int  # Ziel Futtermenge (Wird aufgrund des Nachlaufens geringfügig übersteuern)
       mass_gram_corr: int  # Korrektur Futtermenge (Ausgleich des Übersteuerns)
     then:
-
       # Check inputs
       - if:
           condition:
@@ -269,6 +263,10 @@ script:
           id: sensor_mass_gram_last_run
           state: !lambda |-
             return id(global_mass_remain_before_last_run) - id(sensor_load_mass).state;
+      - sensor.template.publish:
+          id: sensor_mass_gram_total
+          state: !lambda |-
+            return id(sensor_mass_gram_total).state + id(sensor_mass_gram_last_run).state;
       - sensor.template.publish:
           id: sensor_last_run_speed_gps
           state: !lambda |-
