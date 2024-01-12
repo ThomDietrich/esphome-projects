@@ -21,33 +21,13 @@ esphome:
   on_boot:
     - priority: -10
       then:
-        - servo.detach: servo_control
+        - servo.detach: servo_motor
         - binary_sensor.template.publish:
-            id: sensor_servo_running
+            id: sensor_servo_motor_active
             state: OFF
         - sensor.template.publish:
-            id: sensor_mass_gram_total
+            id: sensor_output_total_g
             state: 0
-
-
-globals:
-  - id: global_target_gram_set
-    type: int
-    restore_value: no
-    initial_value: '-1.0'
-
-  - id: global_mass_remain_before_last_run
-    type: int
-    restore_value: no
-    initial_value: '0.0'
-
-  - id: global_dt_last_run_start
-    type: long int
-    restore_value: no
-
-  - id: global_dt_last_run_stop
-    type: long int
-    restore_value: no
 
 
 time:
@@ -67,61 +47,82 @@ output:
 # Turnigy TGY-SM-4309R https://hobbyking.com/en_us/turnigy-tgy-sm-4309r-360-analog-metal-gear-robot-servo-8-7kg-57rpm-56g.html
 # http://rcsearch.info/hobbyking/i41212/#catalog
 servo:
-  - id: servo_control
+  - id: servo_motor
     output: servo_pwm
-    #min_level: 5.75%  # Förderschraube darf sich nicht rückwärts drehen
-    min_level: 7.25%
+    #min_level: 5.75%
+    min_level: 7.25%  # Disallow backwards rotation
     idle_level: 7.25%
     max_level: 8.75%
     restore: false
     transition_length: 500ms
 
 
+globals:
+  - id: global_output_target_corr_g
+    type: int
+    restore_value: no
+    initial_value: '-1.0'
+
+  - id: global_storage_remaining_before_last_run_g
+    type: int
+    restore_value: no
+    initial_value: '0.0'
+
+  - id: global_dt_last_run_start
+    type: long int
+    restore_value: no
+
+  - id: global_dt_last_run_stop
+    type: long int
+    restore_value: no
+
+
 sensor:
   - platform: template
-    name: Futterausgabe Fortschritt
-    id: sensor_pct_run
+    name: Progress
+    id: sensor_output_progress_pct
     icon: mdi:progress-helper
     unit_of_measurement: '%'
     accuracy_decimals: 0
 
   - platform: template
-    name: Futtermenge letzte Ausgabe
-    id: sensor_mass_gram_last_run
-    icon: mdi:scale
-    device_class: weight
-    unit_of_measurement: g
-    accuracy_decimals: 0
-
-  - platform: template
-    name: Futtermenge Ausgabe Total
-    id: sensor_mass_gram_total
-    icon: mdi:scale
-    device_class: weight
-    unit_of_measurement: g
-    accuracy_decimals: 0
-
-  - platform: template
-    name: Letzte Ausgabe
-    id: sensor_last_run
+    name: Last run datetime
+    id: sensor_last_run_dt
     icon: mdi:timer-outline
     device_class: timestamp
 
   - platform: template
-    name: Letzte Ausgabedauer
+    name: Last run duration
     id: sensor_last_run_seconds
     icon: mdi:timer-cog-outline
     unit_of_measurement: s
 
   - platform: template
-    name: Letzte Ausgabegeschwindigkeit
+    name: Last run output
+    id: sensor_last_run_output_g
+    icon: mdi:scale
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+
+  - platform: template
+    name: Last run speed
     id: sensor_last_run_speed_gps
     icon: mdi:speedometer
     unit_of_measurement: 'g/s'
 
+  - platform: template
+    name: Total output
+    id: sensor_output_total_g
+    icon: mdi:scale
+    state_class: total
+    device_class: weight
+    unit_of_measurement: g
+    accuracy_decimals: 0
+
   - platform: hx711
-    name: Futtermenge Vorrat
-    id: sensor_load_mass
+    name: Storage
+    id: sensor_storage_remaining_g
     dout_pin: GPIO7
     clk_pin: GPIO8
     update_interval: 250ms
@@ -130,11 +131,11 @@ sensor:
           window_size: 3
           send_every: 1
       - calibrate_linear:
+          # Attention: These need to be set once per new load cell
           - 90000 -> 0
           - 608000 -> 5000
       - lambda: if (x < 0.0 & x > -300.0) return 0.0; else return x;
-      # - lambda: if (x > 0.0 & x < 25.0) return 0.0; else return x;
-      - delta: 25  # grams difference
+      - delta: 25
     icon: mdi:beer-outline
     device_class: weight
     unit_of_measurement: g
@@ -142,23 +143,23 @@ sensor:
     on_value:
       then:
         - sensor.template.publish:
-            id: sensor_pct_run
+            id: sensor_output_progress_pct
+            # Publish output progress in 0..100%, and 'unknown' in-between runs
             state: !lambda |-
-              if (id(global_target_gram_set) < 0) {
+              if (id(global_output_target_corr_g) < 0) {
                 return NAN;
               } else {
-                return 100.0 / id(global_target_gram_set) * (id(global_mass_remain_before_last_run) - x);
+                return 100.0 / id(global_output_target_corr_g) * (id(global_storage_remaining_before_last_run_g) - x);
               }
 
 
 binary_sensor:
   - platform: template
-    name: Foerderschraube Aktiv
-    id: sensor_servo_running
-    # Wird durch actions gesetzt
+    name: Dispenser motor active
+    id: sensor_servo_motor_active
 
   - platform: gpio
-    name: Gelber Gehaeuse-Taster (identisch zu On-Board-Taster)
+    name: Case button and on-board button
     internal: true
     pin:
       number: GPIO9
@@ -168,30 +169,33 @@ binary_sensor:
     on_press:
       then:
         - script.execute:
-            id: script_run_auger_screw
+            id: script_controlled_output
             timeout_sec: 8
-            mass_gram: 9999
-            mass_gram_corr: 0
+            target_g: 9999
+            offset_g: 0
 
 
 script:
-  - id: script_run_auger_screw
+  - id: script_controlled_output
     mode: single
+
     parameters:
-      timeout_sec: int  # Maximale Laufzeit in Sekunden
-      mass_gram: int  # Ziel Futtermenge (Wird aufgrund des Nachlaufens geringfügig übersteuern)
-      mass_gram_corr: int  # Korrektur Futtermenge (Ausgleich des Übersteuerns)
+      timeout_sec: int
+      target_g: int
+      offset_g: int
+
     then:
-      # Check inputs
+
+      # Check inputs and fail if no output possible
       - if:
           condition:
             lambda: |-
-              return (timeout_sec <= 0) | (mass_gram - mass_gram_corr <= 0);
+              return (timeout_sec <= 0) | (target_g - offset_g <= 0);
           then:
-            - logger.log: "Cancelling 'script_run_auger_screw' due to parameters given"
-            - script.stop: script_run_auger_screw
+            - logger.log: "Cancelling 'script_controlled_output' due to parameters given."
+            - script.stop: script_controlled_output
 
-      # Signalisiere Beginn der Aktivität
+      # Indicate the beginning of the output process
       - light.turn_on:
           id: on_board_led
           red: 60%
@@ -200,59 +204,59 @@ script:
           brightness: 100%
           transition_length: 500ms
       - binary_sensor.template.publish:
-          id: sensor_servo_running
+          id: sensor_servo_motor_active
           state: ON
       - logger.log:
-          format: "Fuetterung beginnt: before %d mass_gram %d minus %d"
-          args: [ 'id(global_mass_remain_before_last_run)', 'mass_gram', 'mass_gram_corr' ]
+          format: "Output started. Remaining in storage = %dg; target output = %dg; offset = %dg"
+          args: [ 'id(sensor_storage_remaining_g).state', 'target_g', 'offset_g' ]
 
-      # Merke Systemzustand vor der Ausgabe
-      - globals.set:
-          id: global_mass_remain_before_last_run
-          value: !lambda |-
-            return id(sensor_load_mass).state;
-      - globals.set:
-          id: global_target_gram_set
-          value: !lambda |-
-            return mass_gram - mass_gram_corr;
-
-      # Nulle bisherigen Wert für bessere Anzeige in HA
+      # Publish clean starting values
       - sensor.template.publish:
-          id: sensor_pct_run
+          id: sensor_output_progress_pct
           state: 0.0
       - sensor.template.publish:
-          id: sensor_mass_gram_last_run
+          id: sensor_last_run_output_g
           state: 0.0
 
-      # Servo für gegebene Menge/Dauer laufen lassen
+      # Buffer relevant values
+      - globals.set:
+          id: global_storage_remaining_before_last_run_g
+          value: !lambda |-
+            return id(sensor_storage_remaining_g).state;
+      - globals.set:
+          id: global_output_target_corr_g
+          value: !lambda |-
+            return target_g - offset_g;
+
+      # Run servo motor until output target or timeout reached
       - globals.set:
           id: global_dt_last_run_start
           value: !lambda |-
             return id(homeassistant_time).now().timestamp;
       - servo.write:
-          id: servo_control
+          id: servo_motor
           level: 100%
       - wait_until:
           condition:
             lambda: |-
-              return (id(global_mass_remain_before_last_run) - id(sensor_load_mass).state) >= id(global_target_gram_set);
+              return (id(global_storage_remaining_before_last_run_g) - id(sensor_storage_remaining_g).state) >= id(global_output_target_corr_g);
           timeout: !lambda |-
             return timeout_sec * 1000.0;
       - servo.write:
-          id: servo_control
+          id: servo_motor
           level: 0%
       - globals.set:
           id: global_dt_last_run_stop
           value: !lambda |-
             return id(homeassistant_time).now().timestamp;
 
-      # Auslaufen lassen
+      # Give the process some time to settle
       - delay: 5s
-      - servo.detach: servo_control
+      - servo.detach: servo_motor
 
-      # Ausgabe, Sensoren aktualisieren
+      # Publish all sensor values
       - sensor.template.publish:
-          id: sensor_last_run
+          id: sensor_last_run_dt
           state: !lambda |-
             return id(global_dt_last_run_stop);
       - sensor.template.publish:
@@ -260,60 +264,73 @@ script:
           state: !lambda |-
             return difftime(id(global_dt_last_run_stop), id(global_dt_last_run_start));
       - sensor.template.publish:
-          id: sensor_mass_gram_last_run
+          id: sensor_last_run_output_g
           state: !lambda |-
-            return id(global_mass_remain_before_last_run) - id(sensor_load_mass).state;
+            return id(global_storage_remaining_before_last_run_g) - id(sensor_storage_remaining_g).state;
       - sensor.template.publish:
-          id: sensor_mass_gram_total
+          id: sensor_output_total_g
           state: !lambda |-
-            return id(sensor_mass_gram_total).state + id(sensor_mass_gram_last_run).state;
+            return id(sensor_output_total_g).state + id(sensor_last_run_output_g).state;
       - sensor.template.publish:
           id: sensor_last_run_speed_gps
           state: !lambda |-
-            return 1.0 * id(sensor_mass_gram_last_run).state / id(sensor_last_run_seconds).state;
+            return 1.0 * id(sensor_last_run_output_g).state / id(sensor_last_run_seconds).state;
 
-      # Aufräumen (Verhindere unnötige Updates von 'sensor_pct_run')
+      # Clean-up
+      # Prevent unnecessary updates of 'sensor_output_progress_pct' and publish 'unknown' in-between runs
       - globals.set:
-          id: global_target_gram_set
+          id: global_output_target_corr_g
           value: '-1.0'
 
-      # Signalisiere Ende der Aktivität
+      # Indicate the end of the output process
       - logger.log:
-          format: "Fuetterung beendet: before %d now %d -> gegeben %d"
-          args: [ 'id(global_mass_remain_before_last_run)', 'id(sensor_load_mass).state', 'id(sensor_mass_gram_last_run).state' ]
+          format: "Output finished. Remaining in storage = %dg; output = %dg; duration = %ds"
+          args: [ 'id(sensor_storage_remaining_g).state', 'id(sensor_last_run_output_g).state', 'id(sensor_last_run_seconds).state' ]
       - binary_sensor.template.publish:
-          id: sensor_servo_running
+          id: sensor_servo_motor_active
           state: OFF
       - light.turn_off:
           id: on_board_led
           transition_length: 500ms
 
 
-# Home Assistant Services
 api:
   services:
-    - service: futter_ausgeben
+    #
+    # Home Assistant Service
+    #
+    # timeout_sec: Max duration in seconds to prevent damages in case of clogging or similar.
+    # You should choose a meaningful timeout (e.g. 2x normal duration) to act as a safeguard in case of issues.
+    #
+    # target_g: Output target mass. Expect the result to slightly overshoot (see offset_g).
+    # Set to 9999 if you want to work with a fixed duration via timeout_sec.
+    #
+    # offset_g: Correction to the provided target output to prevent overshooting.
+    # You have to identify this value over the course of a few trial runs.
+    # Internal target = target_g - offset_g
+    #
+    - service: output
       variables:
         timeout_sec: int
-        mass_gram: int
-        mass_gram_corr: int
+        target_g: int
+        offset_g: int
       then:
         - script.execute:
-            id: script_run_auger_screw
+            id: script_controlled_output
             timeout_sec: !lambda 'return timeout_sec;'
-            mass_gram: !lambda 'return mass_gram;'
-            mass_gram_corr: !lambda 'return mass_gram_corr;'
+            target_g: !lambda 'return target_g;'
+            offset_g: !lambda 'return offset_g;'
 
 
-# https://esphome.io/components/number/template.html
 number:
   - platform: template
-    name: Foerderschraube manuelle Kontrolle
+    name: Manual motor control
+    entity_category: "diagnostic"
     icon: mdi:screw-round-top
-    mode: slider # slider, box
-    min_value: 0 # Förderschraube darf sich nicht rückwärts drehen
-    initial_value: 0
+    mode: slider
+    min_value: 0
     max_value: 100
+    initial_value: 0
     step: 1
     optimistic: false
     set_action:
@@ -323,19 +340,22 @@ number:
               lambda: 'return x > 0;'
             then:
               - servo.write:
-                  id: servo_control
+                  id: servo_motor
                   level: !lambda 'return x / 100.0;'
             else:
-              - servo.detach: servo_control
+              - servo.detach: servo_motor
 
 
 button:
   - platform: template
-    name: Foerderschraube Notstop
+    name: Emergency stop
     on_press:
-      - script.stop: script_run_auger_screw
-      - servo.detach: servo_control
+      - script.stop: script_controlled_output
+      - servo.write:
+          id: servo_motor
+          level: 0%
+      - servo.detach: servo_motor
       - light.turn_off: on_board_led
       - binary_sensor.template.publish:
-          id: sensor_servo_running
+          id: sensor_servo_motor_active
           state: OFF

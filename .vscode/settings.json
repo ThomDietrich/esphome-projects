@@ -2,5 +2,6 @@
     "files.associations": {
         "*.yaml": "esphome",
         "epaper_display_screen_content.yaml": "cpp",
-    }
+    },
+    "editor.rulers": [120, 160]
 }
