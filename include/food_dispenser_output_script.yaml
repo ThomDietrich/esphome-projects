@@ -33,21 +33,13 @@ script:
           format: "Output started. Remaining in storage = %dg; target output = %dg; offset = %dg"
           args: [ 'id(sensor_storage_remaining_g).state', 'target_g', 'offset_g' ]
 
-      # Publish clean starting values
-      - sensor.template.publish:
-          id: sensor_output_progress_pct
-          state: 0.0
-      - sensor.template.publish:
-          id: sensor_last_run_output_g
-          state: 0.0
-
       # Buffer relevant values
       - globals.set:
           id: global_storage_remaining_before_last_run_g
           value: !lambda |-
             return id(sensor_storage_remaining_g).state;
       - globals.set:
-          id: global_output_target_corr_g
+          id: global_output_target_corrected_g
           value: !lambda |-
             return target_g - offset_g;
 
@@ -62,7 +54,7 @@ script:
       - wait_until:
           condition:
             lambda: |-
-              return (id(global_storage_remaining_before_last_run_g) - id(sensor_storage_remaining_g).state) >= id(global_output_target_corr_g);
+              return (id(global_storage_remaining_before_last_run_g) - id(sensor_storage_remaining_g).state) >= id(global_output_target_corrected_g);
           timeout: !lambda |-
             return timeout_sec * 1000.0;
       - servo.write:
@@ -102,7 +94,7 @@ script:
       # Clean-up
       # Prevent unnecessary updates of 'sensor_output_progress_pct' and publish 'unknown' in-between runs
       - globals.set:
-          id: global_output_target_corr_g
+          id: global_output_target_corrected_g
           value: '-1.0'
 
       # Indicate the end of the output process

@@ -44,8 +44,8 @@ sensor:
             id: sensor_output_progress_pct
             # Publish output progress in 0..100%, and 'unknown' in-between runs
             state: !lambda |-
-              if (id(global_output_target_corr_g) < 0) {
+              if (id(global_output_target_corrected_g) < 0) {
                 return NAN;
               } else {
-                return 100.0 / id(global_output_target_corr_g) * (id(global_storage_remaining_before_last_run_g) - x);
+                return 100.0 / id(global_output_target_corrected_g) * (id(global_storage_remaining_before_last_run_g) - x);
               }

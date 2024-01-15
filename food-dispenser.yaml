@@ -13,7 +13,7 @@ packages:
   status_led: !include include/on_board_status_led_sk6812.yaml
   include_1: !include include/food_dispenser_hardware.yaml
   include_2: !include include/food_dispenser_entities.yaml
-  include_3: !include include/food_dispenser_script.yaml
+  include_3: !include include/food_dispenser_output_script.yaml
 
 
 wifi:

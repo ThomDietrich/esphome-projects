@@ -17,7 +17,7 @@ time:
 
 
 globals:
-  - id: global_output_target_corr_g
+  - id: global_output_target_corrected_g
     type: int
     restore_value: no
     initial_value: '-1.0'
