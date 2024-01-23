@@ -1,0 +1,92 @@
+substitutions:
+  device_name: raumsensorknoten
+  device_friendly_name: Raumsensorknoten-1
+  device_area: Kinderzimmer
+
+  rtttl_out_pin: GPIO4
+
+
+packages:
+  system: !include system/esp32_c3_supermini.yaml
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  include_rtttl: !include include/rtttl_out.yaml
+
+
+# wifi:
+#   use_address: 192.168.23.106
+
+
+# Green on-board LED
+# light:
+#   - platform: status_led
+#     id: on_board_status_led
+#     name: "Status LED"
+#     pin:
+#       number: GPIO8
+#       inverted: false
+#     restore_mode: RESTORE_DEFAULT_ON
+
+i2c:
+  id: i2c_component
+  sda: GPIO10
+  scl: GPIO9
+  scan: true
+  frequency: 50kHz
+
+output:
+  - id: on_board_led
+    platform: gpio
+    pin:
+      number: GPIO8
+      inverted: true
+  - id: buzzer_out
+    platform: gpio
+    pin: GPIO3
+
+light:
+  - platform: binary
+    name: "On-Board LED"
+    output: on_board_led
+
+switch:
+  - platform: output
+    name: "Buzzer"
+    output: buzzer_out
+
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: "Living Room Temperature"
+    humidity:
+      name: "Living Room Humidity"
+    address: 0x44
+    update_interval: 60s
+
+  - platform: aht10
+    id: aht21_sensor
+    update_interval: 10s
+    address: 0x38
+    temperature:
+      name: "AHT21 Temperature"
+      id: aht21_temp
+    humidity:
+      name: "AHT21 Humidity"
+      id: aht21_humi
+
+  - platform: ens160
+    id: ens160_sensor
+    address: 0x53
+    update_interval: 10s
+    eco2:
+      name: "ENS160 eCO2"
+      id: ens160_eco2
+    tvoc:
+      name: "ENS160 Total Volatile Organic Compounds"
+      id: ens160_tvoc
+    aqi:
+      name: "ENS160 Air Quality Index"
+      id: ens160_aqi
+    compensation:
+      temperature: aht21_temp
+      humidity: aht21_humi

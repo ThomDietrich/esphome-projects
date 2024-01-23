@@ -11,7 +11,7 @@ button:
   - platform: template
     name: "Two Beeps"
     on_press:
-      - rtttl.play: "two short:d=4,o=5,b=100:16e6,16e6"
+      - rtttl.play: "two short:d=4,o=5,b=100:12g6,16c6"
 
 api:
   services:
