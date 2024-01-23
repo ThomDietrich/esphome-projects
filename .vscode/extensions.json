@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "esphome.esphome-vscode",
+        "redhat.vscode-yaml",
+        "fnando.linter",
+    ]
+}
