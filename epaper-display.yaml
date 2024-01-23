@@ -37,10 +37,17 @@ packages:
   include_3: !include include/epaper_display_screen.yaml
 
 # wifi:
-#   use_address: 192.168.23.204
+#   use_address: 192.168.23.187
 
 sensor:
   - platform: template
     name: "Last Content Update"
     device_class: timestamp
     id: epaperdisplay_last_update
+
+button:
+  - platform: template
+    name: "Force Cotent Update"
+    icon: mdi:calendar-refresh
+    on_press:
+      - component.update: epaperdisplay

@@ -22,14 +22,14 @@
 
   // Current temperature
   if (isnan(id(temperature).state)) {
-    it.print(b1_x_start+145, b1_y_start+30, id(font_wetter_gross), TextAlign::BASELINE_RIGHT, " - ºC");
+    it.print(b1_x_start+150, b1_y_start+30, id(font_wetter_gross), TextAlign::BASELINE_RIGHT, "-IX.XºC");
   } else {
-    it.printf(b1_x_start+145, b1_y_start+30, id(font_wetter_gross), TextAlign::BASELINE_RIGHT, "%2.1fºC", id(temperature).state);
+    it.printf(b1_x_start+150, b1_y_start+30, id(font_wetter_gross), TextAlign::BASELINE_RIGHT, "%2.1fºC", id(temperature).state);
   }
 
   // Min temperature 24h
   if (isnan(id(temperature_min).state)) {
-    it.print(b1_x_end-40, b1_y_start+5, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, " - ºC");
+    it.print(b1_x_end-40, b1_y_start+5, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, "-XX.XºC");
   } else {
     it.printf(b1_x_end-40, b1_y_start+5, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, "%2.1fºC", id(temperature_min).state);
   }
@@ -37,7 +37,7 @@
 
   // Rain 24h
   if (isnan(id(rain_24h).state)) {
-    it.print(b1_x_end-40, b1_y_start+35, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, " - mm");
+    it.print(b1_x_end-40, b1_y_start+35, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, "XX.Xmm");
   } else {
     it.printf(b1_x_end-40, b1_y_start+35, id(font_wetter_mittel), TextAlign::BASELINE_RIGHT, "%2.1fmm", id(rain_24h).state);
   }
@@ -47,7 +47,7 @@
   int b1b_y_start = b1_y_start+35;
   auto forecast_cond = id(forecast_condition).state;
   if (forecast_cond == "unknown" || forecast_cond == "") {
-    it.print(b1_x_start, b1b_y_start, id(mdi_wetter_gross), TextAlign::TOP_LEFT, "󰨹");  // mdi-cloud-question
+    it.print(b1_x_start, b1b_y_start, id(mdi_wetter_gross), TextAlign::TOP_LEFT, "󰼶");  // mdi-weather-snowy-heavy
   } else {
     auto cond_icon = "󰨹";  // mdi-cloud-question
     if (forecast_cond == "Klare Nacht") {
@@ -84,8 +84,8 @@
 
     it.print(b1_x_start, b1b_y_start, id(mdi_wetter_gross), TextAlign::TOP_LEFT, cond_icon);
     it.printf(b1_x_start+70, b1b_y_start+15, id(font_wetter_mittel), TextAlign::TOP_LEFT, "%s %s", id(forecast_tagesstempel).state.c_str(), forecast_cond.c_str());
-    it.printf(b1_x_start+40, b1b_y_start+50, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.0f bis %.0f°C, %.1fmm/%.0f%%", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, id(forecast_precip_prob).state);
-    it.printf(b1_x_start+40, b1b_y_start+50+27, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.1fkm/h %s, %.0fkWh", id(forecast_wind_speed).state, id(forecast_wind_bearing).state.c_str(), id(forecast_solar_production).state);
+    it.printf(b1_x_start+40, b1b_y_start+55, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.0f bis %.0f°C, %.1fmm/%.0f%%", id(forecast_templow).state, id(forecast_temp).state, id(forecast_precip).state, id(forecast_precip_prob).state);
+    it.printf(b1_x_start+40, b1b_y_start+55+27, id(font_wetter_klein), TextAlign::TOP_LEFT, "%.1fkm/h %s, %.0fkWh", id(forecast_wind_speed).state, id(forecast_wind_bearing).state.c_str(), id(forecast_solar_production).state);
   }
 
   /////////////////////////////////////////////////////////////////////////
@@ -152,7 +152,7 @@
 
   // Current temperature
   if (isnan(id(heizung_warmwasser).state)) {
-    it.print(b5_x_start+25, b5_y_start, id(font_wetter_mittel), TextAlign::BASELINE_LEFT, " - ºC");
+    it.print(b5_x_start+25, b5_y_start, id(font_wetter_mittel), TextAlign::BASELINE_LEFT, "XXºC");
   } else {
     it.printf(b5_x_start+25, b5_y_start, id(font_wetter_mittel), TextAlign::BASELINE_LEFT, "%.0fºC", id(heizung_warmwasser).state);
   }
