@@ -60,14 +60,14 @@ script:
       - servo.write:
           id: servo_motor
           level: 0%
+      - servo.detach: servo_motor
       - globals.set:
           id: global_dt_last_run_stop
           value: !lambda |-
             return id(homeassistant_time).now().timestamp;
 
-      # Give the process some time to settle
+      # Give the process some time to settle (some food will still fall out and the scale will settle on an end weight)
       - delay: 5s
-      - servo.detach: servo_motor
 
       # Publish all sensor values
       - sensor.template.publish:
