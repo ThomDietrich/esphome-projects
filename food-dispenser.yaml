@@ -6,6 +6,15 @@ substitutions:
   status_led_pin: GPIO2
 
 
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  project:
+    name: "AWF1877.Food-Dispenser_ESP32-C3-StampC3U"
+    version: "1.0"
+
+
 packages:
   system: !include system/stamp_c3u.yaml
   wifi: !include common/wifi.yaml

@@ -11,6 +11,7 @@ substitutions:
   min_height: "60.0" # cm
   max_height: "125.0" # cm
 
+
 # Hardware setup
 # https://docs.m5stack.com/en/core/stamp_c3u
 #
@@ -22,35 +23,24 @@ substitutions:
 # RX         - Pin 5 (white-blue)  - GPIO20
 # PIN20      - Pin 4 (blue)        - GPIO 9
 
+
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
-  min_version: '2022.12'
-  platformio_options:
-    board_build.flash_mode: dio
-    board_build.mcu: esp32c3
-#    platform_packages:
-#      - platformio/framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git#2.0.5
-
+  # project:
+  #   name: ""
+  #   version: "1.0"
   on_boot:
     - priority: -10
       then:
         - switch.turn_on: switch_alarm
-
   includes:
     - desk_height_sensor.h
 
-esp32:
-  board: esp32-c3-devkitm-1
-  variant: esp32c3
-  framework:
-    type: arduino
-    # version: 2.0.5
-    # platform_version: 5.2.0
-
 
 packages:
+  system: !include system/stamp_c3u.yaml
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml

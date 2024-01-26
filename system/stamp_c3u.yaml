@@ -1,9 +1,6 @@
 # https://docs.m5stack.com/en/core/stamp_c3u
 
 esphome:
-  name: ${device_name}
-  friendly_name: ${device_friendly_name}
-  area: ${device_area}
   platformio_options:
     board_build.flash_mode: dio
     board_build.mcu: esp32c3

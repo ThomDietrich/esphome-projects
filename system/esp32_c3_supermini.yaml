@@ -3,12 +3,6 @@
 # https://www.studiopieters.nl/esp32-c3-pinout/
 
 esphome:
-  name: ${device_name}
-  friendly_name: ${device_friendly_name}
-  area: ${device_area}
-  project:
-    name: "AWF1877.Raumsensorknoten_ESP32-C3-SuperMini"
-    version: "0.1"
   platformio_options:
     board_build.flash_mode: dio
 
@@ -26,7 +20,9 @@ esp32:
 
 logger:
   level: DEBUG
-#   hardware_uart: USB_SERIAL_JTAG
+  # hardware_uart: USB_SERIAL_JTAG
+  # baud_rate: 0
 
+# https://github.com/esphome/issues/issues/4893
 wifi:
-  output_power: 11
+  output_power: 8.5

@@ -1,53 +1,42 @@
 substitutions:
   device_name: raumsensorknoten
-  device_friendly_name: Raumsensorknoten-1
+  device_friendly_name: Raumsensorknoten
   device_area: Kinderzimmer
 
+  status_led_pin: GPIO2
   rtttl_out_pin: GPIO4
 
 
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  project:
+    name: "AWF1877.Raumsensorknoten_ESP32-C3-SuperMini"
+    version: "0.1"
+
+
 packages:
-  system: !include system/esp32_c3_supermini.yaml
+  system: !include system/stamp_c3u.yaml
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
+  status_led: !include include/on_board_status_led_sk6812.yaml
   include_rtttl: !include include/rtttl_out.yaml
-
 
 # wifi:
 #   use_address: 192.168.23.106
 
-
-# Green on-board LED
-# light:
-#   - platform: status_led
-#     id: on_board_status_led
-#     name: "Status LED"
-#     pin:
-#       number: GPIO8
-#       inverted: false
-#     restore_mode: RESTORE_DEFAULT_ON
-
 i2c:
   id: i2c_component
-  sda: GPIO10
-  scl: GPIO9
+  sda: GPIO6
+  scl: GPIO7
   scan: true
   frequency: 50kHz
 
 output:
-  - id: on_board_led
-    platform: gpio
-    pin:
-      number: GPIO8
-      inverted: true
   - id: buzzer_out
     platform: gpio
     pin: GPIO3
-
-light:
-  - platform: binary
-    name: "On-Board LED"
-    output: on_board_led
 
 switch:
   - platform: output
@@ -55,16 +44,41 @@ switch:
     output: buzzer_out
 
 sensor:
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature"
+      oversampling: 16x
+    pressure:
+      name: "BME280 Pressure"
+    humidity:
+      name: "BME280 Humidity"
+    address: 0x76
+    update_interval: 10s
+
+  - platform: bme680
+    temperature:
+      name: "BME680 Temperature"
+      oversampling: 16x
+    pressure:
+      name: "BME680 Pressure"
+    humidity:
+      name: "BME680 Humidity"
+    gas_resistance:
+      name: "BME680 Gas Resistance"
+    address: 0x77
+    update_interval: 10s
+
   - platform: sht3xd
     temperature:
-      name: "Living Room Temperature"
+      name: "SHT31 Temperature"
     humidity:
-      name: "Living Room Humidity"
+      name: "SHT31 Humidity"
     address: 0x44
     update_interval: 60s
 
   - platform: aht10
     id: aht21_sensor
+    variant: AHT20
     update_interval: 10s
     address: 0x38
     temperature:
@@ -90,3 +104,16 @@ sensor:
     compensation:
       temperature: aht21_temp
       humidity: aht21_humi
+
+binary_sensor:
+  - platform: gpio
+    name: On-board button
+    internal: false
+    pin:
+      number: GPIO9
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+    # on_press:
+    #   then:
+    #     ...
