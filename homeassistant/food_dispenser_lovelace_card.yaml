@@ -1,0 +1,131 @@
+type: custom:vertical-stack-in-card
+title: Food dispenser for bird seeds
+cards:
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - type: custom:bar-card
+        name: Storage
+        entity: sensor.taubenfutterspender_storage
+        direction: right
+        height: 50px
+        width: 52%
+        positions:
+          indicator: inside
+          value: inside
+          name: outside
+        entity_row: true
+        min: 0
+        max: 6500
+        severity:
+          - color: Red
+            from: 0
+            to: 800
+          - color: Orange
+            from: 800
+            to: 2000
+          - color: Lightgreen
+            from: 2000
+            to: 4000
+          - color: Green
+            from: 4000
+            to: 6000
+          - color: Darkgreen
+            from: 6000
+            to: 9999
+        card_mod:
+          style: |-
+            ha-card {
+              --ha-card-border-width: 0px;
+            }
+  - type: custom:state-switch
+    entity: binary_sensor.taubenfutterspender_dispenser_motor_active
+    states:
+      'on':
+        type: entities
+        show_header_toggle: false
+        entities:
+          - type: section
+            label: Running output
+          - type: custom:bar-card
+            name: Output
+            entity: sensor.taubenfutterspender_progress
+            positions:
+              name: inside
+              value: inside
+              icon: 'off'
+            entity_row: false
+            min: 0
+            max: 100
+            color: lightgrey
+            style: 'ha-card {border-style: none;}'
+        style: 'ha-card {border-style: none;}'
+  - type: entities
+    entities:
+      - type: section
+        label: Last Run
+  - type: glance
+    show_name: true
+    entities:
+      - entity: sensor.taubenfutterspender_last_run_datetime
+        name: Time
+        format: time
+      - entity: sensor.taubenfutterspender_last_run_duration
+        name: Duration
+      - entity: sensor.taubenfutterspender_last_run_speed
+        name: Speed
+      - entity: sensor.taubenfutterspender_last_run_output
+        name: Amount
+    card_mod:
+      style: |-
+        .entities.no-header {
+          padding-top: 0px !important;
+          padding-bottom: 0px !important;
+        }
+  - type: custom:mini-graph-card
+    icon: mdi:seed-plus
+    entities:
+      - entity: sensor.taubenfutterspender_last_run_output
+        name: Actual output
+        color: darkgreen
+      - entity: sensor.taubenfutterspender_total_output
+        name: Actual output sum
+        color: lightgreen
+      - entity: sensor.taubenfuetterung_futterbedarf_taeglich
+        name: Planned output
+        color: lightgray
+    show:
+      graph: bar
+      name: false
+      icon: false
+      labels: true
+      legend: false
+    aggregate_func: max
+    hours_to_show: 336
+    group_by: date
+    hour24: true
+    height: 150
+    bar_spacing: 2
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - type: section
+        label: Planning
+      - entity: input_boolean.taubenfuetterung_automation
+        name: Automated food output
+      - entity: input_datetime.taubenfuetterung_uhrzeit_1
+        name: Daily feeding time
+    style: '#states {padding-bottom: 0px;}'
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - type: section
+        label: Demand Estimation
+      - entity: input_number.taubenfuetterung_anzahl_tauben
+        name: Number of birds
+      - entity: input_number.taubenfuetterung_gramm_pro_taube
+        name: Grams per bird
+      - entity: sensor.taubenfuetterung_futterbedarf_taeglich
+        name: Daily output target
+      - entity: input_number.taubenfuetterung_futterbedarf_taeglich_anpassung
+        name: Correction in gram

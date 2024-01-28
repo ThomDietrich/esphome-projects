@@ -1,0 +1,122 @@
+input_boolean:
+  taubenfuetterung_automation:
+    name: Taubenfütterung Automation Aktiv
+    icon: mdi:robot-industrial
+
+input_datetime:
+  taubenfuetterung_uhrzeit_1:
+    name: Taubenfütterung Uhrzeit
+    has_date: false
+    has_time: true
+
+input_number:
+  taubenfuetterung_anzahl_tauben:
+    name: Taubenfütterung Anzahl Tauben
+    icon: mdi:bird
+    min: 1
+    max: 999
+    step: 1
+    #initial: 20
+    mode: box
+
+  taubenfuetterung_gramm_pro_taube:
+    name: Taubenfütterung Gramm pro Taube
+    icon: mdi:seed-outline
+    min: 1
+    max: 999
+    step: 1
+    #initial: 30
+    mode: box
+
+  taubenfuetterung_futterbedarf_taeglich_anpassung:
+    name: Taubenfütterung Futterbedarf täglich Anpassung
+    icon: mdi:weight-gram
+    min: 0
+    max: 999
+    step: 1
+    #initial: 30
+    mode: box
+
+template:
+  - sensor:
+      - name: Taubenfuetterung Futterbedarf taeglich
+        unique_id: unique_id__taubenfuetterung_futterbedarf_taeglich
+        unit_of_measurement: "g"
+        icon: mdi:weight
+        state: >
+          {%- set tauben = states('input_number.taubenfuetterung_anzahl_tauben') | int(0) -%}
+          {%- set gramm_pro_taube = states('input_number.taubenfuetterung_gramm_pro_taube') | int(0) -%}
+          {{ (tauben * gramm_pro_taube) | int(0) }}
+
+automation:
+  - alias: Taubenfuetterung zum Morgen
+    trigger:
+      - platform: time
+        at: input_datetime.taubenfuetterung_uhrzeit_1
+    condition:
+      - condition: state
+        entity_id: input_boolean.taubenfuetterung_automation
+        state: "on"
+    action:
+      - service: esphome.taubenfutterspender_output
+        data:
+          timeout_sec: 60
+          target_g: "{{ states('sensor.taubenfuetterung_futterbedarf_taeglich') | int(0) }}"
+          offset_g: "{{ states('input_number.taubenfuetterung_futterbedarf_taeglich_anpassung') | int(0) }}"
+
+  - alias: Taubenfuetterung Benachrichtigung bei ungenügender Fütterung
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.taubenfutterspender_last_run_duration
+        above: 58
+    action:
+      - service: notify.thomas_plus
+        data:
+          title: Taubenfutterspender
+          message: Weniger Futter als geplant ausgegeben (Verstopfung oder Leer?). Bitte prüfen.
+
+  - alias: Taubenfuetterung Benachrichtigung bei niedriger Ausgabegeschwindigkeit
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.taubenfutterspender_last_run_speed
+        below: 5
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.taubenfutterspender_last_run_duration
+        below: 58
+    action:
+      - service: notify.thomas_plus
+        data:
+          title: Taubenfutterspender
+          message: Futter wurde ungewöhnlich langsam ausgegeben (Verstopfung?). Bitte prüfen.
+
+  - alias: Taubenfuetterung Benachrichtigung bei leer werdendem Vorrat
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.taubenfutterspender_storage
+        below: 800
+      - platform: numeric_state
+        entity_id: sensor.taubenfutterspender_storage
+        below: 300
+    action:
+      - service: notify.thomas_plus
+        data:
+          title: Taubenfutterspender
+          message: Der Vorrat geht zur Neige ({{ trigger.to_state.state }}g)! Bitte auffüllen.
+
+  - alias: Taubenfuetterung Benachrichtigung bei nicht erreichbarem Gerät
+    trigger:
+      - platform: time
+        at: input_datetime.taubenfuetterung_uhrzeit_1
+    condition:
+      - condition: state
+        entity_id: input_boolean.taubenfuetterung_automation
+        state: "on"
+      - condition: state
+        entity_id: sensor.taubenfutterspender_esp_device_uptime
+        state: "unavailable"
+    action:
+      - service: notify.thomas_plus
+        data:
+          title: Taubenfutterspender
+          message: Gerät zur Zeit der Fütterung nicht im netzwerk verfügbar! Bitte prüfen und manuell füttern.
