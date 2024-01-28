@@ -11,8 +11,8 @@ esphome:
   friendly_name: ${device_friendly_name}
   area: ${device_area}
   project:
-    name: "AWF1877.Food-Dispenser_ESP32-C3-StampC3U"
-    version: "1.0"
+    name: "ThomDietrich.Food-Dispenser_ESP32-C3-StampC3U"
+    version: "1.2"
 
 
 packages:
@@ -25,8 +25,9 @@ packages:
   include_3: !include include/food_dispenser_output_script.yaml
 
 
-wifi:
-  use_address: 192.168.23.106
+# Manual IP overwrite
+# wifi:
+#   use_address: 192.168.23.106
 
 
 api:
