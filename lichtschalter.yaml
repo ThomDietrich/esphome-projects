@@ -1,0 +1,59 @@
+# esphome -s device_name ug-wohnstube-licht -s device_friendly_name "UG Wohnstube Licht" -s device_area "UG Wohnstube" run lichtschalter.yaml
+
+substitutions:
+  device_name: ug-wohnstube-licht
+  device_friendly_name: UG Wohnstube Licht
+  device_area: UG Wohnstube
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  platform: ESP8266
+  board: esp8285
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+#wifi:
+#  use_address: 192.168.23.126
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+output:
+  - platform: gpio
+    id: relay
+    pin: GPIO12
+
+light:
+  - platform: binary
+    name: Deckenlampe
+    output: relay
+    id: ceiling_light
+
+binary_sensor:
+  - platform: gpio
+    name: On-board Button
+    id: button_onboard
+    pin: GPIO0
+    #internal: true
+    filters:
+      - invert:
+      - delayed_off: 10ms
+    #on_press:
+    #  - light.toggle:
+    #      id: ceiling_light
+
+  - platform: gpio
+    name: Taster Eingang
+    id: button_input
+    #internal: true
+    pin: GPIO4
+    #on_press:
+    #  then:
+    #    - light.toggle:
+    #        id: ceiling_light

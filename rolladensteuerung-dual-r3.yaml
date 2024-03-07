@@ -1,0 +1,138 @@
+# esphome -s device_name stube -s device_friendly_name "UG Gute Stube Rolladen links" -s device_area "UG Wohnstube" run rolladensteuerung-dual-r3.yaml
+
+substitutions:
+  device_name: ug-gute-stube-rollo-links
+  device_friendly_name: UG Gute Stube Rolladen links
+  device_area: UG Wohnstube
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  board: esp32dev
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+#wifi:
+#  use_address: 192.168.23.126
+
+
+light:
+  - platform: status_led
+    name: Blaue Status LED
+    id: blue_status_led
+    #internal: True
+    pin:
+      number: GPIO13
+      inverted: True
+
+switch:
+  - platform: gpio
+    name: Relay 1
+    pin: GPIO27
+    id: relay_1_led_1
+
+  - platform: gpio
+    name: Relay 2
+    pin: GPIO14
+    id: relay_2_led_2
+
+binary_sensor:
+  - platform: gpio
+    name: On-board Button
+    id: sensor_button
+    pin:
+      number: GPIO0
+      mode:
+        input: True
+        pullup: True
+      inverted: True
+    #disabled_by_default: True
+    icon: 'mdi:radiobox-blank'
+    filters:
+      - delayed_on: 50ms
+    #on_press:
+    #  - switch.toggle: relay_1
+
+  - platform: gpio
+    name: Taster Eingang 1
+    pin:
+      number: GPIO32
+      mode:
+        input: True
+        pullup: True
+      inverted: True
+    filters:
+      - delayed_on_off: 50ms
+    on_press:
+      - switch.turn_on: relay_1_led_1
+    on_release:
+      - switch.turn_off: relay_1_led_1
+
+  - platform: gpio
+    name: Taster Eingang 2
+    pin:
+      number: GPIO33
+      mode:
+        input: True
+        pullup: True
+      inverted: True
+    filters:
+      - delayed_on_off: 50ms
+    on_press:
+      - switch.turn_on: relay_2_led_2
+    on_release:
+      - switch.turn_off: relay_2_led_2
+
+uart:
+  tx_pin: GPIO25
+  rx_pin: GPIO26
+  baud_rate: 38400
+  parity: EVEN
+  stop_bits: 1
+
+sensor:
+  - platform: cse7761
+    update_interval: 21
+    voltage:
+      name: Voltage
+      disabled_by_default: True
+    current_1:
+      name: Current 1
+      id: current_1
+      #internal: true
+    current_2:
+      name: Current 2
+      id: current_2
+      #internal: true
+    active_power_1:
+      name: Power 1
+    active_power_2:
+      name: Power 2
+
+cover:
+  - platform: current_based
+    name: "Current Based Cover"
+
+    open_sensor: current_1
+    open_moving_current_threshold: 0.5
+    open_obstacle_current_threshold: 0.8
+    open_duration: 12s
+    open_action:
+      - switch.turn_on: relay_2_led_2
+
+    close_sensor: current_2
+    close_moving_current_threshold: 0.5
+    close_obstacle_current_threshold: 0.8
+    close_duration: 10s
+    close_action:
+      - switch.turn_on: relay_1_led_1
+
+    stop_action:
+      - switch.turn_off: relay_1_led_1
+      - switch.turn_off: relay_2_led_2
+
+    obstacle_rollback: 30%
+    start_sensing_delay: 0.8s
