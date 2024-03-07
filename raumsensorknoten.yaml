@@ -24,7 +24,7 @@ packages:
   include_rtttl: !include include/rtttl_out.yaml
 
 # wifi:
-#   use_address: 192.168.23.106
+#   use_address: 192.168.23.126
 
 i2c:
   id: i2c_component
@@ -32,6 +32,10 @@ i2c:
   scl: GPIO7
   scan: true
   frequency: 50kHz
+
+mcp23017:
+  - id: mcp23017_expander
+    address: 0x20
 
 output:
   - id: buzzer_out
@@ -42,6 +46,36 @@ switch:
   - platform: output
     name: "Buzzer"
     output: buzzer_out
+
+  - platform: gpio
+    name: "MCP23017 Pin B7 Out G"
+    pin:
+      mcp23xxx: mcp23017_expander
+      # Use pin A7
+      number: 15
+      mode:
+        output: true
+      inverted: false
+
+  - platform: gpio
+    name: "MCP23017 Pin B6 Out Y"
+    pin:
+      mcp23xxx: mcp23017_expander
+      # Use pin A7
+      number: 14
+      mode:
+        output: true
+      inverted: false
+
+  - platform: gpio
+    name: "MCP23017 Pin B5 Out R"
+    pin:
+      mcp23xxx: mcp23017_expander
+      # Use pin A7
+      number: 13
+      mode:
+        output: true
+      inverted: false
 
 sensor:
   - platform: bme280
@@ -107,7 +141,7 @@ sensor:
 
 binary_sensor:
   - platform: gpio
-    name: On-board button
+    name: "On-board Button"
     internal: false
     pin:
       number: GPIO9
@@ -117,3 +151,34 @@ binary_sensor:
     # on_press:
     #   then:
     #     ...
+
+  - platform: gpio
+    name: "MCP23017 Pin A0 In"
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+
+
+# MCP23017 Configuration
+# VCC - Unused
+# GND - x5 LED common and Pushbutton common
+# PB7 - LED0 Button (pull-up)
+# PB6 - LED0 R
+# PB5 - LED0 G
+# PB4 - LED0 Y
+# PB3 - LED1 Button (pull-up)
+# PB2 - LED1 G
+# PB1 - LED1 Y
+# PB0 - LED2 Button (pull-up)
+# PA0 - LED2 G
+# PA1 - LED2 Y
+# PA2 - LED3 Button (pull-up)
+# PA3 - LED3 G
+# PA4 - LED3 Y
+# PA5 - LED4 Button (pull-up)
+# PA6 - LED4 G
+# PA7 - LED4 Y
