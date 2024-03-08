@@ -24,6 +24,7 @@ substitutions:
   group_total: Total
   group_balance: Unbemessene Sicherungen (17A, 18B, 19C, 20A, 27, 33A, 34B, 35C, 47B, 48)
   group_herd: UG Kueche Herd (37A, 38B, 39C)
+  group_dg: DG Total
   group_og: OG Total
   group_ug: UG Total
   group_kg: KG Total
@@ -187,6 +188,7 @@ sensor:
         - component.update: total_power
         - component.update: balance_power
         - component.update: ug_kueche_herd_power
+        - component.update: dg_sum_power
         - component.update: og_sum_power
         - component.update: ug_sum_power
         - component.update: kg_sum_power
@@ -285,6 +287,17 @@ sensor:
   - { platform: total_daily_energy, power_id: ug_kueche_herd_power, name: "${group_herd} Energy Daily", accuracy_decimals: 0, restore: false, filters: *throttle_time }
 
   - platform: template
+    id: dg_sum_power
+    lambda: !lambda |-
+      return max(0.0f, id(cir1).state);
+    update_interval: never   # will be updated after all power sensors update via on_update trigger
+    device_class: power
+    state_class: measurement
+    unit_of_measurement: "W"
+  - { platform: copy, name: "${group_dg} Power", source_id: dg_sum_power, filters: *throttle_avg }
+  - { platform: total_daily_energy, power_id: dg_sum_power, name: "${group_dg} Energy Daily", accuracy_decimals: 0, restore: false, filters: *throttle_time }
+
+  - platform: template
     id: og_sum_power
     lambda: !lambda |-
       return max(0.0f, id(cir2).state + id(cir3).state + id(cir4).state + id(cir5).state + id(cir6).state);
@@ -294,7 +307,6 @@ sensor:
     unit_of_measurement: "W"
   - { platform: copy, name: "${group_og} Power", source_id: og_sum_power, filters: *throttle_avg }
   - { platform: total_daily_energy, power_id: og_sum_power, name: "${group_og} Energy Daily", accuracy_decimals: 0, restore: false, filters: *throttle_time }
-
 
   - platform: template
     id: ug_sum_power
