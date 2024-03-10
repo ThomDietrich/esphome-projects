@@ -1,4 +1,4 @@
-# esphome -s device_name stube -s device_friendly_name "UG Gute Stube Rolladen links" -s device_area "UG Wohnstube" run rolladensteuerung-dual-r3.yaml
+# esphome -s device_name ug-gute-stube-rollo-links -s device_friendly_name "UG Gute Stube Rolladen links" -s device_area "UG Wohnstube" run rolladensteuerung-dual-r3.yaml
 
 substitutions:
   device_name: ug-gute-stube-rollo-links
@@ -9,6 +9,8 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
+
+esp32:
   board: esp32dev
 
 packages:
@@ -17,7 +19,6 @@ packages:
 
 #wifi:
 #  use_address: 192.168.23.126
-
 
 light:
   - platform: status_led
@@ -33,11 +34,14 @@ switch:
     name: Relay 1
     pin: GPIO27
     id: relay_1_led_1
-
+    interlock: [relay_2_led_2]
+    interlock_wait_time: 250ms
   - platform: gpio
     name: Relay 2
     pin: GPIO14
     id: relay_2_led_2
+    interlock: [relay_1_led_1]
+    interlock_wait_time: 250ms
 
 binary_sensor:
   - platform: gpio
@@ -95,7 +99,7 @@ uart:
 
 sensor:
   - platform: cse7761
-    update_interval: 21
+    update_interval: 5s
     voltage:
       name: Voltage
       disabled_by_default: True
@@ -112,27 +116,27 @@ sensor:
     active_power_2:
       name: Power 2
 
-cover:
-  - platform: current_based
-    name: "Current Based Cover"
+# cover:
+#   - platform: current_based
+#     name: "Current Based Cover"
 
-    open_sensor: current_1
-    open_moving_current_threshold: 0.5
-    open_obstacle_current_threshold: 0.8
-    open_duration: 12s
-    open_action:
-      - switch.turn_on: relay_2_led_2
+#     open_sensor: current_1
+#     open_moving_current_threshold: 0.5
+#     open_obstacle_current_threshold: 0.8
+#     open_duration: 12s
+#     open_action:
+#       - switch.turn_on: relay_2_led_2
 
-    close_sensor: current_2
-    close_moving_current_threshold: 0.5
-    close_obstacle_current_threshold: 0.8
-    close_duration: 10s
-    close_action:
-      - switch.turn_on: relay_1_led_1
+#     close_sensor: current_2
+#     close_moving_current_threshold: 0.5
+#     close_obstacle_current_threshold: 0.8
+#     close_duration: 10s
+#     close_action:
+#       - switch.turn_on: relay_1_led_1
 
-    stop_action:
-      - switch.turn_off: relay_1_led_1
-      - switch.turn_off: relay_2_led_2
+#     stop_action:
+#       - switch.turn_off: relay_1_led_1
+#       - switch.turn_off: relay_2_led_2
 
-    obstacle_rollback: 30%
-    start_sensing_delay: 0.8s
+#     obstacle_rollback: 30%
+#     start_sensing_delay: 0.8s
