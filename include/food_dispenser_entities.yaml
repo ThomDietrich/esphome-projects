@@ -132,9 +132,6 @@ button:
     name: Emergency stop
     on_press:
       - script.stop: script_controlled_output
-      - servo.write:
-          id: servo_motor
-          level: 0%
       - servo.detach: servo_motor
       - light.turn_off: on_board_led
       - binary_sensor.template.publish:
