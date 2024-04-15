@@ -1,0 +1,44 @@
+substitutions:
+  device_name: torfahrtsschuppen-zk-astra
+  device_friendly_name: Torfahrtsschuppen ZK Astra
+  device_area: Torfahrtsschuppen
+
+  rtttl_out_pin: GPIO12
+
+# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
+# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
+
+# ASTRA BR4A4AL
+# https://rocketcontroller.com/product/astra-basic-controller-4-relays-16a-4-ac-input-ac-power-led-br4a4al/
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  include_1: !include include/torfahrtsschuppen_zk_astra_relays.yaml
+  include_4: !include include/rtttl_out.yaml
+
+# wifi:
+#   use_address: 192.168.23.33
+
+################################################################################
+
+logger:
+  logs:
+    # By default, every reading will be printed to the UART, which is very slow
+    # This will disable printing the readings but keep other helpful messages
+    sensor: INFO
+
+status_led:
+  pin:
+    number: 4
+    inverted: true

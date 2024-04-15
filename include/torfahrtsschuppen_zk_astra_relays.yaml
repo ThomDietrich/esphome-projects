@@ -1,0 +1,70 @@
+output:
+  - platform: gpio
+    id: relay1
+    pin: 25
+
+  - platform: gpio
+    id: relay2
+    pin: 26
+
+  - platform: gpio
+    id: relay3
+    pin: 33
+
+light:
+  - platform: binary
+    id: keller_licht
+    name: Keller Deckenlicht
+    output: relay1
+
+  - platform: binary
+    id: vorraum_licht
+    name: Vorraum Deckenlicht
+    output: relay2
+
+  - platform: binary
+    id: technikraum_licht
+    name: Technikraum Deckenlicht
+    output: relay3
+
+
+switch:
+  - platform: gpio
+    id: technikraum_lueftung
+    name: Technikraum Lueftung
+    pin: 32
+    restore_mode: ALWAYS_OFF
+
+
+binary_sensor:
+  # https://esphome.io/components/binary_sensor/gpio.html
+
+  - platform: gpio
+    name: Vorraum Lichttaster Keller
+    internal: true
+    pin:
+      number: 34
+      inverted: true
+    on_press:
+      then:
+        - light.toggle: keller_licht
+
+  - platform: gpio
+    name: Vorraum Lichttaster Eingang
+    internal: true
+    pin:
+      number: 35
+      inverted: true
+    on_press:
+      then:
+        - light.toggle: vorraum_licht
+
+  - platform: gpio
+    name: Technikraum Lichttaster
+    internal: true
+    pin:
+      number: 36
+      inverted: true
+    on_press:
+      then:
+        - light.toggle: technikraum_licht
