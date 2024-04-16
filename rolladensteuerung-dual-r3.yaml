@@ -1,8 +1,10 @@
 # esphome -s device_name ug-gute-stube-rollo-links -s device_friendly_name "UG Gute Stube Rolladen links" -s device_area "UG Wohnstube" run rolladensteuerung-dual-r3.yaml
 
 substitutions:
-  device_name: ug-gute-stube-rollo-links
-  device_friendly_name: UG Gute Stube Rolladen links
+  #device_name: ug-gute-stube-rollo-links
+  #device_friendly_name: UG Gute Stube Rolladen links
+  device_name: ug-gute-stube-rollo-rechts
+  device_friendly_name: UG Gute Stube Rolladen rechts
   device_area: UG Wohnstube
 
 esphome:
@@ -17,78 +19,110 @@ packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
 
-#wifi:
-#  use_address: 192.168.23.126
+# wifi:
+#   use_address: 192.168.23.137
+
 
 light:
+
   - platform: status_led
     name: Blaue Status LED
     id: blue_status_led
-    #internal: True
+    internal: true
     pin:
       number: GPIO13
       inverted: True
 
+
 switch:
+
   - platform: gpio
-    name: Relay 1
+    name: Motorfahrt hoch
     pin: GPIO27
-    id: relay_1_led_1
-    interlock: [relay_2_led_2]
+    id: relay_open_led_1
+    interlock: [relay_close_led_2]
     interlock_wait_time: 250ms
+    # internal: true
+
   - platform: gpio
-    name: Relay 2
+    name: Motorfahrt runter
     pin: GPIO14
-    id: relay_2_led_2
-    interlock: [relay_1_led_1]
+    id: relay_close_led_2
+    interlock: [relay_open_led_1]
     interlock_wait_time: 250ms
+    # internal: true
+
 
 binary_sensor:
+  # https://esphome.io/components/binary_sensor/index.html
+
   - platform: gpio
     name: On-board Button
-    id: sensor_button
+    id: button_onboard
     pin:
       number: GPIO0
       mode:
         input: True
         pullup: True
       inverted: True
-    #disabled_by_default: True
-    icon: 'mdi:radiobox-blank'
+    internal: true
     filters:
-      - delayed_on: 50ms
-    #on_press:
-    #  - switch.toggle: relay_1
+      - delayed_on: 300ms
+    on_press:
+      - button.press: esp_restart_button
 
   - platform: gpio
-    name: Taster Eingang 1
+    name: Externer Taster hoch
     pin:
       number: GPIO32
       mode:
         input: True
         pullup: True
       inverted: True
+    internal: true
     filters:
       - delayed_on_off: 50ms
     on_press:
-      - switch.turn_on: relay_1_led_1
-    on_release:
-      - switch.turn_off: relay_1_led_1
+      - lambda: |-
+          auto call = id(my_cover).make_call();
+          if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE) {
+            call.set_command_open();
+          } else {
+            call.set_command_stop();
+          }
+          call.perform();
+    on_click:
+      - min_length: 0.5s
+        max_length: 999s
+        then: # falling edge action
+          - cover.stop: my_cover
 
   - platform: gpio
-    name: Taster Eingang 2
+    name: Externer Taster runter
     pin:
       number: GPIO33
       mode:
         input: True
         pullup: True
       inverted: True
+    internal: true
     filters:
       - delayed_on_off: 50ms
     on_press:
-      - switch.turn_on: relay_2_led_2
-    on_release:
-      - switch.turn_off: relay_2_led_2
+      - lambda: |-
+          auto call = id(my_cover).make_call();
+          if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE) {
+            call.set_command_close();
+          } else {
+            call.set_command_stop();
+          }
+          call.perform();
+    on_click:
+      - min_length: 0.5s
+        max_length: 999s
+        then: # falling edge action
+          - cover.stop: my_cover
+
 
 uart:
   tx_pin: GPIO25
@@ -98,45 +132,58 @@ uart:
   stop_bits: 1
 
 sensor:
+  # https://esphome.io/components/sensor/cse7761.html
+  # Rollomotor Gute Stube: 0.44A, 100W
   - platform: cse7761
-    update_interval: 5s
-    voltage:
-      name: Voltage
-      disabled_by_default: True
+    update_interval: 0.25s
     current_1:
-      name: Current 1
-      id: current_1
-      #internal: true
+      name: Motorstrom hoch
+      id: current_open_1
+      # internal: true
     current_2:
-      name: Current 2
-      id: current_2
-      #internal: true
-    active_power_1:
-      name: Power 1
-    active_power_2:
-      name: Power 2
+      name: Motorstrom runter
+      id: current_close_2
+      # internal: true
+    # voltage:
+    #   name: Voltage
+    #   disabled_by_default: True
+    # active_power_1:
+    #   name: Power 1
+    # active_power_2:
+    #   name: Power 2
 
-# cover:
-#   - platform: current_based
-#     name: "Current Based Cover"
+logger:
+  logs:
+    # Disable printing the readings from cse7761
+    sensor: INFO
+    #cse7761: INFO
 
-#     open_sensor: current_1
-#     open_moving_current_threshold: 0.5
-#     open_obstacle_current_threshold: 0.8
-#     open_duration: 12s
-#     open_action:
-#       - switch.turn_on: relay_2_led_2
 
-#     close_sensor: current_2
-#     close_moving_current_threshold: 0.5
-#     close_obstacle_current_threshold: 0.8
-#     close_duration: 10s
-#     close_action:
-#       - switch.turn_on: relay_1_led_1
+cover:
+  # https://esphome.io/components/cover/current_based.html
+  - platform: current_based
+    name: Rollosteuerung
+    id: my_cover
 
-#     stop_action:
-#       - switch.turn_off: relay_1_led_1
-#       - switch.turn_off: relay_2_led_2
+    open_sensor: current_open_1
+    open_moving_current_threshold: 0.01
+    open_obstacle_current_threshold: 1.0
+    open_duration: 18s
+    open_action:
+      - switch.turn_on: relay_open_led_1
 
-#     obstacle_rollback: 30%
-#     start_sensing_delay: 0.8s
+    close_sensor: current_close_2
+    close_moving_current_threshold: 0.01
+    close_obstacle_current_threshold: 1.0
+    close_duration: 14s
+    close_action:
+      - switch.turn_on: relay_close_led_2
+
+    stop_action:
+      - switch.turn_off: relay_open_led_1
+      - switch.turn_off: relay_close_led_2
+
+    max_duration: 20s
+    obstacle_rollback: 30%
+    start_sensing_delay: 0.6s
+    malfunction_detection: true

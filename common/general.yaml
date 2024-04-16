@@ -30,6 +30,7 @@ binary_sensor:
 button:
   # https://esphome.io/components/button/restart.html
   - platform: restart
+    id: esp_restart_button
     name: "ESP Device Restart"
 
 sensor:
