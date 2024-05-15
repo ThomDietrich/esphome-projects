@@ -78,7 +78,7 @@ switch:
       inverted: false
 
 sensor:
-  - platform: bme280
+  - platform: bme280_i2c
     temperature:
       name: "BME280 Temperature"
       oversampling: 16x
@@ -139,6 +139,18 @@ sensor:
       temperature: aht21_temp
       humidity: aht21_humi
 
+  - platform: adc
+    name: "Water Pressure Sensor"
+    id: water_pressure_adc
+    pin: GPIO0
+    update_interval: 3s
+    accuracy_decimals: 3
+    attenuation: auto
+    #update_interval: 20ms
+    internal: false
+    #filters:
+
+
 binary_sensor:
   - platform: gpio
     name: "On-board Button"
@@ -164,21 +176,28 @@ binary_sensor:
 
 
 # MCP23017 Configuration
-# VCC - Unused
-# GND - x5 LED common and Pushbutton common
-# PB7 - LED0 Button (pull-up)
-# PB6 - LED0 R
+#
+# VCC - Not needed for this project
+# GND - Physically extended to 10 connectors: 5x LED common and Pushbutton common
+#
+# # Power button
+# PB7 - LED0 Button input (pull-up)
+# PB6 - LED0 R (only button where we use the red channel, due to multiplexer size)
 # PB5 - LED0 G
 # PB4 - LED0 Y
-# PB3 - LED1 Button (pull-up)
+# # Valve 1 button
+# PB3 - LED1 Button input (pull-up)
 # PB2 - LED1 G
 # PB1 - LED1 Y
-# PB0 - LED2 Button (pull-up)
+# # Valve 2 button
+# PB0 - LED2 Button input (pull-up)
 # PA0 - LED2 G
 # PA1 - LED2 Y
-# PA2 - LED3 Button (pull-up)
+# # Valve 3 button
+# PA2 - LED3 Button input (pull-up)
 # PA3 - LED3 G
 # PA4 - LED3 Y
-# PA5 - LED4 Button (pull-up)
+# # Valve 3 button
+# PA5 - LED4 Button input (pull-up)
 # PA6 - LED4 G
 # PA7 - LED4 Y

@@ -1,0 +1,84 @@
+substitutions:
+  device_name: gartenbewaesserung-astra
+  device_friendly_name: Gartenbewaesserung Astra
+  device_area: Garten
+
+  rtttl_out_pin: GPIO12
+
+# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
+# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
+
+# ASTRA BR4G8AL
+# https://rocketcontroller.com/product/astra-controller-4-relays-16a-8-gpio-input-dc-power-led-br4g8al/
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  include_rtttl: !include include/rtttl_out.yaml
+
+# wifi:
+#   use_address: 192.168.23.33
+
+################################################################################
+
+logger:
+  logs:
+    # By default, every reading will be printed to the UART, which is very slow
+    # This will disable printing the readings but keep other helpful messages
+    sensor: INFO
+
+status_led:
+  pin:
+    number: 4
+    inverted: true
+
+###############################################################################
+
+switch:
+
+  - platform: gpio
+    name: Ventil 1
+    id: relay1
+    pin: 25
+    restore_mode: ALWAYS_OFF # Kann nicht modifiziert werden (Astra Controller Verhalten)
+
+  - platform: gpio
+    name: Ventil 2
+    id: relay2
+    pin: 26
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    name: Ventil 3
+    id: relay3
+    pin: 33
+    restore_mode: ALWAYS_OFF
+
+  - platform: gpio
+    name: Ventil 4
+    id: relay4
+    pin: 32
+    restore_mode: ALWAYS_OFF
+
+sensor:
+
+  - platform: adc
+    name: Wasserdruck
+    id: water_pressure_adc
+    pin: GPIO0
+    update_interval: 3s
+    accuracy_decimals: 3
+    attenuation: auto
+    # update_interval: 20ms
+    # internal: false
+    # filters:
