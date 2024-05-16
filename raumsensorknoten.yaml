@@ -3,8 +3,8 @@ substitutions:
   device_friendly_name: Raumsensorknoten
   device_area: Kinderzimmer
 
-  status_led_pin: GPIO2
   rtttl_out_pin: GPIO4
+  status_led_pin: GPIO2
 
 
 esphome:
@@ -13,8 +13,7 @@ esphome:
   area: ${device_area}
   project:
     name: "AWF1877.Raumsensorknoten_ESP32-C3-SuperMini"
-    version: "0.1"
-
+    version: "0.0"
 
 packages:
   system: !include system/stamp_c3u.yaml
@@ -48,31 +47,19 @@ switch:
     output: buzzer_out
 
   - platform: gpio
-    name: "MCP23017 Pin B7 Out G"
+    name: "MCP23017 Pin A6 Out G"
     pin:
       mcp23xxx: mcp23017_expander
-      # Use pin A7
-      number: 15
+      number: 6
       mode:
         output: true
       inverted: false
 
   - platform: gpio
-    name: "MCP23017 Pin B6 Out Y"
+    name: "MCP23017 Pin A7 Out Y"
     pin:
       mcp23xxx: mcp23017_expander
-      # Use pin A7
-      number: 14
-      mode:
-        output: true
-      inverted: false
-
-  - platform: gpio
-    name: "MCP23017 Pin B5 Out R"
-    pin:
-      mcp23xxx: mcp23017_expander
-      # Use pin A7
-      number: 13
+      number: 7
       mode:
         output: true
       inverted: false
@@ -165,10 +152,10 @@ binary_sensor:
     #     ...
 
   - platform: gpio
-    name: "MCP23017 Pin A0 In"
+    name: "MCP23017 Pin A5 In"
     pin:
       mcp23xxx: mcp23017_expander
-      number: 0
+      number: 5
       mode:
         input: true
         pullup: true
@@ -181,23 +168,23 @@ binary_sensor:
 # GND - Physically extended to 10 connectors: 5x LED common and Pushbutton common
 #
 # # Power button
-# PB7 - LED0 Button input (pull-up)
-# PB6 - LED0 R (only button where we use the red channel, due to multiplexer size)
-# PB5 - LED0 G
-# PB4 - LED0 Y
+# PB7 (15) - LED0 Button input (pull-up)
+# PB6 (14) - LED0 R (only button where we use the red channel, due to multiplexer size)
+# PB5 (13) - LED0 G
+# PB4 (12) - LED0 Y
 # # Valve 1 button
-# PB3 - LED1 Button input (pull-up)
-# PB2 - LED1 G
-# PB1 - LED1 Y
+# PB3 (11) - LED1 Button input (pull-up)
+# PB2 (10) - LED1 G
+# PB1 (09) - LED1 Y
 # # Valve 2 button
-# PB0 - LED2 Button input (pull-up)
-# PA0 - LED2 G
-# PA1 - LED2 Y
+# PB0 (08) - LED2 Button input (pull-up)
+# PA0 (00) - LED2 G
+# PA1 (01) - LED2 Y
 # # Valve 3 button
-# PA2 - LED3 Button input (pull-up)
-# PA3 - LED3 G
-# PA4 - LED3 Y
-# # Valve 3 button
-# PA5 - LED4 Button input (pull-up)
-# PA6 - LED4 G
-# PA7 - LED4 Y
+# PA2 (02) - LED3 Button input (pull-up)
+# PA3 (03) - LED3 G
+# PA4 (04) - LED3 Y
+# # Valve 4 button
+# PA5 (05) - LED4 Button input (pull-up)
+# PA6 (06) - LED4 G
+# PA7 (07) - LED4 Y

@@ -4,6 +4,7 @@ substitutions:
   device_area: Garten
 
   rtttl_out_pin: GPIO12
+  blue_led_pin: GPIO4
 
 # https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
 # https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
@@ -15,6 +16,9 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
+  project:
+    name: "AWF1877.ASTRA_BR4G8AL"
+    version: "0.0"
 
 esp32:
   board: esp32dev
@@ -39,7 +43,7 @@ logger:
 
 status_led:
   pin:
-    number: 4
+    number: ${blue_led_pin}
     inverted: true
 
 ###############################################################################
@@ -75,7 +79,7 @@ sensor:
   - platform: adc
     name: Wasserdruck
     id: water_pressure_adc
-    pin: GPIO0
+    pin: 34
     update_interval: 3s
     accuracy_decimals: 3
     attenuation: auto
