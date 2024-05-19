@@ -25,6 +25,7 @@ packages:
 # wifi:
 #   use_address: 192.168.23.126
 
+
 i2c:
   id: i2c_component
   sda: GPIO6
@@ -32,37 +33,18 @@ i2c:
   scan: true
   frequency: 50kHz
 
-mcp23017:
-  - id: mcp23017_expander
-    address: 0x20
 
 output:
   - id: buzzer_out
     platform: gpio
     pin: GPIO3
 
+
 switch:
   - platform: output
     name: "Buzzer"
     output: buzzer_out
 
-  - platform: gpio
-    name: "MCP23017 Pin A6 Out G"
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 6
-      mode:
-        output: true
-      inverted: false
-
-  - platform: gpio
-    name: "MCP23017 Pin A7 Out Y"
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 7
-      mode:
-        output: true
-      inverted: false
 
 sensor:
   - platform: bme280_i2c
@@ -126,17 +108,6 @@ sensor:
       temperature: aht21_temp
       humidity: aht21_humi
 
-  - platform: adc
-    name: "Water Pressure Sensor"
-    id: water_pressure_adc
-    pin: GPIO0
-    update_interval: 3s
-    accuracy_decimals: 3
-    attenuation: auto
-    #update_interval: 20ms
-    internal: false
-    #filters:
-
 
 binary_sensor:
   - platform: gpio
@@ -150,41 +121,3 @@ binary_sensor:
     # on_press:
     #   then:
     #     ...
-
-  - platform: gpio
-    name: "MCP23017 Pin A5 In"
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 5
-      mode:
-        input: true
-        pullup: true
-      inverted: true
-
-
-# MCP23017 Configuration
-#
-# VCC - Not needed for this project
-# GND - Physically extended to 10 connectors: 5x LED common and Pushbutton common
-#
-# # Power button
-# PB7 (15) - LED0 Button input (pull-up)
-# PB6 (14) - LED0 R (only button where we use the red channel, due to multiplexer size)
-# PB5 (13) - LED0 G
-# PB4 (12) - LED0 Y
-# # Valve 1 button
-# PB3 (11) - LED1 Button input (pull-up)
-# PB2 (10) - LED1 G
-# PB1 (09) - LED1 Y
-# # Valve 2 button
-# PB0 (08) - LED2 Button input (pull-up)
-# PA0 (00) - LED2 G
-# PA1 (01) - LED2 Y
-# # Valve 3 button
-# PA2 (02) - LED3 Button input (pull-up)
-# PA3 (03) - LED3 G
-# PA4 (04) - LED3 Y
-# # Valve 4 button
-# PA5 (05) - LED4 Button input (pull-up)
-# PA6 (06) - LED4 G
-# PA7 (07) - LED4 Y
