@@ -1,0 +1,53 @@
+esphome:
+  on_boot:
+    - priority: 600
+      then:
+        - light.turn_on:
+            id: button_0_led_red
+        #- delay: 500ms
+    - priority: 250
+      then:
+        - light.turn_on:
+            id: button_1_led_orange
+    - priority: 200
+      then:
+        - light.turn_on:
+            id: button_2_led_orange
+    - priority: 0
+      then:
+        - light.turn_on:
+            id: button_3_led_orange
+    - priority: -100
+      then:
+        - delay: 500ms
+        - light.turn_off:
+            id: button_0_led_red
+        - light.turn_off:
+            id: button_1_led_orange
+        - light.turn_off:
+            id: button_2_led_orange
+        - light.turn_off:
+            id: button_3_led_orange
+        - light.turn_off:
+            id: button_4_led_orange
+        - light.turn_on:
+            id: button_0_led_green
+        - light.turn_on:
+            id: button_1_led_green
+        - light.turn_on:
+            id: button_2_led_green
+        - light.turn_on:
+            id: button_3_led_green
+        - light.turn_on:
+            id: button_4_led_green
+        - delay: 3000ms
+        - light.turn_off:
+            id: button_0_led_green
+        - light.turn_off:
+            id: button_1_led_green
+        - light.turn_off:
+            id: button_2_led_green
+        - light.turn_off:
+            id: button_3_led_green
+        - light.turn_off:
+            id: button_4_led_green

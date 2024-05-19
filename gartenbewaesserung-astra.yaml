@@ -17,7 +17,7 @@ esphome:
   friendly_name: ${device_friendly_name}
   area: ${device_area}
   project:
-    name: "AWF1877.ASTRA_BR4G8AL"
+    name: "ASTRA.BR4G8AL"
     version: "0.0"
 
 esp32:
@@ -29,6 +29,10 @@ packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
   include_rtttl: !include include/rtttl_out.yaml
+  include_1: !include include/gartenbewaesserung_valves.yaml
+  include_2: !include include/gartenbewaesserung_sensors.yaml
+  include_3: !include include/gartenbewaesserung_controller.yaml
+  include_4: !include include/gartenbewaesserung_controller_boot.yaml
 
 # wifi:
 #   use_address: 192.168.23.33
@@ -48,41 +52,9 @@ status_led:
 
 ###############################################################################
 
-switch:
-
-  - platform: gpio
-    name: Ventil 1
-    id: relay1
-    pin: 25
-    restore_mode: ALWAYS_OFF # Kann nicht modifiziert werden (Astra Controller Verhalten)
-
-  - platform: gpio
-    name: Ventil 2
-    id: relay2
-    pin: 26
-    restore_mode: ALWAYS_OFF
-
-  - platform: gpio
-    name: Ventil 3
-    id: relay3
-    pin: 33
-    restore_mode: ALWAYS_OFF
-
-  - platform: gpio
-    name: Ventil 4
-    id: relay4
-    pin: 32
-    restore_mode: ALWAYS_OFF
-
-sensor:
-
-  - platform: adc
-    name: Wasserdruck
-    id: water_pressure_adc
-    pin: 34
-    update_interval: 3s
-    accuracy_decimals: 3
-    attenuation: auto
-    # update_interval: 20ms
-    # internal: false
-    # filters:
+i2c:
+  id: i2c_component
+  sda: 13
+  scl: 14
+  scan: true
+  frequency: 50kHz

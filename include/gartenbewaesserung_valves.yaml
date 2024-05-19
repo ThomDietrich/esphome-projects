@@ -1,0 +1,42 @@
+
+# https://esphome.io/components/switch/gpio.html
+switch:
+  - platform: gpio
+    name: Ventil 1
+    id: valve_1
+    pin: 25
+    restore_mode: ALWAYS_OFF  # Kann nicht geändert werden (Astra Controller Verhalten)
+    on_turn_on:
+      - light.turn_on: button_1_led_green
+    on_turn_off:
+      - light.turn_off: button_1_led_green
+
+  - platform: gpio
+    name: Ventil 2
+    id: valve_2
+    pin: 26
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - light.turn_on: button_2_led_green
+    on_turn_off:
+      - light.turn_off: button_2_led_green
+
+  - platform: gpio
+    name: Ventil 3
+    id: valve_3
+    pin: 33
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - light.turn_on: button_3_led_green
+    on_turn_off:
+      - light.turn_off: button_3_led_green
+
+  - platform: gpio
+    name: Ventil 4
+    id: valve_4
+    pin: 32
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - light.turn_on: button_4_led_green
+    on_turn_off:
+      - light.turn_off: button_4_led_green

@@ -1,0 +1,232 @@
+
+# MCP23017 Configuration
+#
+# VCC - Not needed for this project
+# GND - Physically extended to 10 connectors: 5x LED common and Pushbutton common
+#
+# # Power button
+# PB7 (15) - LED0 Button input (pull-up)
+# PB6 (14) - LED0 R (only button where we use the red channel, due to multiplexer size)
+# PB5 (13) - LED0 G
+# PB4 (12) - LED0 Y
+# # Valve 1 button
+# PB3 (11) - LED1 Button input (pull-up)
+# PB2 (10) - LED1 G
+# PB1 (09) - LED1 Y
+# # Valve 2 button
+# PB0 (08) - LED2 Button input (pull-up)
+# PA0 (00) - LED2 G
+# PA1 (01) - LED2 Y
+# # Valve 3 button
+# PA2 (02) - LED3 Button input (pull-up)
+# PA3 (03) - LED3 G
+# PA4 (04) - LED3 Y
+# # Valve 4 button
+# PA5 (05) - LED4 Button input (pull-up)
+# PA6 (06) - LED4 G
+# PA7 (07) - LED4 Y
+
+# I2C expected in main project
+
+# https://esphome.io/components/mcp230xx.html
+mcp23017:
+  - id: mcp23017_expander
+    address: 0x20
+
+
+# https://esphome.io/components/binary_sensor/gpio.html
+binary_sensor:
+  - platform: gpio
+    name: Taster 0
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 15
+      mode: INPUT_PULLUP
+      inverted: true
+
+  - platform: gpio
+    name: Taster 1
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 11
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      then:
+        - switch.toggle: valve_1
+
+  - platform: gpio
+    name: Taster 2
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 8
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      then:
+        - switch.toggle: valve_2
+
+  - platform: gpio
+    name: Taster 3
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 2
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      then:
+        - switch.toggle: valve_3
+
+  - platform: gpio
+    name: Taster 4
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 5
+      mode: INPUT_PULLUP
+      inverted: true
+    on_press:
+      then:
+        - switch.toggle: valve_4
+
+
+output:
+  # Taster 0
+  - platform: gpio
+    id: output_button_0_led_red
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 14
+
+  - platform: gpio
+    id: output_button_0_led_green
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 13
+
+  - platform: gpio
+    id: output_button_0_led_orange
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 12
+
+  # Taster 1
+  - platform: gpio
+    id: output_button_1_led_green
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 10
+
+  - platform: gpio
+    id: output_button_1_led_orange
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 9
+
+  # Taster 2
+  - platform: gpio
+    id: output_button_2_led_green
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 0
+
+  - platform: gpio
+    id: output_button_2_led_orange
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 1
+
+  # Taster 3
+  - platform: gpio
+    id: output_button_3_led_green
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 3
+
+  - platform: gpio
+    id: output_button_3_led_orange
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 4
+
+  # Taster 4
+  - platform: gpio
+    id: output_button_4_led_green
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 6
+
+  - platform: gpio
+    id: output_button_4_led_orange
+    pin:
+      mcp23xxx: mcp23017_expander
+      number: 7
+
+
+light:
+  # Taster 0
+  - platform: binary
+    name: Taster 0 LED rot
+    id: button_0_led_red
+    output: output_button_0_led_red
+    effects:
+      - strobe:
+          name: Blinken
+          colors:
+            - state: true
+              duration: 200ms
+            - state: false
+              duration: 100ms
+
+  - platform: binary
+    name: Taster 0 LED gruen
+    id: button_0_led_green
+    output: output_button_0_led_green
+
+  - platform: binary
+    name: Taster 0 LED orange
+    id: button_0_led_orange
+    output: output_button_0_led_orange
+
+  # Taster 1
+  - platform: binary
+    name: Taster 1 LED gruen
+    id: button_1_led_green
+    output: output_button_1_led_green
+
+  - platform: binary
+    name: Taster 1 LED orange
+    id: button_1_led_orange
+    output: output_button_1_led_orange
+
+  # Taster 2
+  - platform: binary
+    name: Taster 2 LED gruen
+    id: button_2_led_green
+    output: output_button_2_led_green
+
+  - platform: binary
+    name: Taster 2 LED orange
+    id: button_2_led_orange
+    output: output_button_2_led_orange
+
+  # Taster 3
+  - platform: binary
+    name: Taster 3 LED gruen
+    id: button_3_led_green
+    output: output_button_3_led_green
+
+  - platform: binary
+    name: Taster 3 LED orange
+    id: button_3_led_orange
+    output: output_button_3_led_orange
+
+  # Taster 4
+  - platform: binary
+    name: Taster 4 LED gruen
+    id: button_4_led_green
+    output: output_button_4_led_green
+
+  - platform: binary
+    name: Taster 4 LED orange
+    id: button_4_led_orange
+    output: output_button_4_led_orange

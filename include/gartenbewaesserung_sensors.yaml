@@ -1,0 +1,12 @@
+
+sensor:
+  - platform: adc
+    name: Wasserdruck
+    id: water_pressure_adc
+    pin: 34
+    update_interval: 3s
+    accuracy_decimals: 3
+    attenuation: auto
+    # update_interval: 20ms
+    # internal: false
+    # filters:
