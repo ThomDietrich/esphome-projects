@@ -33,6 +33,7 @@ packages:
   include_2: !include include/gartenbewaesserung_sensors.yaml
   include_3: !include include/gartenbewaesserung_controller.yaml
   include_4: !include include/gartenbewaesserung_controller_boot.yaml
+  include_5: !include include/gartenbewaesserung_controller_extra.yaml
 
 # wifi:
 #   use_address: 192.168.23.33

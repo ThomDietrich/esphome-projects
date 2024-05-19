@@ -284,9 +284,9 @@ number:
     id: set_desk_height
     min_value: ${min_height}
     max_value: ${max_height}
-    icon: "mdi:counter"
-    unit_of_measurement: "cm"
-    device_class: "distance"
+    icon: mdi:counter
+    unit_of_measurement: cm
+    device_class: distance
     step: 0.1
     lambda: !lambda |-
       return id(desk_height).state;

@@ -60,7 +60,7 @@ sensor:
     update_interval: 60s
     accuracy_decimals: 1
     unit_of_measurement: kg
-    icon: "mdi:scale"
+    icon: mdi:scale
     filters:
       - calibrate_linear:
           - 370 -> 0

@@ -57,7 +57,7 @@ switch:
     pin: D2
     id: relay_up
     name: "Ausloeser Hoch"
-    icon: "mdi:archive-arrow-up-outline"
+    icon: mdi:archive-arrow-up-outline
     #interlock: &interlock_group [relay_up, relay_down]
     on_turn_on:
       - delay: 300ms
@@ -66,7 +66,7 @@ switch:
     pin: D1
     id: relay_down
     name: "Ausloeser Runter"
-    icon: "mdi:archive-arrow-down-outline"
+    icon: mdi:archive-arrow-down-outline
     #interlock: *interlock_group
     on_turn_on:
       - delay: 300ms

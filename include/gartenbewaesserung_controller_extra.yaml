@@ -1,0 +1,265 @@
+select:
+  - platform: template
+    name: Taster 0 LED
+    id: button_0_led
+    icon: mdi:led-outline
+    optimistic: true
+    options:
+      - unknown
+      - "off"
+      - red
+      - green
+      - orange
+      - yellow
+    set_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "off";
+          then:
+            - light.turn_off:
+                id: button_0_led_red
+            - light.turn_off:
+                id: button_0_led_green
+            - light.turn_off:
+                id: button_0_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "red";
+          then:
+            - light.turn_on:
+                id: button_0_led_red
+            - light.turn_off:
+                id: button_0_led_green
+            - light.turn_off:
+                id: button_0_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "green";
+          then:
+            - light.turn_off:
+                id: button_0_led_red
+            - light.turn_on:
+                id: button_0_led_green
+            - light.turn_off:
+                id: button_0_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "orange";
+          then:
+            - light.turn_off:
+                id: button_0_led_red
+            - light.turn_off:
+                id: button_0_led_green
+            - light.turn_on:
+                id: button_0_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "yellow";
+          then:
+            - light.turn_off:
+                id: button_0_led_red
+            - light.turn_on:
+                id: button_0_led_green
+            - light.turn_on:
+                id: button_0_led_orange
+
+  - platform: template
+    name: Taster 1 LED
+    id: button_1_led
+    icon: mdi:led-outline
+    optimistic: true
+    options:
+      - unknown
+      - "off"
+      - green
+      - orange
+      - yellow
+    set_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "off";
+          then:
+            - light.turn_off:
+                id: button_1_led_green
+            - light.turn_off:
+                id: button_1_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "green";
+          then:
+            - light.turn_on:
+                id: button_1_led_green
+            - light.turn_off:
+                id: button_1_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "orange";
+          then:
+            - light.turn_off:
+                id: button_1_led_green
+            - light.turn_on:
+                id: button_1_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "yellow";
+          then:
+            - light.turn_on:
+                id: button_1_led_green
+            - light.turn_on:
+                id: button_1_led_orange
+
+  - platform: template
+    name: Taster 2 LED
+    id: button_2_led
+    icon: mdi:led-outline
+    optimistic: true
+    options:
+      - unknown
+      - "off"
+      - green
+      - orange
+      - yellow
+    set_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "off";
+          then:
+            - light.turn_off:
+                id: button_2_led_green
+            - light.turn_off:
+                id: button_2_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "green";
+          then:
+            - light.turn_on:
+                id: button_2_led_green
+            - light.turn_off:
+                id: button_2_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "orange";
+          then:
+            - light.turn_off:
+                id: button_2_led_green
+            - light.turn_on:
+                id: button_2_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "yellow";
+          then:
+            - light.turn_on:
+                id: button_2_led_green
+            - light.turn_on:
+                id: button_2_led_orange
+
+  - platform: template
+    name: Taster 3 LED
+    id: button_3_led
+    icon: mdi:led-outline
+    optimistic: true
+    options:
+      - unknown
+      - "off"
+      - green
+      - orange
+      - yellow
+    set_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "off";
+          then:
+            - light.turn_off:
+                id: button_3_led_green
+            - light.turn_off:
+                id: button_3_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "green";
+          then:
+            - light.turn_on:
+                id: button_3_led_green
+            - light.turn_off:
+                id: button_3_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "orange";
+          then:
+            - light.turn_off:
+                id: button_3_led_green
+            - light.turn_on:
+                id: button_3_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "yellow";
+          then:
+            - light.turn_on:
+                id: button_3_led_green
+            - light.turn_on:
+                id: button_3_led_orange
+
+  - platform: template
+    name: Taster 4 LED
+    id: button_4_led
+    icon: mdi:led-outline
+    optimistic: true
+    options:
+      - unknown
+      - "off"
+      - green
+      - orange
+      - yellow
+    set_action:
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "off";
+          then:
+            - light.turn_off:
+                id: button_4_led_green
+            - light.turn_off:
+                id: button_4_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "green";
+          then:
+            - light.turn_on:
+                id: button_4_led_green
+            - light.turn_off:
+                id: button_4_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "orange";
+          then:
+            - light.turn_off:
+                id: button_4_led_green
+            - light.turn_on:
+                id: button_4_led_orange
+      - if:
+          condition:
+            - lambda: !lambda |-
+                return x == "yellow";
+          then:
+            - light.turn_on:
+                id: button_4_led_green
+            - light.turn_on:
+                id: button_4_led_orange

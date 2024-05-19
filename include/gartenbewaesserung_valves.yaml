@@ -7,9 +7,13 @@ switch:
     pin: 25
     restore_mode: ALWAYS_OFF  # Kann nicht geändert werden (Astra Controller Verhalten)
     on_turn_on:
-      - light.turn_on: button_1_led_green
+      - select.set:
+            id: button_1_led
+            option: green
     on_turn_off:
-      - light.turn_off: button_1_led_green
+      - select.set:
+            id: button_1_led
+            option: "off"
 
   - platform: gpio
     name: Ventil 2
@@ -17,9 +21,13 @@ switch:
     pin: 26
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - light.turn_on: button_2_led_green
+      - select.set:
+            id: button_2_led
+            option: green
     on_turn_off:
-      - light.turn_off: button_2_led_green
+      - select.set:
+            id: button_2_led
+            option: "off"
 
   - platform: gpio
     name: Ventil 3
@@ -27,9 +35,13 @@ switch:
     pin: 33
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - light.turn_on: button_3_led_green
+      - select.set:
+            id: button_3_led
+            option: green
     on_turn_off:
-      - light.turn_off: button_3_led_green
+      - select.set:
+            id: button_3_led
+            option: "off"
 
   - platform: gpio
     name: Ventil 4
@@ -37,6 +49,10 @@ switch:
     pin: 32
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - light.turn_on: button_4_led_green
+      - select.set:
+            id: button_4_led
+            option: green
     on_turn_off:
-      - light.turn_off: button_4_led_green
+      - select.set:
+            id: button_4_led
+            option: "off"
