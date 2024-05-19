@@ -17,7 +17,7 @@ esphome:
   friendly_name: ${device_friendly_name}
   area: ${device_area}
   project:
-    name: "AWF1877.ASTRA_BR4A4AL (ext. antenna)"
+    name: "ASTRA.BR4A4AL (ext. antenna)"
     version: "0.0"
 
 esp32:
