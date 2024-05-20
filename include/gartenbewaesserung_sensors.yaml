@@ -1,12 +1,24 @@
 
+# https://esphome.io/components/sensor/adc.html
+# https://esphome.io/components/sensor/#config-sensor
 sensor:
   - platform: adc
     name: Wasserdruck
     id: water_pressure_adc
     pin: 34
-    update_interval: 3s
-    accuracy_decimals: 3
     attenuation: auto
-    # update_interval: 20ms
-    # internal: false
-    # filters:
+    update_interval: 1s
+    unit_of_measurement: bar
+    icon: mdi:gauge
+    device_class: pressure
+    state_class: measurement
+    accuracy_decimals: 1
+    filters:
+      - calibrate_linear:
+         datapoints:
+          - 1.13 -> 1.5
+          - 1.97 -> 4.2
+      - lambda: if (x < 0.0 & x > -0.5) return 0.0; else return x;
+      - or:
+        - delta: 0.1
+        - heartbeat: 30min

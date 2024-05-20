@@ -43,6 +43,8 @@ binary_sensor:
       number: 15
       mode: INPUT_PULLUP
       inverted: true
+    # on_press:
+    # # Schaltlogik für Pumpe in HA realisiert
 
   - platform: gpio
     name: Taster 1
