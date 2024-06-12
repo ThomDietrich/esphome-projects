@@ -28,10 +28,26 @@
 
 # I2C expected in main project
 
+
 # https://esphome.io/components/mcp230xx.html
 mcp23017:
   - id: mcp23017_expander
     address: 0x20
+
+
+# https://esphome.io/components/event/index.html
+# https://esphome.io/components/event/template.html
+event:
+  - platform: template
+    name: Taster
+    id: controller_button_pressed_event
+    device_class: button
+    event_types:
+      - controller_button_pressed_event_0
+      - controller_button_pressed_event_1
+      - controller_button_pressed_event_2
+      - controller_button_pressed_event_3
+      - controller_button_pressed_event_4
 
 
 # https://esphome.io/components/binary_sensor/gpio.html
@@ -43,8 +59,15 @@ binary_sensor:
       number: 15
       mode: INPUT_PULLUP
       inverted: true
-    # on_press:
-    # # Schaltlogik für Pumpe in HA realisiert
+    internal: false
+    filters:
+      - delayed_on_off: 100ms
+    on_press:
+      then:
+        # Schaltlogik für Pumpe in HA realisiert
+        - event.trigger:
+            id: controller_button_pressed_event
+            event_type: controller_button_pressed_event_0
 
   - platform: gpio
     name: Taster 1
@@ -53,9 +76,15 @@ binary_sensor:
       number: 11
       mode: INPUT_PULLUP
       inverted: true
+    internal: false
+    filters:
+      - delayed_on_off: 100ms
     on_press:
       then:
         - switch.toggle: valve_1
+        - event.trigger:
+            id: controller_button_pressed_event
+            event_type: controller_button_pressed_event_1
 
   - platform: gpio
     name: Taster 2
@@ -64,9 +93,15 @@ binary_sensor:
       number: 8
       mode: INPUT_PULLUP
       inverted: true
+    internal: false
+    filters:
+      - delayed_on_off: 100ms
     on_press:
       then:
         - switch.toggle: valve_2
+        - event.trigger:
+            id: controller_button_pressed_event
+            event_type: controller_button_pressed_event_2
 
   - platform: gpio
     name: Taster 3
@@ -75,9 +110,15 @@ binary_sensor:
       number: 2
       mode: INPUT_PULLUP
       inverted: true
+    internal: false
+    filters:
+      - delayed_on_off: 100ms
     on_press:
       then:
         - switch.toggle: valve_3
+        - event.trigger:
+            id: controller_button_pressed_event
+            event_type: controller_button_pressed_event_3
 
   - platform: gpio
     name: Taster 4
@@ -86,9 +127,15 @@ binary_sensor:
       number: 5
       mode: INPUT_PULLUP
       inverted: true
+    internal: false
+    filters:
+      - delayed_on_off: 100ms
     on_press:
       then:
         - switch.toggle: valve_4
+        - event.trigger:
+            id: controller_button_pressed_event
+            event_type: controller_button_pressed_event_4
 
 
 output:
