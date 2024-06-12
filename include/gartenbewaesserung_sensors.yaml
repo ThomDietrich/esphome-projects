@@ -12,7 +12,7 @@ sensor:
     icon: mdi:gauge
     device_class: pressure
     state_class: measurement
-    accuracy_decimals: 1
+    accuracy_decimals: 2
     filters:
       - calibrate_linear:
          datapoints:
@@ -20,5 +20,5 @@ sensor:
           - 1.97 -> 4.2
       - lambda: if (x < 0.0 & x > -0.5) return 0.0; else return x;
       - or:
-        - delta: 0.1
+        - delta: 0.03
         - heartbeat: 30min
