@@ -1,0 +1,120 @@
+substitutions:
+  device_name: wasseruhrsensor
+  device_friendly_name: Wasseruhrsensor
+  device_area: Keller
+
+  status_led_pin: GPIO2
+
+  ## all watermeters   wmid: "0"
+  ## your watermeter: wmid: !secret watermeterId
+  wmid: "0"
+
+  ## logger settings
+  log_level: "DEBUG"  # not that logging need memory, so in production mode use "WARN"
+  log_wmbus: "DEBUG" # Loglevel for wmbus meters component
+  log_baudrate: "0" # 0 disable uart logger messages
+
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+#  project:
+#    name: "AWF1877.Wasseruhrsensor_ESP32-C3U"
+#    version: "0.0"
+
+packages:
+  system: !include system/stamp_c3u.yaml
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  status_led: !include include/on_board_status_led_sk6812.yaml
+
+# wifi:
+#   use_address: 192.168.23.126
+
+binary_sensor:
+  - platform: gpio
+    name: "On-board Button"
+    internal: false
+    pin:
+      number: GPIO9
+      inverted: true
+    filters:
+      - delayed_on: 50ms
+    # on_press:
+    #   then:
+    #     ...
+
+
+external_components:
+  # uses the latest version from SzczepanLeon
+  # https://github.com/SzczepanLeon/esphome-components
+  # You can make ESPHome check the repository every time by setting this option to 0s
+  - source: github://SzczepanLeon/esphome-components@main
+    refresh: 0s
+    components: [wmbus]
+
+logger:
+  level: ${log_level}
+  baud_rate: ${log_baudrate}
+  logs:
+    wmbus: ${log_wmbus}
+    wMBus-lib: ${log_wmbus}
+
+time:
+  - platform: sntp
+    id: time_sntp
+    timezone: Europe/Berlin
+
+wmbus:
+  frequency: 868.950
+  mosi_pin: GPIO6
+  miso_pin: GPIO7
+  clk_pin: GPIO8
+  cs_pin: GPIO05
+  gdo0_pin: GPIO0
+  gdo2_pin: GPIO1
+
+  # log_unknown (Optional): Show telegrams from not configured meters in log.
+  # Defaults to False
+  log_unknown: True
+
+
+## ---------------------------------------------------
+## SENSORS
+## ---------------------------------------------------
+sensor:
+
+  - platform: wmbus
+    meter_id: ${wmid}
+    type: hydrus
+    add_prefix: True
+
+    # The LQI value reported by the CC1101 is a 7 bit unsigned number with a range from 0 to 127.
+    # Note that a lower value indicates a better link.
+    # The LQI of a received packet will be bad (higher number) when there is lot of interference.
+    lqi:
+      id: wmbus_cc1101_lqi
+      name: "Watermeter CC1101 LQI"
+      unit_of_measurement: "lqi"
+      entity_category: "diagnostic"
+
+    # The RSSI value reported by the CC1101 is a 8 bit signed number with an effective
+    # range from -138 dBm to -10.5 dBm when the CC1101 is operating around 868 MHz.
+    # RSSI stands for received signal strength (power) indication (in dBm).
+    # A higher value indicates higher power.
+    rssi:
+      id: wmbus_cc1101_rssi
+      name: "Watermeter CC1101 RSSI"
+      unit_of_measurement: "%"
+      entity_category: "diagnostic"
+
+    # reports the watermeter display value
+    total_water_m3:
+      id: "waterdisplay"
+      name: "Watermeter Display"
+      unit_of_measurement: "m³"
+      state_class: total_increasing
+      device_class: "water"
+      accuracy_decimals: 3
+      icon: mdi:counter
