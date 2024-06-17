@@ -1,28 +1,32 @@
 # http://wiki.icbbuy.com/doku.php?id=developmentboard:esp32-c3mini
 # https://www.waveshare.com/esp32-c3-zero.htm
 # https://www.studiopieters.nl/esp32-c3-pinout/
+# https://www.sudo.is/docs/esphome/boards/esp32c3supermini/
 
 esphome:
   platformio_options:
     board_build.flash_mode: dio
-
-esp32:
-  board: esp32-c3-devkitm-1
-  variant: esp32c3
-  framework:
-    type: esp-idf
+  project:
+    name: "Espressif.ESP32-C3-SuperMini"
+    version: "0.0"
 
 # esp32:
 #   board: esp32-c3-devkitm-1
 #   variant: esp32c3
 #   framework:
-#     type: arduino
+#     type: esp-idf
 
-logger:
-  level: DEBUG
-  # hardware_uart: USB_SERIAL_JTAG
-  # baud_rate: 0
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  framework:
+    type: arduino
+
+# logger:
+#   level: DEBUG
+#   hardware_uart: USB_SERIAL_JTAG
+#   baud_rate: 0
 
 # https://github.com/esphome/issues/issues/4893
-wifi:
-  output_power: 8.5
+# wifi:
+#   output_power: 8.5

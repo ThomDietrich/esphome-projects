@@ -4,6 +4,9 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
     board_build.mcu: esp32c3
+  project:
+    name: "M5Stack.M5Stamp-C3U"
+    version: "0.0"
 
 esp32:
   board: esp32-c3-devkitm-1
