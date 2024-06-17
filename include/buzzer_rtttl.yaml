@@ -1,7 +1,7 @@
 
 output:
   - platform: ledc
-    pin: ${rtttl_out_pin}
+    pin: ${buzzer_pin}
     id: rtttl_out_buzzer
 
 rtttl:

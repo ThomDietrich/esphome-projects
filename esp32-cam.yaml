@@ -22,6 +22,7 @@ packages:
 
 #time:
 #  - platform: homeassistant
+#    id: homeassistant_time
 
 output:
   - platform: ledc

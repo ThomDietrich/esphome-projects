@@ -3,7 +3,7 @@ substitutions:
   device_friendly_name: Raumsensorknoten
   device_area: Kinderzimmer
 
-  rtttl_out_pin: GPIO4
+  buzzer_pin: GPIO4
   status_led_pin: GPIO2
 
 
@@ -20,7 +20,7 @@ packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml
-  include_rtttl: !include include/rtttl_out.yaml
+  include_rtttl: !include include/buzzer_rtttl.yaml
 
 # wifi:
 #   use_address: 192.168.23.126

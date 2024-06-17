@@ -1,0 +1,9 @@
+output:
+  - id: buzzer_out
+    platform: gpio
+    pin: ${buzzer_pin}
+
+switch:
+  - platform: output
+    name: Buzzer
+    output: buzzer_out

@@ -3,7 +3,7 @@ substitutions:
   device_friendly_name: Haus UV
   device_area: Flur
 
-  rtttl_out_pin: GPIO12
+  buzzer_pin: GPIO12
 
   circuit_01: DG (21B)
   circuit_02: OG Neubau Beleuchtung (22C)
@@ -46,7 +46,7 @@ esp32:
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
-  include_rtttl: !include include/rtttl_out.yaml
+  include_rtttl: !include include/buzzer_rtttl.yaml
 
 # wifi:
 #   use_address: 192.168.23.193  # manual IP overwrite
@@ -93,7 +93,8 @@ i2c:
 # needed for total_daily_energy
 time:
   - platform: sntp
-    id: my_time
+    id: time_sntp
+    timezone: Europe/Berlin
 
 # these are called references in YAML. They allow you to reuse
 # this configuration in each sensor, while only defining it once
