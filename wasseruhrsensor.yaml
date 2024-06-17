@@ -5,10 +5,6 @@ substitutions:
 
   status_led_pin: GPIO2
 
-  ## all watermeters   wmid: "0"
-  ## your watermeter: wmid: !secret watermeterId
-  wmid: "0"
-
   ## logger settings
   log_level: "DEBUG"  # not that logging need memory, so in production mode use "WARN"
   log_wmbus: "DEBUG" # Loglevel for wmbus meters component
@@ -30,7 +26,7 @@ packages:
   status_led: !include include/on_board_status_led_sk6812.yaml
 
 # wifi:
-#   use_address: 192.168.23.126
+#   use_address: 192.168.23.100
 
 binary_sensor:
   - platform: gpio
@@ -55,11 +51,11 @@ external_components:
     components: [wmbus]
 
 logger:
-  level: ${log_level}
-  baud_rate: ${log_baudrate}
+  level: DEBUG
+  # baud_rate: 0
   logs:
-    wmbus: ${log_wmbus}
-    wMBus-lib: ${log_wmbus}
+    wmbus: DEBUG
+    wMBus-lib: DEBUG
 
 time:
   - platform: sntp
@@ -67,13 +63,16 @@ time:
     timezone: Europe/Berlin
 
 wmbus:
+  # https://www.cdebyte.com/products/E07-M1101D-TH/2#Pin
   frequency: 868.950
-  mosi_pin: GPIO6
-  miso_pin: GPIO7
-  clk_pin: GPIO8
-  cs_pin: GPIO05
-  gdo0_pin: GPIO0
-  gdo2_pin: GPIO1
+  # Pin 1 - GND
+  # Pin 2 - VCC - Power supply 1.8 V-3.6V DC
+  gdo0_pin: GPIO3 # GDO0 - Information output pin
+  cs_pin: GPIO4 # CSN - Chip selection pin, for starting a SPI communication
+  clk_pin: GPIO5 # SCK - SPI clock pin
+  mosi_pin: GPIO6 # MOSI - SPI data input pin
+  miso_pin: GPIO7 # MISO/GDO1 - SPI data output pin
+  gdo2_pin: GPIO8 # GDO2 - Information output pin
 
   # log_unknown (Optional): Show telegrams from not configured meters in log.
   # Defaults to False
@@ -86,9 +85,10 @@ wmbus:
 sensor:
 
   - platform: wmbus
-    meter_id: ${wmid}
+    meter_id: !secret watermeter_id
     type: hydrus
-    add_prefix: True
+    # key: !secret watermeter_api_key
+    add_prefix: False
 
     # The LQI value reported by the CC1101 is a 7 bit unsigned number with a range from 0 to 127.
     # Note that a lower value indicates a better link.
