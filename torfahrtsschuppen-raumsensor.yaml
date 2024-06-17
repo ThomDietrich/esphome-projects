@@ -1,0 +1,128 @@
+substitutions:
+  device_name: torfahrtsschuppen-raumsensor
+  device_friendly_name: Torfahrtsschuppen Raumsensor
+  device_area: Torfahrtsschuppen
+
+  status_led_pin: GPIO8
+  on_board_button: GPIO9
+
+  buzzer_pin: GPIO4
+
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+packages:
+  system: !include system/esp32_c3_supermini.yaml
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+  status_led: !include include/on_board_status_led_single.yaml
+  include_rtttl: !include include/buzzer_rtttl.yaml
+
+# wifi:
+#   use_address: 192.168.23.172
+
+
+i2c:
+  id: i2c_component
+  sda: GPIO2
+  scl: GPIO3
+  scan: true
+  frequency: 50kHz
+
+
+sensor:
+  # https://esphome.io/components/sensor/bme280.html
+  - platform: bme280_i2c
+    temperature:
+      name: Technikraum Temperatur
+      id: technikraum_temp
+      oversampling: 16x
+      on_value:
+        then:
+          - component.update: technikraum_temp_diff
+    humidity:
+      name: Technikraum Luftfeuchte
+      id: technikraum_hum
+      on_value:
+        then:
+          - component.update: technikraum_hum_diff
+    pressure:
+      name: Technikraum Luftdruck
+    address: 0x76
+    update_interval: 60s
+
+  - platform: bme280_i2c
+    temperature:
+      name: Dachboden Temperatur
+      id: dachboden_temp
+      oversampling: 16x
+      on_value:
+        then:
+          - component.update: technikraum_temp_diff
+    humidity:
+      name: Dachboden Luftfeuchte
+      id: dachboden_hum
+      on_value:
+        then:
+          - component.update: technikraum_hum_diff
+    pressure:
+      name: Dachboden Luftdruck
+    address: 0x77  # Ungewöhnlicher BME280 mit SDO auf VCC
+    update_interval: 60s
+
+  - platform: template
+    name: Technikraum Temperatur Differenz
+    id: technikraum_temp_diff
+    state_class: measurement
+    device_class: temperature
+    unit_of_measurement: "K"
+    accuracy_decimals: 1
+    update_interval: never
+    lambda: |-
+      return (id(technikraum_temp).state - id(dachboden_temp).state);
+
+  - platform: template
+    name: Technikraum Luftfeuchte Differenz
+    id: technikraum_hum_diff
+    state_class: measurement
+    # device_class: humidity
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: never
+    lambda: |-
+      return (id(technikraum_hum).state - id(dachboden_hum).state);
+
+
+binary_sensor:
+  - platform: gpio
+    name: On-board Button
+    id: button_onboard
+    pin:
+      number: ${on_board_button}
+      mode:
+        input: True
+        pullup: True
+      inverted: True
+    internal: true
+    filters:
+      - delayed_on: 300ms
+    on_press:
+      - button.press: esp_restart_button
+
+
+switch:
+  # Construct an additional GND from GPIO
+  - platform: gpio
+    internal: true
+    restore_mode: ALWAYS_ON
+    name: Additional GND Pin 0
+    icon: mdi:arrow-collapse-down
+    pin:
+      number: GPIO0
+      inverted: true
+      mode:
+        output: true
+        open_drain: true
