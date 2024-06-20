@@ -1,0 +1,71 @@
+
+# Funktionsweise der Flusserkennung:
+# 1. 'intern_heizkreis_gpio_tick' - Repräsentiert die Ticks vom Zähler
+# 2. 'intern_heizkreis_aktiv' - Totmannschalter. Ändert sich verzögert zu Off wenn länger keine Ticks vernommen wurden
+# 3. 'sensor_heizkreis_aktiv' - Folgt dem verzögerten Totmannschalter, wird aber zusätzlich direkt und sofort Off geschaltet wenn 'wwb_anforderung' umschaltet.
+#                               Nur dieser Sensor wird an HA veröffentlicht.
+
+binary_sensor:
+  - id: !extend intern_heizkreis_gpio_tick
+    on_press:
+      - binary_sensor.template.publish:
+          id: intern_heizkreis_aktiv
+          state: ON
+    on_release:
+      - binary_sensor.template.publish:
+          id: intern_heizkreis_aktiv
+          state: OFF
+
+  - id: !extend intern_wwb_gpio_tick
+    on_press:
+      - binary_sensor.template.publish:
+          id: intern_wwb_aktiv
+          state: ON
+    on_release:
+      - binary_sensor.template.publish:
+          id: intern_wwb_aktiv
+          state: OFF
+
+  # https://esphome.io/components/binary_sensor/template.html
+  - platform: template
+    name: Heizkreis Volumenstrom Flusserkennung (Zwischenschritt)
+    id: intern_heizkreis_aktiv
+    internal: true
+    icon: mdi:heart-pulse
+    lambda: 'return false;'
+    filters:
+      - delayed_off: 60s
+
+  - platform: template
+    name: Warmwasser Volumenstrom Flusserkennung (Zwischenschritt)
+    id: intern_wwb_aktiv
+    internal: true
+    icon: mdi:heart-pulse
+    lambda: 'return false;'
+    filters:
+      - delayed_off: 60s
+
+  - platform: template
+    name: Heizkreis Volumenstrom Flusserkennung
+    id: sensor_heizkreis_aktiv
+    icon: mdi:heart-pulse
+    lambda: 'return id(intern_heizkreis_aktiv).state;'
+
+  - platform: template
+    name: Warmwasser Volumenstrom Flusserkennung
+    id: sensor_wwb_aktiv
+    icon: mdi:heart-pulse
+    lambda: 'return id(intern_wwb_aktiv).state;'
+
+switch:
+  # Umschalten zwischen Heizkreis und WWB bedeutet sofortiges zum Stillstand kommen des Flows im anderen Kreis.
+  # Umschalten bedeutet nicht automatisch, dass auch Wasser fließt (insbsondere im Heizkreis)
+  - id: !extend wwb_anforderung
+    on_turn_on:
+      - binary_sensor.template.publish:
+          id: sensor_heizkreis_aktiv
+          state: OFF
+    on_turn_off:
+      - binary_sensor.template.publish:
+          id: sensor_wwb_aktiv
+          state: OFF

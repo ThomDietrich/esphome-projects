@@ -14,16 +14,6 @@ esphome:
   comment: ${device_friendly_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
-  #platform: ESP32
-  #board: esp32dev
-  #platformio_options:
-    #platform: espressif32
-    #platform: espressif32@3.5.0
-    #board: az-delivery-devkit-v4
-    #board_build.mcu: esp32
-    #board_build.f_cpu: 240000000L
-    #upload_protocol: esptool
-  min_version: '2022.11'
 
 esp32:
   board: az-delivery-devkit-v4
@@ -39,8 +29,9 @@ packages:
   include_4: !include include/heizungsregelung_temp_pt1000_spi.yaml
   include_5: !include include/heizungsregelung_temp_ds18b20.yaml
   include_6: !include include/heizungsregelung_temp_diff.yaml
-  include_7: !include include/heizungsregelung_energy_heat.yaml
-  include_8: !include include/heizungsregelung_energy_electric.yaml
+  include_7: !include include/heizungsregelung_energy_heat_counter.yaml
+  include_8: !include include/heizungsregelung_energy_heat_flow.yaml
+  include_9: !include include/heizungsregelung_energy_electric.yaml
 
 # Explicitly use IP address for connection
 #wifi:

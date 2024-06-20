@@ -31,7 +31,7 @@ globals:
 binary_sensor:
   # https://esphome.io/components/binary_sensor/gpio.html
   - platform: gpio
-    #name: Heizkreis Volumenstrommessung Sensor
+    name: Heizkreis Volumenstrommessung Tick Sensor
     id: intern_heizkreis_gpio_tick
     pin: GPIO34
     icon: mdi:square-wave
@@ -57,11 +57,9 @@ binary_sensor:
                   const float c_wh_kgk = 1.1625;
                   const float k_k = id(heizkreis_diff).state;
                   return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
-      #- component.update: sensor_heizkreis_wasser
-      #- component.update: sensor_heizkreis_energie
 
   - platform: gpio
-    #name: Warmwasser Volumenstrommessung Sensor
+    name: Warmwasser Volumenstrommessung Tick Sensor
     id: intern_wwb_gpio_tick
     pin: GPIO35
     icon: mdi:square-wave
@@ -87,8 +85,6 @@ binary_sensor:
                   const float c_wh_kgk = 1.1625;
                   const float k_k = id(warmwasser_diff).state;
                   return id(global_wwb_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
-      #- component.update: sensor_wwb_wasser
-      #- component.update: sensor_wwb_energie
 
 sensor:
   - platform: template
@@ -101,6 +97,10 @@ sensor:
     accuracy_decimals: 1
     lambda: return id(global_heizkreis_volumen_l);
     update_interval: 10s
+    filters:
+      - or:
+        - delta: 0.01
+        - heartbeat: 5min
 
   - platform: template
     name: Heizkreis Energie
@@ -112,6 +112,10 @@ sensor:
     accuracy_decimals: 2
     lambda: return id(global_heizkreis_energie_kwh);
     update_interval: 10s
+    filters:
+      - or:
+        - delta: 0.01
+        - heartbeat: 5min
 
   - platform: template
     name: Warmwasser Volumen
@@ -123,6 +127,10 @@ sensor:
     accuracy_decimals: 1
     lambda: return id(global_wwb_volumen_l);
     update_interval: 10s
+    filters:
+      - or:
+        - delta: 0.01
+        - heartbeat: 5min
 
   - platform: template
     name: Warmwasser Energie
@@ -134,3 +142,23 @@ sensor:
     accuracy_decimals: 2
     lambda: return id(global_wwb_energie_kwh);
     update_interval: 10s
+    filters:
+      - or:
+        - delta: 0.01
+        - heartbeat: 5min
+
+switch:
+  # Aktualisiere die Sensoren oberen in jedem Fall sofort wenn die wwb_anforderung wechselt
+  - id: !extend wwb_anforderung
+    on_turn_on:
+      # Warmwasserbereitung
+      - component.update: sensor_heizkreis_wasser
+      - component.update: sensor_heizkreis_energie
+      - component.update: sensor_wwb_wasser
+      - component.update: sensor_wwb_energie
+    on_turn_off:
+      # Heizungsmodus
+      - component.update: sensor_heizkreis_wasser
+      - component.update: sensor_heizkreis_energie
+      - component.update: sensor_wwb_wasser
+      - component.update: sensor_wwb_energie

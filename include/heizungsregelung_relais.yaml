@@ -35,16 +35,10 @@ switch:
 
     # Update relevant flow sensors
     on_turn_on:
+      # Warmwasserbereitung
       - component.update: heizkreis_diff
-      - component.update: sensor_heizkreis_wasser
-      - component.update: sensor_heizkreis_energie
       - component.update: warmwasser_diff
-      - component.update: sensor_wwb_wasser
-      - component.update: sensor_wwb_energie
     on_turn_off:
+      # Heizungsmodus
       - component.update: heizkreis_diff
-      - component.update: sensor_heizkreis_wasser
-      - component.update: sensor_heizkreis_energie
       - component.update: warmwasser_diff
-      - component.update: sensor_wwb_wasser
-      - component.update: sensor_wwb_energie
