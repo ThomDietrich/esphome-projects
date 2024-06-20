@@ -7,159 +7,91 @@ dallas:
 sensor:
   # DS18B20 Temperatursensoren
   # https://esphome.io/components/sensor/dallas.html
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xd33c97f6491fd728
     name: "Solarkreis Ruecklauf"
     id: solarkreis_rl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
     icon: mdi:thermometer-chevron-down
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: solarkreis_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x540316839e33ff28
     name: "Warmwasserspeicher unten"
     id: warmwasserspeicher_unten
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: solarkreis_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xa25469481f64ff28
     name: "Warmwasserspeicher oben"
     id: warmwasserspeicher_oben
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x2500000cf8822e28
     name: "Heizkreis Vorlauf"
     id: heizkreis_vl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
     icon: mdi:thermometer-chevron-up
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: heizkreis_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x94626a481f64ff28
     name: "Heizkreis Ruecklauf"
     id: heizkreis_rl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: heizkreis_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x4400000cf8ea0528
     name: "Gastherme Vorlauf"
     id: gastherme_vl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: warmwasser_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x9500000cf8984828
     name: "Gastherme Ruecklauf Warmwasserbereitung"
     id: gastherme_rl_wwb
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: warmwasser_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x45000005fa787a28
     name: "Pufferspeicher blau 550 Liter"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xd6000005faf54928
     name: "Pufferspeicher grau 600 Liter"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xc400000cf8624528
     name: "Kessel Vorlauf"
     id: kessel_vl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: kessel_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xd900000cf8d4ca28
     name: "Kessel Ruecklauf"
     id: kessel_rl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: kessel_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x0ebe6d481f64ff28
     name: "Kesselpufferkreis Vorlauf"
     id: kesselpufferkreis_vl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: kesselpufferkreis_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xe73f69481f64ff28
     name: "Kesselpufferkreis Ruecklauf"
     id: kesselpufferkreis_rl
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85
     on_value:
       - component.update: kesselpufferkreis_diff
 
-  - platform: dallas
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0x7c186d481f64ff28
     name: "Warmwasserspeicher Abfluss"
-    unit_of_measurement: "°C"
-    accuracy_decimals: 1
-    icon: mdi:thermometer
-    filters:
-      - filter_out: 85

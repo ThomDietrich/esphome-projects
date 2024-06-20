@@ -1,0 +1,13 @@
+# DS18B20 Temperatursensoren
+# https://esphome.io/components/sensor/dallas.html
+platform: dallas
+unit_of_measurement: "°C"
+device_class: temperature
+state_class: measurement
+accuracy_decimals: 1
+icon: mdi:thermometer
+filters:
+  - filter_out: 85
+  - or:
+    - delta: 0.3
+    - heartbeat: 30min
