@@ -4,7 +4,7 @@ substitutions:
   device_area: Torfahrtsschuppen
 
   status_led_pin: GPIO8
-  on_board_button: GPIO9
+  on_board_button_pin: GPIO9
 
   buzzer_pin: GPIO4
 
@@ -101,7 +101,7 @@ binary_sensor:
     name: On-board Button
     id: button_onboard
     pin:
-      number: ${on_board_button}
+      number: ${on_board_button_pin}
       mode:
         input: True
         pullup: True

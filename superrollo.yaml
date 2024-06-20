@@ -47,6 +47,7 @@ api:
   password: ""
 
 ota:
+  platform: esphome
   password: ${ota_pw}
 
 web_server:
