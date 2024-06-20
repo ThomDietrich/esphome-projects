@@ -17,7 +17,7 @@ sensor:
     id: wifi_signal_db
     update_interval: 60s
     device_class: signal_strength
-    entity_category: "diagnostic"
+    entity_category: diagnostic
 
   # Reports the WiFi signal strength in %
   - platform: copy
@@ -27,4 +27,4 @@ sensor:
       - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
     unit_of_measurement: "%"
     device_class: ""
-    entity_category: "diagnostic"
+    entity_category: diagnostic

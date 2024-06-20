@@ -31,8 +31,8 @@ packages:
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml
 
-wifi:
-  use_address: 192.168.23.105
+# wifi:
+#   use_address: 192.168.23.105
 
 time:
   - platform: sntp
@@ -49,7 +49,6 @@ external_components:
 
 logger:
   level: DEBUG
-  # baud_rate: 0
   logs:
     wmbus: DEBUG
     wMBus-lib: DEBUG
@@ -96,8 +95,10 @@ sensor:
     lqi:
       id: wmbus_cc1101_lqi
       name: CC1101 LQI
-      unit_of_measurement: "lqi"
+      state_class: measurement
       entity_category: "diagnostic"
+      filters:
+        - timeout: 60min
 
     # The RSSI value reported by the CC1101 is a 8 bit signed number with an effective
     # range from -138 dBm to -10.5 dBm when the CC1101 is operating around 868 MHz.
@@ -112,14 +113,16 @@ sensor:
       entity_category: "diagnostic"
       state_class: "measurement"
       icon: mdi:rss
+      filters:
+        - timeout: 60min
 
     total_water_m3:
       id: wmbus_watermeter_total
-      name: Wassermenge Total (Display)
+      name: Wassermenge Total
       unit_of_measurement: "m³"
       state_class: total_increasing
       device_class: water
       accuracy_decimals: 3
       icon: mdi:counter
       filters:
-        - heartbeat: 30min
+        - timeout: 15min
