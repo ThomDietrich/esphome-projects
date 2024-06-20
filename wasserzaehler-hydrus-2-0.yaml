@@ -84,9 +84,9 @@ wmbus:
 
 sensor:
   - platform: wmbus
-    meter_id: !secret watermeter_id
+    # meter_id: !secret watermeter_id
     type: hydrus
-    key: !secret watermeter_api_key
+    # key: !secret watermeter_api_key
     add_prefix: False
 
     # The LQI value reported by the CC1101 is a 7 bit unsigned number with a range from 0 to 127.
@@ -109,12 +109,11 @@ sensor:
       name: CC1101 RSSI
       filters:
         - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
-      unit_of_measurement: "%"
-      entity_category: "diagnostic"
-      state_class: "measurement"
-      icon: mdi:rss
-      filters:
         - timeout: 60min
+      unit_of_measurement: "%"
+      state_class: "measurement"
+      entity_category: "diagnostic"
+      icon: mdi:rss
 
     total_water_m3:
       id: wmbus_watermeter_total
