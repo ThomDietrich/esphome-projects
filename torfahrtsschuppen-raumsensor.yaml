@@ -42,17 +42,39 @@ sensor:
       oversampling: 16x
       on_value:
         then:
-          - component.update: technikraum_temp_diff
+          - component.update: technikraum_dewpoint
     humidity:
       name: Technikraum Luftfeuchte
       id: technikraum_hum
       on_value:
         then:
-          - component.update: technikraum_hum_diff
+          - component.update: technikraum_dewpoint
     pressure:
       name: Technikraum Luftdruck
     address: 0x76
     update_interval: 60s
+
+  - platform: absolute_humidity
+    name: Technikraum Luftfeuchte, absolut
+    id: technikraum_hum_abs
+    temperature: technikraum_temp
+    humidity: technikraum_hum
+
+  - platform: template
+    name: Technikraum Taupunkt
+    id: technikraum_dewpoint
+    unit_of_measurement: °C
+    icon: 'mdi:thermometer-alert'
+    accuracy_decimals: 1
+    lambda: |-
+        const float alpha = 6.112;  // hPa
+        const float beta = 17.62;
+        const float lambda = 243.12;  // °C
+        float T = id(technikraum_temp).raw_state;  // Temperature in °C
+        float RH = id(technikraum_hum).raw_state;  // Relative Humidity
+        float H = log(RH / 100) + beta * T / (lambda + T);
+        return lambda * H / (beta - H);
+    update_interval: never
 
   - platform: bme280_i2c
     temperature:
@@ -61,39 +83,39 @@ sensor:
       oversampling: 16x
       on_value:
         then:
-          - component.update: technikraum_temp_diff
+          - component.update: dachboden_dewpoint
     humidity:
       name: Dachboden Luftfeuchte
       id: dachboden_hum
       on_value:
         then:
-          - component.update: technikraum_hum_diff
+          - component.update: dachboden_dewpoint
     pressure:
       name: Dachboden Luftdruck
     address: 0x77  # Ungewöhnlicher BME280 mit SDO auf VCC
     update_interval: 60s
 
-  - platform: template
-    name: Technikraum Temperatur Differenz
-    id: technikraum_temp_diff
-    state_class: measurement
-    device_class: temperature
-    unit_of_measurement: "K"
-    accuracy_decimals: 1
-    update_interval: never
-    lambda: |-
-      return (id(technikraum_temp).state - id(dachboden_temp).state);
+  - platform: absolute_humidity
+    name: Dachboden Luftfeuchte, absolut
+    id: dachboden_hum_abs
+    temperature: dachboden_temp
+    humidity: dachboden_hum
 
   - platform: template
-    name: Technikraum Luftfeuchte Differenz
-    id: technikraum_hum_diff
-    state_class: measurement
-    # device_class: humidity
-    unit_of_measurement: "%"
+    name: Dachboden Taupunkt
+    id: dachboden_dewpoint
+    unit_of_measurement: °C
+    icon: 'mdi:thermometer-alert'
     accuracy_decimals: 1
-    update_interval: never
     lambda: |-
-      return (id(technikraum_hum).state - id(dachboden_hum).state);
+        const float alpha = 6.112;  // hPa
+        const float beta = 17.62;
+        const float lambda = 243.12;  // °C
+        float T = id(dachboden_temp).raw_state;  // Temperature in °C
+        float RH = id(dachboden_hum).raw_state;  // Relative Humidity
+        float H = log(RH / 100) + beta * T / (lambda + T);
+        return lambda * H / (beta - H);
+    update_interval: never
 
 
 binary_sensor:
