@@ -1,6 +1,6 @@
 substitutions:
-  device_name: hcb223a-1
-  device_friendly_name: HCB223A-1
+  device_name: schreibtischgestell-hcb223a-1
+  device_friendly_name: Kinderzimmer Schreibtischgestell
   device_area: Kinderzimmer
 
   status_led_pin: GPIO2
@@ -8,7 +8,8 @@ substitutions:
   # Desk: Sanodesk EC4
   # Controller: LoctekMotion HCB223A-1
   # Similar product https://en.loctek.com/Desk-Frames/Dual-Motors/ET268
-  min_height: "60.0" # cm
+  # min_height: "60.0" # cm # Technisches Limit
+  min_height: "72.0" # cm # Limit wegen Schreibtischunterschrank
   max_height: "125.0" # cm
 
 
@@ -28,15 +29,13 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
-  # project:
-  #   name: ""
-  #   version: "1.0"
+  project:
+    name: "M5Stack.M5Stamp-C3U_HCB223A-1"
+    version: "0.0"
   on_boot:
     - priority: -10
       then:
         - switch.turn_on: switch_alarm
-  includes:
-    - desk_height_sensor.h
 
 
 packages:
@@ -46,8 +45,13 @@ packages:
   status_led: !include include/on_board_status_led_sk6812.yaml
 
 
-# wifi:
-#   use_address: 192.168.23.33
+wifi:
+  use_address: 192.168.23.183
+
+
+external_components:
+  source: github://iMicknl/LoctekMotion_IoT@v2
+  components: [ loctekmotion_desk_height ]
 
 
 logger:
@@ -62,35 +66,26 @@ uart:
 
 
 sensor:
-  - platform: custom
-    lambda: |-
-      auto desk_height_sensor = new DeskHeightSensor(id(desk_uart));
-      App.register_component(desk_height_sensor);
-      return {desk_height_sensor};
-    sensors:
-      id: desk_height
-      name: Desk Height
-      unit_of_measurement: cm
-      accuracy_decimals: 1
-      icon: mdi:counter
-      state_class: measurement
-      on_value_range:
-      - below: ${min_height}
-        then:
-          - switch.turn_off: switch_down
-      - above: ${max_height}
-        then:
-          - switch.turn_off: switch_up
-      on_value:
-        then:
-          - component.update: set_desk_height
-          - cover.template.publish:
-              id: desk_cover
-              position: !lambda |-
-                  // The sensor outputs values from min_height (cm) to max_height (cm)
-                  // We need to translate this to 0 - 1 scale.
-                  float position = (float(x) - float(${min_height})) / (float(${max_height}) - float(${min_height}));
-                  return position;
+  - platform: loctekmotion_desk_height
+    id: desk_height
+    name: Desk Height
+    on_value_range:
+    - below: ${min_height}
+      then:
+        - switch.turn_off: switch_down
+    - above: ${max_height}
+      then:
+        - switch.turn_off: switch_up
+    on_value:
+      then:
+        - cover.template.publish:
+            id: desk_cover
+            position: !lambda |-
+                // The sensor outputs values from min_height (cm) to max_height (cm)
+                // We need to translate this to 0 - 1 scale.
+                float position = (float(x) - float(${min_height})) / (float(${max_height}) - float(${min_height}));
+                return position;
+        - component.update: set_desk_height
 
 
 switch:
@@ -235,7 +230,7 @@ button:
 cover:
   - platform: template
     id: desk_cover
-    icon: mdi:desk
+    icon: mdi:desk # or mdi:human-male-height-variant
     name: Desk
     device_class: blind # makes it easier to integrate with Google/Alexa
     has_position: true
@@ -278,6 +273,7 @@ cover:
       - switch.turn_on: switch_down
     optimistic: false
 
+
 number:
   - platform: template
     name: Desk Height
@@ -290,7 +286,6 @@ number:
     step: 0.1
     lambda: !lambda |-
       return id(desk_height).state;
-    #update_interval: 0ms # update in every loop() iteration
     update_interval: never
     set_action:
       - logger.log:
