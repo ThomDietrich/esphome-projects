@@ -31,8 +31,7 @@ packages:
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml
 
-# wifi:
-#   use_address: 192.168.23.105
+# wifi: { use_address: 192.168.23.x }
 
 time:
   - platform: sntp
@@ -60,12 +59,12 @@ binary_sensor:
     pin:
       number: ${on_board_button_pin}
       mode:
-        input: True
-        pullup: True
-      inverted: True
+        input: true
+        pullup: true
+      inverted: true
     internal: true
     filters:
-      - delayed_on: 300ms
+      - delayed_on: 50ms
     on_press:
       - button.press: esp_restart_button
 

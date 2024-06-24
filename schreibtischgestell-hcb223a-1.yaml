@@ -44,9 +44,7 @@ packages:
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml
 
-
-wifi:
-  use_address: 192.168.23.183
+# wifi: { use_address: 192.168.23.x }
 
 
 external_components:

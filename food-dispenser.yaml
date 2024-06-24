@@ -26,8 +26,7 @@ packages:
 
 
 # Manual IP overwrite
-# wifi:
-#   use_address: 192.168.23.106
+# wifi: { use_address: 192.168.23.x }
 
 
 api:

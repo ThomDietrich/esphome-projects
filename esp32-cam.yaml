@@ -17,8 +17,7 @@ packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
 
-# wifi:
-#   use_address: 192.168.23.15
+# wifi: { use_address: 192.168.23.x }
 
 #time:
 #  - platform: homeassistant

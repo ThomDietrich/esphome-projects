@@ -22,8 +22,7 @@ packages:
   status_led: !include include/on_board_status_led_sk6812.yaml
   include_rtttl: !include include/buzzer_rtttl.yaml
 
-# wifi:
-#   use_address: 192.168.23.126
+# wifi: { use_address: 192.168.23.x }
 
 
 i2c:

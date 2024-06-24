@@ -33,9 +33,7 @@ packages:
   include_8: !include include/heizungsregelung_energy_heat_flow.yaml
   include_9: !include include/heizungsregelung_energy_electric.yaml
 
-# Explicitly use IP address for connection
-#wifi:
-#  use_address: 192.168.23.187
+# wifi: { use_address: 192.168.23.x }
 
 # https://esphome.io/components/status_led.html
 status_led:

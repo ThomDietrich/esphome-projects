@@ -48,8 +48,7 @@ packages:
   general: !include common/general.yaml
   include_rtttl: !include include/buzzer_rtttl.yaml
 
-# wifi:
-#   use_address: 192.168.23.193  # manual IP overwrite
+# wifi: { use_address: 192.168.23.x }
 
 ################################################################################
 

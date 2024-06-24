@@ -21,8 +21,7 @@ packages:
   status_led: !include include/on_board_status_led_single.yaml
   include_rtttl: !include include/buzzer_rtttl.yaml
 
-# wifi:
-#   use_address: 192.168.23.172
+# wifi: { use_address: 192.168.23.x }
 
 
 i2c:
@@ -125,12 +124,12 @@ binary_sensor:
     pin:
       number: ${on_board_button_pin}
       mode:
-        input: True
-        pullup: True
-      inverted: True
+        input: true
+        pullup: true
+      inverted: true
     internal: true
     filters:
-      - delayed_on: 300ms
+      - delayed_on: 50ms
     on_press:
       - button.press: esp_restart_button
 

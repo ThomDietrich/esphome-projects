@@ -36,8 +36,7 @@ packages:
   include_2: !include include/epaper_display_homeassistant.yaml
   include_3: !include include/epaper_display_screen.yaml
 
-# wifi:
-#   use_address: 192.168.23.187
+# wifi: { use_address: 192.168.23.x }
 
 sensor:
   - platform: template

@@ -33,8 +33,7 @@ packages:
   include_3: !include include/haus_uv_astra_nachtlicht.yaml
   include_4: !include include/buzzer_rtttl.yaml
 
-# wifi:
-#   use_address: 192.168.23.33
+# wifi: { use_address: 192.168.23.x }
 
 ################################################################################
 
