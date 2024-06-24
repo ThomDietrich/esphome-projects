@@ -1,0 +1,99 @@
+# esphome -s device_name ug-wohnstube-licht -s device_friendly_name "UG Wohnstube Licht" -s device_area "UG Wohnstube" run ug-stube-lichtschalter.yaml
+# esphome -s device_name ug-gute-stube-licht -s device_friendly_name "UG Gute Stube Licht" -s device_area "UG Wohnstube" run ug-stube-lichtschalter.yaml
+
+substitutions:
+  device_name: ug-stube-licht
+  device_friendly_name: UG Stube Licht
+  device_area: UG Wohnstube
+
+  on_board_button_pin: GPIO0
+  external_button_pin: GPIO4
+
+# https://devices.esphome.io/devices/Sonoff-Mini-Relay
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  platform: ESP8266
+  board: esp8285
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+# wifi: { use_address: 192.168.23.103 }
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+# https://esphome.io/components/event/index.html
+# https://esphome.io/components/event/template.html
+event:
+  - platform: template
+    name: Taster Ereignis
+    id: button_input_event
+    device_class: button
+    event_types:
+      - button_pressed_short
+      - button_pressed_long
+
+# https://esphome.io/components/binary_sensor/index.html
+# https://esphome.io/components/binary_sensor/gpio.html
+binary_sensor:
+  - platform: gpio
+    name: On-board Button
+    id: button_onboard
+    pin:
+      number: ${on_board_button_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      - button.press: esp_restart_button
+
+  - platform: gpio
+    name: Taster Eingang
+    id: button_input
+    pin:
+      number: ${external_button_pin}
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    internal: true
+    filters:
+      - settle: 50ms
+    on_press:
+      then:
+        - light.toggle:
+            id: ceiling_light
+        - event.trigger:
+            id: button_input_event
+            event_type: button_pressed_short
+    on_multi_click:
+      - timing:
+          - ON for at least 300ms
+        then:
+          - event.trigger:
+              id: button_input_event
+              event_type: button_pressed_long
+
+# https://esphome.io/components/output/gpio.html
+# https://esphome.io/components/light/binary.html
+output:
+  - platform: gpio
+    id: relay
+    pin: GPIO12
+
+light:
+  - platform: binary
+    name: Deckenlampe
+    output: relay
+    id: ceiling_light
