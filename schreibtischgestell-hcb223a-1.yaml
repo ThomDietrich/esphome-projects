@@ -125,19 +125,18 @@ switch:
       - switch.turn_off: switch_alarm
     entity_category: config
 
-  ### No locking function on HCB223A-1, but will wake controller up
-  #
-  # - platform: uart
-  #   name: Child Lock
-  #   id: switch_child_lock
-  #   icon: mdi:account-lock
-  #   data: [0x9b, 0x06, 0x02, 0x20, 0x00, 0xac, 0xb8, 0x9d]
-  #   uart_id: desk_uart
-  #   send_every: 108ms
-  #   on_turn_on:
-  #     - delay: 5000ms
-  #     - switch.turn_off: switch_child_lock
-  #   entity_category: "config"
+  ## No locking function on HCB223A-1, but will wake controller up
+  - platform: uart
+    name: Child Lock
+    id: switch_child_lock
+    icon: mdi:account-lock
+    data: [0x9b, 0x06, 0x02, 0x20, 0x00, 0xac, 0xb8, 0x9d]
+    uart_id: desk_uart
+    send_every: 108ms
+    on_turn_on:
+      - delay: 5000ms
+      - switch.turn_off: switch_child_lock
+    entity_category: "config"
 
 button:
   - platform: template
@@ -172,20 +171,18 @@ button:
           id: desk_uart
           data: [0x9b, 0x06, 0x02, 0x00, 0x01, 0xac, 0x60, 0x9d]
 
-  ### Unclear function on HCB223A-1
-  #
-  # - platform: template
-  #   name: Memory
-  #   id: button_m
-  #   icon: mdi:alpha-m-box
-  #   entity_category: "config"
-  #   on_press:
-  #     - uart.write:
-  #         id: desk_uart
-  #         data: [0x9b, 0x06, 0x02, 0x20, 0x00, 0xac, 0xb8, 0x9d]
+  ## Programming function on HCB223A-1 (Press preset button after to store)
+  - platform: template
+    name: Memory
+    id: button_m
+    icon: mdi:alpha-m-box
+    entity_category: "config"
+    on_press:
+      - uart.write:
+          id: desk_uart
+          data: [0x9b, 0x06, 0x02, 0x20, 0x00, 0xac, 0xb8, 0x9d]
 
-  ### No effect on HCB223A-1
-  #
+  # ## No effect on HCB223A-1
   # - platform: template
   #   name: Wake Screen
   #   id: button_wake_screen

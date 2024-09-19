@@ -11,6 +11,10 @@ output:
     id: relay3
     pin: 33
 
+  - platform: gpio
+    id: relay4
+    pin: 32
+
 light:
   - platform: binary
     id: keller_licht
@@ -27,13 +31,11 @@ light:
     name: Technikraum Deckenlicht
     output: relay3
 
-
 switch:
-  - platform: gpio
+  - platform: output
     id: technikraum_lueftung
     name: Technikraum Lueftung
-    pin: 32
-    restore_mode: ALWAYS_OFF
+    output: relay4
 
 
 binary_sensor:
@@ -45,9 +47,13 @@ binary_sensor:
     pin:
       number: 34
       inverted: true
+    # Physical switch input
     on_press:
       then:
-        - light.toggle: keller_licht
+        - light.turn_on: keller_licht
+    on_release:
+      then:
+        - light.turn_off: keller_licht
 
   - platform: gpio
     name: Vorraum Lichttaster Eingang
@@ -55,6 +61,7 @@ binary_sensor:
     pin:
       number: 35
       inverted: true
+    # Physical push button input
     on_press:
       then:
         - light.toggle: vorraum_licht
@@ -65,6 +72,7 @@ binary_sensor:
     pin:
       number: 36
       inverted: true
+    # Physical push button input
     on_press:
       then:
         - light.toggle: technikraum_licht

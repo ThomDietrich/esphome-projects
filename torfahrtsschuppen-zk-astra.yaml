@@ -4,7 +4,7 @@ substitutions:
   device_area: Torfahrtsschuppen
 
   buzzer_pin: GPIO12
-  led_blue_pin: GPIO4
+  blue_led_pin: GPIO4
 
 # https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
 # https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
@@ -17,7 +17,7 @@ esphome:
   friendly_name: ${device_friendly_name}
   area: ${device_area}
   project:
-    name: "ASTRA.BR4A4AL (ext. antenna)"
+    name: "ASTRA.BR4A4AL-ext-antenna"
     version: "0.0"
 
 esp32:

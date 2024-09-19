@@ -4,7 +4,7 @@ api:
   password: ""
 
 ota:
-  # platform: esphome
+  platform: esphome
   password: !secret ota_pw
 
 web_server:
