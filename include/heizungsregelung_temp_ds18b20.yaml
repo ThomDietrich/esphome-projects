@@ -1,12 +1,11 @@
 # DS18B20 Temperatursensoren Pin
-# https://esphome.io/components/sensor/dallas.html
-dallas:
-  - pin: GPIO32
-    update_interval: 15s
+# https://esphome.io/components/one_wire.html
+one_wire:
+  - platform: gpio
+    pin: GPIO32
 
 sensor:
   # DS18B20 Temperatursensoren
-  # https://esphome.io/components/sensor/dallas.html
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
     address: 0xd33c97f6491fd728
     name: "Solarkreis Ruecklauf"

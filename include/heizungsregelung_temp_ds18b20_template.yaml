@@ -1,11 +1,12 @@
 # DS18B20 Temperatursensoren
-# https://esphome.io/components/sensor/dallas.html
-platform: dallas
+# https://esphome.io/components/sensor/dallas_temp.html
+platform: dallas_temp
 unit_of_measurement: "°C"
 device_class: temperature
 state_class: measurement
 accuracy_decimals: 1
 icon: mdi:thermometer
+update_interval: 15s
 filters:
   - filter_out: 85
   - or:
