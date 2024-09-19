@@ -1,10 +1,9 @@
 # esphome -s device_name ug-gute-stube-rollo-links -s device_friendly_name "UG Gute Stube Rolladen links" -s device_area "UG Wohnstube" run rolladensteuerung-dual-r3.yaml
+# esphome -s device_name ug-gute-stube-rollo-rechts -s device_friendly_name "UG Gute Stube Rolladen rechts" -s device_area "UG Wohnstube" run rolladensteuerung-dual-r3.yaml
 
 substitutions:
-  #device_name: ug-gute-stube-rollo-links
-  #device_friendly_name: UG Gute Stube Rolladen links
-  device_name: ug-gute-stube-rollo-rechts
-  device_friendly_name: UG Gute Stube Rolladen rechts
+  device_name: ug-gute-stube-rollo-x
+  device_friendly_name: UG Gute Stube Rolladen x
   device_area: UG Wohnstube
 
 esphome:
@@ -23,7 +22,6 @@ packages:
 
 
 light:
-
   - platform: status_led
     name: Blaue Status LED
     id: blue_status_led
@@ -31,6 +29,39 @@ light:
     pin:
       number: GPIO13
       inverted: True
+
+
+cover:
+  # https://esphome.io/components/cover/current_based.html
+  - platform: current_based
+    name: Rollosteuerung
+    id: my_cover
+
+    open_sensor: current_open_1
+    open_moving_current_threshold: 0.01
+    open_obstacle_current_threshold: 1.0
+    open_duration: 18s
+    open_action:
+      - switch.turn_on: relay_open_led_1
+
+    close_sensor: current_close_2
+    close_moving_current_threshold: 0.01
+    close_obstacle_current_threshold: 1.0
+    close_duration: 14s
+    close_action:
+      - switch.turn_on: relay_close_led_2
+
+    stop_action:
+      - switch.turn_off: relay_open_led_1
+      - switch.turn_off: relay_close_led_2
+      - sensor.template.publish:
+          id: position_percentage
+          state: !lambda 'return 100.0 * id(my_cover).position;'
+
+    max_duration: 20s
+    obstacle_rollback: 30%
+    start_sensing_delay: 0.6s
+    malfunction_detection: true
 
 
 switch:
@@ -41,7 +72,7 @@ switch:
     id: relay_open_led_1
     interlock: [relay_close_led_2]
     interlock_wait_time: 250ms
-    # internal: true
+    internal: true
 
   - platform: gpio
     name: Motorfahrt runter
@@ -49,7 +80,7 @@ switch:
     id: relay_close_led_2
     interlock: [relay_open_led_1]
     interlock_wait_time: 250ms
-    # internal: true
+    internal: true
 
 
 binary_sensor:
@@ -138,11 +169,11 @@ sensor:
     current_1:
       name: Motorstrom hoch
       id: current_open_1
-      # internal: true
+      internal: true
     current_2:
       name: Motorstrom runter
       id: current_close_2
-      # internal: true
+      internal: true
     # voltage:
     #   name: Voltage
     #   disabled_by_default: True
@@ -151,38 +182,18 @@ sensor:
     # active_power_2:
     #   name: Power 2
 
+  - platform: template
+    name: Rollo Position
+    id: position_percentage
+    update_interval: never
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: mdi:roller-shade
+    state_class: measurement
+    device_class: ""
+
 logger:
   logs:
     # Disable printing the readings from cse7761
     sensor: INFO
-    #cse7761: INFO
-
-
-cover:
-  # https://esphome.io/components/cover/current_based.html
-  - platform: current_based
-    name: Rollosteuerung
-    id: my_cover
-
-    open_sensor: current_open_1
-    open_moving_current_threshold: 0.01
-    open_obstacle_current_threshold: 1.0
-    open_duration: 18s
-    open_action:
-      - switch.turn_on: relay_open_led_1
-
-    close_sensor: current_close_2
-    close_moving_current_threshold: 0.01
-    close_obstacle_current_threshold: 1.0
-    close_duration: 14s
-    close_action:
-      - switch.turn_on: relay_close_led_2
-
-    stop_action:
-      - switch.turn_off: relay_open_led_1
-      - switch.turn_off: relay_close_led_2
-
-    max_duration: 20s
-    obstacle_rollback: 30%
-    start_sensing_delay: 0.6s
-    malfunction_detection: true
+    cse7761: INFO
