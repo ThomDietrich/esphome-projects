@@ -6,9 +6,6 @@ substitutions:
   status_led_pin: GPIO2
   on_board_button_pin: GPIO9
 
-  ## logger settings
-  log_baudrate: "0" # 0 disable uart logger messages
-
 # Diehl HYDRUS 2.0 Ultraschall-Wasserzähler 173
 # https://www.diehl.com/metering/de/produkte-loesungen/produkte-services/wasserzaehler/hydrus-20-de/
 # https://wasser.badenovanetze.de/downloads/wasser-allgemein/bedienungsanleitungen-funkwasserzaehler/bedienungsanleitung-hydrus-wasserzaehler-2.0-173.pdf
@@ -35,40 +32,74 @@ esphome:
   friendly_name: ${device_friendly_name}
   area: ${device_area}
   project:
-    name: "M5Stack.M5Stamp-C3U_plus_CC1101"
+    name: "M5Stack.C3U_plus_CC1101"
     version: "0.0"
 
-packages:
-  system: !include system/stamp_c3u.yaml
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-  status_led: !include include/on_board_status_led_sk6812.yaml
+esp32:
+  board: esp32-c3-devkitm-1
+  variant: esp32c3
 
-# wifi: { use_address: 192.168.23.x }
+# packages:
+#   # system: !include system/stamp_c3u.yaml
+#   # wifi: !include common/wifi.yaml
+#   # general: !include common/general.yaml
+#   # status_led: !include include/on_board_status_led_sk6812.yaml  # 2024-10 Leave commented out
+
+external_components:
+  # https://github.com/SzczepanLeon/esphome-components
+  - source: github://SzczepanLeon/esphome-components@fix_135
+    refresh: 0d
+    components: [ wmbus ]
+
+wifi:
+  networks:
+    - ssid: !secret wifi_home1_ssid
+      password: !secret wifi_home1_pw
+  ap:
+    ssid: "${device_name}"
+    password: !secret wifi_fallback_pw
+
+# wifi: { use_address: 192.168.23.116 }
+
+captive_portal:
+
+api:
+  password: ""
+
+ota:
+  platform: esphome
+  password: ""
+
+web_server:
+  port: 80
+
+logger:
 
 time:
   - platform: sntp
     id: time_sntp
     timezone: Europe/Berlin
 
-external_components:
-  # uses the latest version from SzczepanLeon
-  # https://github.com/SzczepanLeon/esphome-components
-  # You can make ESPHome check the repository every time by setting this option to 0s
-  #- source: github://SzczepanLeon/esphome-components@main
-  #  refresh: 0s
-  #  components: [wmbus]
-  - source: github://ThomDietrich/esphome-components@hydrus-fix
-    refresh: 0s
-    components: [wmbus]
-
-logger:
-  level: VERY_VERBOSE
-  logs:
-    wmbus: VERY_VERBOSE
-    wMBus-lib: DEBUG
+wmbus:
+  # https://www.cdebyte.com/products/E07-M1101D-TH/2#Pin
+  # frequency: 868.950
+  # Pin 1 - GND
+  # Pin 2 - VCC - Power supply 1.8 V-3.6V DC
+  gdo0_pin: GPIO3 # GDO0 - Information output pin
+  cs_pin: GPIO4 # CSN - Chip selection pin, for starting a SPI communication
+  clk_pin: GPIO5 # SCK - SPI clock pin
+  mosi_pin: GPIO6 # MOSI - SPI data input pin
+  miso_pin: GPIO7 # MISO/GDO1 - SPI data output pin
+  gdo2_pin: GPIO8 # GDO2 - Information output pin
+  # led_pin: GPIO0
+  # led_blink_time: 1s
+  all_drivers: False
+  log_all: False
 
 binary_sensor:
+  - platform: status
+    name: ESP Device Status
+
   - platform: gpio
     name: On-board Button
     id: button_onboard
@@ -84,59 +115,86 @@ binary_sensor:
     on_press:
       - button.press: esp_restart_button
 
-wmbus:
-  # https://www.cdebyte.com/products/E07-M1101D-TH/2#Pin
-  frequency: 868.950
-  # Pin 1 - GND
-  # Pin 2 - VCC - Power supply 1.8 V-3.6V DC
-  gdo0_pin: GPIO3 # GDO0 - Information output pin
-  cs_pin: GPIO4 # CSN - Chip selection pin, for starting a SPI communication
-  clk_pin: GPIO5 # SCK - SPI clock pin
-  mosi_pin: GPIO6 # MOSI - SPI data input pin
-  miso_pin: GPIO7 # MISO/GDO1 - SPI data output pin
-  gdo2_pin: GPIO8 # GDO2 - Information output pin
-  log_unknown: True # Show telegrams from not configured meters in log.
+button:
+  - platform: restart
+    id: esp_restart_button
+    name: ESP Device Restart
+
+text_sensor:
+  - platform: version
+    name: ESPHome Version
 
 sensor:
+  - platform: uptime
+    name: ESP Device Uptime
+    update_interval: 60s
+    device_class: duration
+
+  - platform: wifi_signal
+    name: WiFi Signal RSSI
+    id: wifi_signal_db
+    update_interval: 60s
+    device_class: signal_strength
+    entity_category: diagnostic
+
+  - platform: copy
+    source_id: wifi_signal_db
+    name: WiFi Signal Strength
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    device_class: ""
+    entity_category: diagnostic
+
   - platform: wmbus
-    meter_id: !secret watermeter_id
     type: hydrus
+    meter_id: !secret watermeter_id
     key: !secret watermeter_api_key
-    add_prefix: False
 
-    # The LQI value reported by the CC1101 is a 7 bit unsigned number with a range from 0 to 127.
-    # Note that a lower value indicates a better link.
-    # The LQI of a received packet will be bad (higher number) when there is lot of interference.
-    lqi:
-      id: wmbus_cc1101_lqi
-      name: CC1101 LQI
-      state_class: measurement
-      entity_category: "diagnostic"
-      filters:
-        - timeout: 60min
+    sensors:
+      - field: total
+        id: wmbus_watermeter_total
+        name: Wassermenge Total
+        icon: mdi:water
+        accuracy_decimals: 3
+        unit_of_measurement: "m³"
+        device_class: water
+        state_class: total_increasing
+        filters:
+          - timeout: 15min
 
-    # The RSSI value reported by the CC1101 is a 8 bit signed number with an effective
-    # range from -138 dBm to -10.5 dBm when the CC1101 is operating around 868 MHz.
-    # RSSI stands for received signal strength (power) indication (in dBm).
-    # A higher value indicates higher power. (internal only) see id: cc1101_rssi
-    rssi:
-      id: wmbus_cc1101_rssi
-      name: CC1101 RSSI
-      filters:
-        - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
-        - timeout: 60min
-      unit_of_measurement: "%"
-      state_class: "measurement"
-      entity_category: "diagnostic"
-      icon: mdi:rss
+      - field: flow_temperature
+        id: wmbus_watermeter_flow_temperature_c
+        name: Wassertemperatur
+        icon: mdi:thermometer
+        accuracy_decimals: 1
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+        filters:
+          - timeout: 15min
 
-    total_water_m3:
-      id: wmbus_watermeter_total
-      name: Wassermenge Total
-      unit_of_measurement: "m³"
-      state_class: total_increasing
-      device_class: water
-      accuracy_decimals: 3
-      icon: mdi:counter
-      filters:
-        - timeout: 15min
+      # The RSSI value reported by the CC1101 is a 8 bit signed number with an effective
+      # range from -138 dBm to -10.5 dBm when the CC1101 is operating around 868 MHz.
+      # RSSI stands for received signal strength (power) indication (in dBm).
+      # A higher value indicates higher power.
+      - field: rssi
+        id: wmbus_cc1101_rssi
+        name: CC1101 RSSI
+        accuracy_decimals: 0
+        unit_of_measurement: "dBm"
+        device_class: signal_strength
+        entity_category: diagnostic
+        state_class: measurement
+
+      # # The LQI value reported by the CC1101 is a 7 bit unsigned number with a range from 0 to 127.
+      # # Note that a lower value indicates a better link.
+      # # The LQI of a received packet will be bad (higher number) when there is lot of interference.
+      # - field: lqi
+      #   id: wmbus_cc1101_lqi
+      #   name: CC1101 LQI
+      #   unit_of_measurement: " "
+      #   state_class: measurement
+      #   entity_category: diagnostic
+      #   filters:
+      #     - timeout: 60min
