@@ -1,9 +1,13 @@
+# esphome -s device_name kueche-superrollo -s device_friendly_name "Küche Superrollo" -s device_area "Küche" -s open_seconds 18.0 -s close_seconds 16.5 run superrollo.yaml
+# esphome -s device_name schlafzimmer-superrollo -s device_friendly_name "Schlafzimmer Superrollo" -s device_area "Schlafzimmer" -s open_seconds 18.0 -s close_seconds 16.5 run superrollo.yaml
 
-# esphome -s room_name wohnzimmer -s open_seconds 20.0 -s close_seconds 19.5 config superrollo.yaml
 substitutions:
-  room_name: default
-  open_seconds: 20.0
-  close_seconds: 19.5
+  device_name: kueche-superrollo
+  device_friendly_name: Küche Superrollo
+  device_area: Küche
+  #open_seconds: 9.9
+  #close_seconds: 9.9
+  #
   # superrollo-kueche
   #open_seconds: 18.0
   #close_seconds: 16.5
@@ -14,88 +18,78 @@ substitutions:
   #open_seconds:
   #close_seconds:
 
-  # secrets
-  ota_pw: !secret ota_pw
-  wifi_home1_ssid: !secret wifi_home1_ssid
-  wifi_home1_password: !secret wifi_home1_password
-  wifi_home2_ssid: !secret wifi_home2_ssid
-  wifi_home2_password: !secret wifi_home2_password
-  wifi_fallback_pw: !secret wifi_fallback_password
-
 esphome:
-  name: superrollo-${room_name}
-  platform: ESP8266
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  project:
+    name: "Rademacher_plus_Wemos.Superrollo_GW60_plus_D1_mini"
+    version: "0.0"
+
+esp8266:
   board: d1_mini
 
-wifi:
-  networks:
-    - ssid: ${wifi_home2_ssid}
-      password: ${wifi_home2_password}
-    - ssid: ${wifi_home1_ssid}
-      password: ${wifi_home1_password}
-  ap:
-    ssid: "Superrollo ${room_name} fallback"
-    password: ${wifi_fallback_password}
-  # Explicitly use IP address for connection
-  #use_address: 192.168.23.66
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
 
-captive_portal:
-
-logger:
-
-api:
-  password: ""
-
-ota:
-  platform: esphome
-  password: ${ota_pw}
-
-web_server:
-  port: 80
+# wifi: { use_address: 192.168.1.72 } # Küche
+# wifi: { use_address: 192.168.1.67 } # Schlafzimmer
 
 switch:
   - platform: gpio
-    pin: D2
-    id: relay_up
     name: "Ausloeser Hoch"
+    id: relay_up
+    pin: D1
     icon: mdi:archive-arrow-up-outline
-    #interlock: &interlock_group [relay_up, relay_down]
     on_turn_on:
       - delay: 300ms
       - switch.turn_off: relay_up
+    internal: true
   - platform: gpio
-    pin: D1
-    id: relay_down
     name: "Ausloeser Runter"
+    id: relay_down
+    pin: D2
     icon: mdi:archive-arrow-down-outline
-    #interlock: *interlock_group
     on_turn_on:
       - delay: 300ms
       - switch.turn_off: relay_down
+    internal: true
 
 binary_sensor:
   - platform: gpio
-    pin: D6
     name: "Faehrt hoch"
-    filters:
-      - invert:
-  - platform: gpio
+    id: movement_up
     pin: D7
-    name: "Faehrt runter"
     filters:
       - invert:
+    internal: true
+  - platform: gpio
+    name: "Faehrt runter"
+    id: movement_down
+    pin: D6
+    filters:
+      - invert:
+    internal: true
 
 cover:
-  - platform: time_based
+  - platform: feedback
+    name: Rolladen
+    id: my_cover
     device_class: shade
-    name: "Superrollo ${room_name}"
+    #
     open_action:
       - switch.turn_on: relay_up
     open_duration: ${open_seconds}s
+    open_sensor: movement_up
+    #
     close_action:
       - switch.turn_on: relay_down
     close_duration: ${close_seconds}s
-    has_built_in_endstop: True
+    close_sensor: movement_down
+    #
+    has_built_in_endstop: true
+    infer_endstop_from_movement: true
     stop_action:
       - switch.turn_on: relay_up
       - switch.turn_on: relay_down
