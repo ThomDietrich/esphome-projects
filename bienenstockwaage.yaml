@@ -3,7 +3,6 @@ substitutions:
   nummer: 0
 
   # secrets
-  ota_pw: !secret ota_pw
   wifi_home1_ssid: !secret wifi_home1_ssid
   wifi_home1_password: !secret wifi_home1_password
   wifi_home2_ssid: !secret wifi_home2_ssid
@@ -43,7 +42,7 @@ api:
 
 ota:
   platform: esphome
-  password: ${ota_pw}
+  password: ""
 
 web_server:
   port: 80

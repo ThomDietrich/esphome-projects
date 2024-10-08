@@ -1,4 +1,5 @@
 wifi:
+  # use_address: 192.168.23.x
   networks:
     - ssid: !secret wifi_home1_ssid
       password: !secret wifi_home1_pw
@@ -13,7 +14,7 @@ wifi:
 sensor:
   # Reports the WiFi signal strength/RSSI in dB
   - platform: wifi_signal
-    name: "WiFi Signal RSSI"
+    name: WiFi Signal RSSI
     id: wifi_signal_db
     update_interval: 60s
     device_class: signal_strength
@@ -22,7 +23,7 @@ sensor:
   # Reports the WiFi signal strength in %
   - platform: copy
     source_id: wifi_signal_db
-    name: "WiFi Signal Strength"
+    name: WiFi Signal Strength
     filters:
       - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
     unit_of_measurement: "%"

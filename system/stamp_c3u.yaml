@@ -13,3 +13,4 @@ esp32:
   variant: esp32c3
   framework:
     type: arduino
+    version: recommended
