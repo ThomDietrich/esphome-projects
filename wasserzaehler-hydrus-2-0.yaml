@@ -39,15 +39,9 @@ esp32:
   board: esp32-c3-devkitm-1
   variant: esp32c3
 
-# packages:
-#   # system: !include system/stamp_c3u.yaml
-#   # wifi: !include common/wifi.yaml
-#   # general: !include common/general.yaml
-#   # status_led: !include include/on_board_status_led_sk6812.yaml  # 2024-10 Leave commented out
-
 external_components:
   # https://github.com/SzczepanLeon/esphome-components
-  - source: github://SzczepanLeon/esphome-components@fix_135
+  - source: github://SzczepanLeon/esphome-components@main
     refresh: 0d
     components: [ wmbus ]
 
@@ -59,7 +53,7 @@ wifi:
     ssid: "${device_name}"
     password: !secret wifi_fallback_pw
 
-# wifi: { use_address: 192.168.23.116 }
+  # use_address: 192.168.23.116
 
 captive_portal:
 
@@ -82,7 +76,6 @@ time:
 
 wmbus:
   # https://www.cdebyte.com/products/E07-M1101D-TH/2#Pin
-  # frequency: 868.950
   # Pin 1 - GND
   # Pin 2 - VCC - Power supply 1.8 V-3.6V DC
   gdo0_pin: GPIO3 # GDO0 - Information output pin
@@ -91,10 +84,58 @@ wmbus:
   mosi_pin: GPIO6 # MOSI - SPI data input pin
   miso_pin: GPIO7 # MISO/GDO1 - SPI data output pin
   gdo2_pin: GPIO8 # GDO2 - Information output pin
-  # led_pin: GPIO0
-  # led_blink_time: 1s
+  # frequency: 868.950 # MHz
+  led_pin: GPIO10 # LED blinks on telegram. LED connected to GND
+  led_blink_time: 1s
   all_drivers: False
   log_all: False
+
+i2c:
+  id: i2c_component
+  sda: GPIO21
+  scl: GPIO20
+  scan: true
+  frequency: 50kHz
+
+# TODO Status LED:
+# https://github.com/esphome/feature-requests/issues/2230
+# TODO Replace by https://github.com/esphome/esphome/pull/5814
+light:
+  - platform: esp32_rmt_led_strip
+    id: on_board_led
+    name: On-Board LED
+    icon: mdi:alarm-light
+    pin: ${status_led_pin}
+    rgb_order: GRB
+    num_leds: 1
+    rmt_channel: 0
+    chipset: SK6812
+    restore_mode: ALWAYS_OFF
+  - platform: status_led
+    name: On-Board Status LED
+    output: status_led_output
+    internal: true
+
+output:
+  - platform: template
+    id: status_led_output
+    type: binary
+    write_action:
+      - if:
+          condition:
+             lambda: return state > 0;
+          then:
+            - light.turn_on:
+                id: on_board_led
+                red: 0%
+                green: 0%
+                blue: 100%
+                brightness: 50%
+                transition_length: 200ms
+          else:
+            - light.turn_off:
+                id: on_board_led
+                transition_length: 200ms
 
 binary_sensor:
   - platform: status
@@ -187,14 +228,13 @@ sensor:
         entity_category: diagnostic
         state_class: measurement
 
-      # # The LQI value reported by the CC1101 is a 7 bit unsigned number with a range from 0 to 127.
-      # # Note that a lower value indicates a better link.
-      # # The LQI of a received packet will be bad (higher number) when there is lot of interference.
-      # - field: lqi
-      #   id: wmbus_cc1101_lqi
-      #   name: CC1101 LQI
-      #   unit_of_measurement: " "
-      #   state_class: measurement
-      #   entity_category: diagnostic
-      #   filters:
-      #     - timeout: 60min
+  - platform: bme280_i2c
+    temperature:
+      name: Temperatur
+      oversampling: 16x
+    humidity:
+      name: Luftfeuchte
+    pressure:
+      name: Luftdruck
+    address: 0x76
+    update_interval: 60s
