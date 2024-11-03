@@ -1,6 +1,6 @@
 substitutions:
-  device_name: wasserzaehler
-  device_friendly_name: Wasserzaehler
+  device_name: wasserzaehler-3
+  device_friendly_name: Wasserzaehler-3
   device_area: Keller
 
   status_led_pin: GPIO2
@@ -76,19 +76,21 @@ time:
 
 wmbus:
   # https://www.cdebyte.com/products/E07-M1101D-TH/2#Pin
-  # Pin 1 - GND
-  # Pin 2 - VCC - Power supply 1.8 V-3.6V DC
-  gdo0_pin: GPIO3 # GDO0 - Information output pin
-  cs_pin: GPIO4 # CSN - Chip selection pin, for starting a SPI communication
-  clk_pin: GPIO5 # SCK - SPI clock pin
-  mosi_pin: GPIO6 # MOSI - SPI data input pin
-  miso_pin: GPIO7 # MISO/GDO1 - SPI data output pin
-  gdo2_pin: GPIO8 # GDO2 - Information output pin
+  #
+  #                # CC1101 Pin 1 - GND
+  #                # CC1101 Pin 2 - VCC - Power supply 1.8 V-3.6V DC
+  gdo0_pin: GPIO3  # CC1101 Pin 3 - GDO0 - Information output pin
+  cs_pin: GPIO4    # CC1101 Pin 4 - CSN - Chip selection pin, for starting a SPI communication
+  clk_pin: GPIO5   # CC1101 Pin 5 - SCK - SPI clock pin
+  mosi_pin: GPIO6  # CC1101 Pin 6 - MOSI - SPI data input pin
+  miso_pin: GPIO7  # CC1101 Pin 7 - MISO/GDO1 - SPI data output pin
+  gdo2_pin: GPIO8  # CC1101 Pin 8 - GDO2 - Information output pin
   # frequency: 868.950 # MHz
-  led_pin: GPIO10 # LED blinks on telegram. LED connected to GND
+  led_pin: GPIO10  # LED blinks on telegram. LED connected to GND
   led_blink_time: 1s
   all_drivers: False
   log_all: False
+  id: wmbus_component
 
 i2c:
   id: i2c_component
@@ -96,6 +98,16 @@ i2c:
   scl: GPIO20
   scan: true
   frequency: 50kHz
+
+globals:
+  - id: global_dt_last_telegram
+    type: long int
+    restore_value: no
+    initial_value: '0.0'
+  - id: global_total_m3_last_telegram
+    type: float
+    restore_value: no
+    initial_value: '0.0'
 
 # TODO Status LED:
 # https://github.com/esphome/feature-requests/issues/2230
@@ -111,31 +123,30 @@ light:
     rmt_channel: 0
     chipset: SK6812
     restore_mode: ALWAYS_OFF
-  - platform: status_led
-    name: On-Board Status LED
-    output: status_led_output
-    internal: true
-
-output:
-  - platform: template
-    id: status_led_output
-    type: binary
-    write_action:
-      - if:
-          condition:
-             lambda: return state > 0;
-          then:
-            - light.turn_on:
-                id: on_board_led
-                red: 0%
-                green: 0%
-                blue: 100%
-                brightness: 50%
-                transition_length: 200ms
-          else:
-            - light.turn_off:
-                id: on_board_led
-                transition_length: 200ms
+#   - platform: status_led
+#     name: On-Board Status LED
+#     output: status_led_output
+#     internal: true
+# output:
+#   - platform: template
+#     id: status_led_output
+#     type: binary
+#     write_action:
+#       - if:
+#           condition:
+#              lambda: return state > 0;
+#           then:
+#             - light.turn_on:
+#                 id: on_board_led
+#                 red: 0%
+#                 green: 0%
+#                 blue: 100%
+#                 brightness: 50%
+#                 transition_length: 200ms
+#           else:
+#             - light.turn_off:
+#                 id: on_board_led
+#                 transition_length: 200ms
 
 binary_sensor:
   - platform: status
@@ -156,6 +167,12 @@ binary_sensor:
     on_press:
       - button.press: esp_restart_button
 
+  - platform: template
+    name: CC1101 I2C
+    device_class: connectivity
+    entity_category: diagnostic
+    lambda: "return !id(wmbus_component).is_failed();"
+
 button:
   - platform: restart
     id: esp_restart_button
@@ -171,6 +188,7 @@ sensor:
     update_interval: 60s
     device_class: duration
 
+  #
   - platform: wifi_signal
     name: WiFi Signal RSSI
     id: wifi_signal_db
@@ -187,10 +205,61 @@ sensor:
     device_class: ""
     entity_category: diagnostic
 
+  #
+  - platform: bme280_i2c
+    temperature:
+      name: Raum Temperatur
+      oversampling: 16x
+    humidity:
+      name: Raum Luftfeuchte
+    pressure:
+      name: Raum Luftdruck
+    address: 0x76
+    update_interval: 60s
+
+  #
+  - platform: template
+    name: CC1101 wM-Bus Telegrammabstand
+    id: sensor_time_between_telegrams_s
+    icon: mdi:timer-cog-outline
+    device_class: duration
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    entity_category: diagnostic
+
+  - platform: template
+    name: Wassermenge letztes Telegram
+    id: sensor_water_flow_since_last_telegram_liter
+    icon: mdi:water-plus-outline
+    device_class: water
+    unit_of_measurement: L
+    accuracy_decimals: 0
+    entity_category: diagnostic
+
+  - platform: template
+    name: Wasserfluss letztes Telegram
+    id: sensor_water_flow_rate_since_last_telegram_lpmin
+    icon: mdi:water-plus
+    device_class: volume_flow_rate
+    unit_of_measurement: L/min
+    accuracy_decimals: 1
+    entity_category: diagnostic
+
+  - platform: template
+    name: Wassertemperatur fließend
+    id: sensor_water_flowing_temperature_c
+    icon: mdi:thermometer
+    device_class: temperature
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+
+  #
   - platform: wmbus
     type: hydrus
     meter_id: !secret watermeter_id
     key: !secret watermeter_api_key
+    # meter_id: !secret watermeter_id_s94
+    # key: !secret watermeter_api_key_s94
 
     sensors:
       - field: total
@@ -198,43 +267,78 @@ sensor:
         name: Wassermenge Total
         icon: mdi:water
         accuracy_decimals: 3
-        unit_of_measurement: "m³"
+        unit_of_measurement: m³
         device_class: water
         state_class: total_increasing
         filters:
           - timeout: 15min
+        on_value:
+          then:
+            - if:
+                condition:
+                  lambda: |-
+                    return id(global_total_m3_last_telegram) > 0;
+                then:
+                  - sensor.template.publish:
+                      id: sensor_water_flow_since_last_telegram_liter
+                      state: !lambda |-
+                        return (id(wmbus_watermeter_total).state - id(global_total_m3_last_telegram)) * 1000;
+            - if:
+                condition:
+                  lambda: |-
+                    return id(global_total_m3_last_telegram) > 0 && id(sensor_time_between_telegrams_s).state > 0;
+                then:
+                  - sensor.template.publish:
+                      id: sensor_water_flow_rate_since_last_telegram_lpmin
+                      state: !lambda |-
+                        return id(sensor_water_flow_since_last_telegram_liter).state / (id(sensor_time_between_telegrams_s).state / 60.0);
+            - globals.set:
+                id: global_total_m3_last_telegram
+                value: !lambda |-
+                  return id(wmbus_watermeter_total).state;
 
       - field: flow_temperature
         id: wmbus_watermeter_flow_temperature_c
         name: Wassertemperatur
         icon: mdi:thermometer
         accuracy_decimals: 1
-        unit_of_measurement: "°C"
+        unit_of_measurement: °C
         device_class: temperature
         state_class: measurement
         filters:
           - timeout: 15min
+        on_value:
+          then:
+            - if:
+                condition:  # Es gab Wasserfluss seit letztem Telegram
+                  lambda: |-
+                    return id(sensor_water_flow_since_last_telegram_liter).state > 1;
+                then:
+                  - sensor.template.publish:
+                      id: sensor_water_flowing_temperature_c
+                      state: !lambda |-
+                        return id(wmbus_watermeter_flow_temperature_c).state;
 
-      # The RSSI value reported by the CC1101 is a 8 bit signed number with an effective
-      # range from -138 dBm to -10.5 dBm when the CC1101 is operating around 868 MHz.
-      # RSSI stands for received signal strength (power) indication (in dBm).
-      # A higher value indicates higher power.
       - field: rssi
         id: wmbus_cc1101_rssi
         name: CC1101 RSSI
         accuracy_decimals: 0
-        unit_of_measurement: "dBm"
+        unit_of_measurement: dBm
         device_class: signal_strength
         entity_category: diagnostic
         state_class: measurement
-
-  - platform: bme280_i2c
-    temperature:
-      name: Temperatur
-      oversampling: 16x
-    humidity:
-      name: Luftfeuchte
-    pressure:
-      name: Luftdruck
-    address: 0x76
-    update_interval: 60s
+        on_value:
+          then:
+            - if:
+                condition:
+                  lambda: |-
+                    return id(time_sntp).now().timestamp > 0 && id(global_dt_last_telegram) > 0;
+                then:
+                  - sensor.template.publish:
+                      id: sensor_time_between_telegrams_s
+                      state: !lambda |-
+                        return difftime(id(time_sntp).now().timestamp, id(global_dt_last_telegram));
+            - globals.set:
+                id: global_dt_last_telegram
+                value: !lambda |-
+                  return id(time_sntp).now().timestamp;
