@@ -52,6 +52,7 @@ sensor:
       oversampling: 16x
     pressure:
       name: "BME280 Pressure"
+      accuracy_decimals: 0
     humidity:
       name: "BME280 Humidity"
     address: 0x76
@@ -63,6 +64,7 @@ sensor:
       oversampling: 16x
     pressure:
       name: "BME680 Pressure"
+      accuracy_decimals: 0
     humidity:
       name: "BME680 Humidity"
     gas_resistance:

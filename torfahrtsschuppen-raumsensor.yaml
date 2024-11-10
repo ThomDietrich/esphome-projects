@@ -50,6 +50,7 @@ sensor:
           - component.update: technikraum_dewpoint
     pressure:
       name: Technikraum Luftdruck
+      accuracy_decimals: 0
     address: 0x76
     update_interval: 60s
 
@@ -91,6 +92,7 @@ sensor:
           - component.update: dachboden_dewpoint
     pressure:
       name: Dachboden Luftdruck
+      accuracy_decimals: 0
     address: 0x77  # Ungewöhnlicher BME280 mit SDO auf VCC
     update_interval: 60s
 

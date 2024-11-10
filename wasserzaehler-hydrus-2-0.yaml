@@ -82,6 +82,10 @@ globals:
     type: float
     restore_value: no
     initial_value: '0.0'
+  - id: global_consecutive_non_zero_telegrams
+    type: int
+    restore_value: no
+    initial_value: '0'
 
 time:
   - platform: sntp
@@ -94,17 +98,17 @@ time:
           - if:
               condition:
                 lambda: |-
-                  return id(wmbus_watermeter_total).state == 0 || id(global_total_m3_last_full_hour) == 0;
+                  return isnan(id(wmbus_watermeter_total).state) || id(wmbus_watermeter_total).state == 0 || id(global_total_m3_last_full_hour) == 0;
               then:
                 - sensor.template.publish:
-                    id: sensor_water_flow_since_last_hour_liter
+                    id: sensor_water_since_last_hour_liter
                     state: NAN  # unknown
                 - sensor.template.publish:
                     id: sensor_hours_since_zero_flow_for_one_hour
                     state: NAN  # unknown
               else:
                 - sensor.template.publish:
-                    id: sensor_water_flow_since_last_hour_liter
+                    id: sensor_water_since_last_hour_liter
                     state: !lambda |-
                       return (id(wmbus_watermeter_total).state - id(global_total_m3_last_full_hour)) * 1000;
                 - if:
@@ -118,16 +122,16 @@ time:
                 - if:
                     condition:
                       lambda: |-
-                        return id(sensor_water_flow_since_last_hour_liter).state > 0;
+                        return id(sensor_water_since_last_hour_liter).state > 0;
                     then:
-                      - sensor.template.publish:
-                          id: sensor_hours_since_zero_flow_for_one_hour
-                          state: 0
-                    else:
                       - sensor.template.publish:
                           id: sensor_hours_since_zero_flow_for_one_hour
                           state: !lambda |-
                             return id(sensor_hours_since_zero_flow_for_one_hour).state + 1;
+                    else:
+                      - sensor.template.publish:
+                          id: sensor_hours_since_zero_flow_for_one_hour
+                          state: 0
           - globals.set:
               id: global_total_m3_last_full_hour
               value: !lambda |-
@@ -263,6 +267,7 @@ sensor:
       name: Raum Luftfeuchte
     pressure:
       name: Raum Luftdruck
+      accuracy_decimals: 0
     address: 0x76
     update_interval: 60s
 
@@ -278,7 +283,7 @@ sensor:
 
   - platform: template
     name: Wassermenge letztes Telegram
-    id: sensor_water_flow_since_last_telegram_liter
+    id: sensor_water_since_last_telegram_liter
     icon: mdi:water-plus-outline
     device_class: water
     unit_of_measurement: L
@@ -287,7 +292,7 @@ sensor:
 
   - platform: template
     name: Wassermenge letzte Stunde
-    id: sensor_water_flow_since_last_hour_liter
+    id: sensor_water_since_last_hour_liter
     icon: mdi:water-plus-outline
     device_class: water
     unit_of_measurement: L
@@ -346,9 +351,22 @@ sensor:
                     return id(global_total_m3_last_telegram) > 0;
                 then:
                   - sensor.template.publish:
-                      id: sensor_water_flow_since_last_telegram_liter
+                      id: sensor_water_since_last_telegram_liter
                       state: !lambda |-
                         return (id(wmbus_watermeter_total).state - id(global_total_m3_last_telegram)) * 1000;
+            - if:
+                condition:
+                  lambda: |-
+                    return id(sensor_water_since_last_telegram_liter).state > 0;
+                then:
+                  - globals.set:
+                      id: global_consecutive_non_zero_telegrams
+                      value: !lambda |-
+                        return id(global_consecutive_non_zero_telegrams) + 1;
+                else:
+                  - globals.set:
+                      id: global_consecutive_non_zero_telegrams
+                      value: '0'
             - if:
                 condition:
                   lambda: |-
@@ -357,7 +375,7 @@ sensor:
                   - sensor.template.publish:
                       id: sensor_water_flow_rate_since_last_telegram_lpmin
                       state: !lambda |-
-                        return id(sensor_water_flow_since_last_telegram_liter).state / (id(sensor_time_between_telegrams_s).state / 60.0);
+                        return id(sensor_water_since_last_telegram_liter).state / (id(sensor_time_between_telegrams_s).state / 60.0);
             - globals.set:
                 id: global_total_m3_last_telegram
                 value: !lambda |-
@@ -371,14 +389,15 @@ sensor:
         unit_of_measurement: °C
         device_class: temperature
         state_class: measurement
+        entity_category: diagnostic # Show flowing water temperature instead
         filters:
           - timeout: 15min
         on_value:
           then:
             - if:
-                condition:  # Es gab Wasserfluss seit letztem Telegram
+                condition:
                   lambda: |-
-                    return id(sensor_water_flow_since_last_telegram_liter).state > 2;
+                    return id(global_consecutive_non_zero_telegrams) > 3;
                 then:
                   - sensor.template.publish:
                       id: sensor_water_flowing_temperature_c
