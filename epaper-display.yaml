@@ -17,6 +17,10 @@ esphome:
   platform: esp32
   board: pico32
 
+  project:
+    name: "M5Stack.M5Stamp-Pico"
+    version: "0.0"
+
   on_boot:
     - priority: -10
       then:
@@ -40,13 +44,13 @@ packages:
 
 sensor:
   - platform: template
-    name: "Last Content Update"
+    name: Last Content Update
     device_class: timestamp
     id: epaperdisplay_last_update
 
 button:
   - platform: template
-    name: "Force Cotent Update"
+    name: Force Cotent Update
     icon: mdi:calendar-refresh
     on_press:
       - component.update: epaperdisplay
