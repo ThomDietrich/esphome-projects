@@ -6,6 +6,8 @@ substitutions:
   status_led_pin: GPIO2
   on_board_button_pin: GPIO9
 
+  watermeter_identifier_subst: !secret watermeter_identifier
+
 # Diehl HYDRUS 2.0 Ultraschall-Wasserzähler 173
 # https://www.diehl.com/metering/de/produkte-loesungen/produkte-services/wasserzaehler/hydrus-20-de/
 # https://wasser.badenovanetze.de/downloads/wasser-allgemein/bedienungsanleitungen-funkwasserzaehler/bedienungsanleitung-hydrus-wasserzaehler-2.0-173.pdf
@@ -49,6 +51,10 @@ wifi:
   networks:
     - ssid: !secret wifi_home1_ssid
       password: !secret wifi_home1_pw
+    - ssid: !secret wifi_home2_ssid
+      password: !secret wifi_home2_pw
+    - ssid: !secret wifi_home3_ssid
+      password: !secret wifi_home3_pw
   ap:
     ssid: "${device_name}"
     password: !secret wifi_fallback_pw
@@ -231,6 +237,13 @@ text_sensor:
   - platform: version
     name: ESPHome Version
 
+  - platform: template
+    name: Zaehlernummer
+    icon: mdi:identifier
+    lambda: |-
+      std::string identifier = "${watermeter_identifier_subst}";
+      return identifier;
+
 sensor:
   - platform: uptime
     name: ESP Device Uptime
@@ -307,8 +320,6 @@ sensor:
     type: hydrus
     meter_id: !secret watermeter_id
     key: !secret watermeter_api_key
-    # meter_id: !secret watermeter_id_s94
-    # key: !secret watermeter_api_key_s94
 
     sensors:
       - field: total
