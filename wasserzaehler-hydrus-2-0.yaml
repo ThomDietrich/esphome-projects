@@ -45,7 +45,7 @@ external_components:
   # https://github.com/SzczepanLeon/esphome-components
   - source: github://SzczepanLeon/esphome-components@main
     refresh: 0d
-    components: [ wmbus ]
+    components: [wmbus]
 
 wifi:
   networks:
@@ -79,15 +79,15 @@ globals:
   - id: global_dt_last_telegram
     type: long int
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: global_total_m3_last_telegram
     type: float
     restore_value: no
-    initial_value: '0.0'
+    initial_value: "0.0"
   - id: global_total_m3_last_full_hour
     type: float
     restore_value: no
-    initial_value: '0.0'
+    initial_value: "0.0"
 
 time:
   - platform: sntp
@@ -95,7 +95,7 @@ time:
     timezone: Europe/Berlin
 
     on_time:
-      - cron: "0 0 /1 * * *"  # every hour
+      - cron: "0 0 /1 * * *" # every hour
         then:
           - if:
               condition:
@@ -104,10 +104,10 @@ time:
               then:
                 - sensor.template.publish:
                     id: sensor_water_since_last_hour_liter
-                    state: NAN  # unknown
+                    state: NAN # unknown
                 - sensor.template.publish:
                     id: sensor_hours_since_zero_flow_for_one_hour
-                    state: NAN  # unknown
+                    state: NAN # unknown
               else:
                 - sensor.template.publish:
                     id: sensor_water_since_last_hour_liter
@@ -142,16 +142,16 @@ time:
 wmbus:
   # https://www.cdebyte.com/products/E07-M1101D-TH/2#Pin
   #
-  #                # CC1101 Pin 1 - GND
-  #                # CC1101 Pin 2 - VCC - Power supply 1.8 V-3.6V DC
-  gdo0_pin: GPIO3  # CC1101 Pin 3 - GDO0 - Information output pin
-  cs_pin: GPIO4    # CC1101 Pin 4 - CSN - Chip selection pin, for starting a SPI communication
-  clk_pin: GPIO5   # CC1101 Pin 5 - SCK - SPI clock pin
-  mosi_pin: GPIO6  # CC1101 Pin 6 - MOSI - SPI data input pin
-  miso_pin: GPIO7  # CC1101 Pin 7 - MISO/GDO1 - SPI data output pin
-  gdo2_pin: GPIO8  # CC1101 Pin 8 - GDO2 - Information output pin
+  #                    # CC1101 Pin 1 - GND
+  #                    # CC1101 Pin 2 - VCC - Power supply 1.8 V-3.6V DC
+  gdo0_pin: GPIO3 #    # CC1101 Pin 3 - GDO0 - Information output pin
+  cs_pin: GPIO4 #      # CC1101 Pin 4 - CSN - Chip selection pin, for starting a SPI communication
+  clk_pin: GPIO5 #     # CC1101 Pin 5 - SCK - SPI clock pin
+  mosi_pin: GPIO6 #    # CC1101 Pin 6 - MOSI - SPI data input pin
+  miso_pin: GPIO7 #    # CC1101 Pin 7 - MISO/GDO1 - SPI data output pin
+  gdo2_pin: GPIO8 #    # CC1101 Pin 8 - GDO2 - Information output pin
   # frequency: 868.950 # MHz
-  led_pin: GPIO10  # LED blinks on telegram. LED connected to GND
+  led_pin: GPIO10 # LED blinks on telegram. LED connected to GND
   led_blink_time: 1s
   all_drivers: False
   log_all: False
@@ -322,6 +322,31 @@ sensor:
     key: !secret watermeter_api_key
 
     sensors:
+
+      - field: rssi
+        id: wmbus_cc1101_rssi
+        name: CC1101 RSSI
+        accuracy_decimals: 1
+        unit_of_measurement: dBm
+        device_class: signal_strength
+        state_class: measurement
+        entity_category: diagnostic
+        filters:
+          - timeout: 15min
+          - sliding_window_moving_average:
+              window_size: 5
+
+      - field: flow_temperature
+        id: wmbus_watermeter_flow_temperature_c
+        name: Wassertemperatur
+        icon: mdi:thermometer
+        accuracy_decimals: 1
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        filters:
+          - timeout: 15min
+
       - field: total
         id: wmbus_watermeter_total
         name: Wassermenge Total
@@ -334,42 +359,7 @@ sensor:
           - timeout: 15min
         on_value:
           then:
-            - if:
-                condition:
-                  lambda: |-
-                    return id(global_total_m3_last_telegram) > 0;
-                then:
-                  - sensor.template.publish:
-                      id: sensor_water_since_last_telegram_liter
-                      state: !lambda |-
-                        return (id(wmbus_watermeter_total).state - id(global_total_m3_last_telegram)) * 1000;
-            - globals.set:
-                id: global_total_m3_last_telegram
-                value: !lambda |-
-                  return id(wmbus_watermeter_total).state;
-
-      - field: flow_temperature
-        id: wmbus_watermeter_flow_temperature_c
-        name: Wassertemperatur
-        icon: mdi:thermometer
-        accuracy_decimals: 1
-        unit_of_measurement: °C
-        device_class: temperature
-        state_class: measurement
-        entity_category: diagnostic # Show flowing water temperature instead
-        filters:
-          - timeout: 15min
-
-      - field: rssi
-        id: wmbus_cc1101_rssi
-        name: CC1101 RSSI
-        accuracy_decimals: 0
-        unit_of_measurement: dBm
-        device_class: signal_strength
-        entity_category: diagnostic
-        state_class: measurement
-        on_value:
-          then:
+            # Track time since last telegram
             - if:
                 condition:
                   lambda: |-
@@ -383,3 +373,17 @@ sensor:
                 id: global_dt_last_telegram
                 value: !lambda |-
                   return id(time_sntp).now().timestamp;
+            # Track volume since last telegram
+            - if:
+                condition:
+                  lambda: |-
+                    return id(global_total_m3_last_telegram) > 0;
+                then:
+                  - sensor.template.publish:
+                      id: sensor_water_since_last_telegram_liter
+                      state: !lambda |-
+                        return (id(wmbus_watermeter_total).state - id(global_total_m3_last_telegram)) * 1000;
+            - globals.set:
+                id: global_total_m3_last_telegram
+                value: !lambda |-
+                  return id(wmbus_watermeter_total).state;
