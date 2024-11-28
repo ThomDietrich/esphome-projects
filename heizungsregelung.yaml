@@ -20,18 +20,24 @@ esp32:
   framework:
     type: arduino
 
+time:
+  - platform: sntp
+    id: time_sntp
+    timezone: Europe/Berlin
+
 packages:
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
-  include_1: !include include/heizungsregelung_i2c_enclosure.yaml
-  include_2: !include include/heizungsregelung_relais.yaml
-  include_3: !include include/heizungsregelung_em10_pwm.yaml
-  include_4: !include include/heizungsregelung_temp_pt1000_spi.yaml
-  include_5: !include include/heizungsregelung_temp_ds18b20.yaml
-  include_6: !include include/heizungsregelung_temp_diff.yaml
-  include_7: !include include/heizungsregelung_energy_heat_counter.yaml
-  include_8: !include include/heizungsregelung_energy_heat_flow.yaml
-  include_9: !include include/heizungsregelung_energy_electric.yaml
+  include_01: !include include/heizungsregelung_i2c_enclosure.yaml
+  include_02: !include include/heizungsregelung_relais.yaml
+  include_03: !include include/heizungsregelung_em10_pwm.yaml
+  include_04: !include include/heizungsregelung_temp_pt1000_spi.yaml
+  include_05: !include include/heizungsregelung_temp_ds18b20.yaml
+  include_06: !include include/heizungsregelung_temp_diff.yaml
+  include_07: !include include/heizungsregelung_energy_heat_counter.yaml
+  include_08: !include include/heizungsregelung_energy_heat_flow.yaml
+  include_09: !include include/heizungsregelung_energy_solar_production.yaml
+  include_10: !include include/heizungsregelung_energy_electric.yaml
 
 # wifi: { use_address: 192.168.23.x }
 

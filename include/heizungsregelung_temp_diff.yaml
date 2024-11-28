@@ -1,55 +1,66 @@
 sensor:
 
   - platform: template
-    name: "Solarkreis Differenz"
-    id: solarkreis_diff
+    name: Solarkreis Differenz Eintrag
+    id: solarkreis_diff_rlvl
     state_class: measurement
     device_class: temperature
-    unit_of_measurement: "K"
+    unit_of_measurement: K
+    accuracy_decimals: 1
+    update_interval: never
+    lambda: |-
+      return (id(solarkreis_rl).state - id(solarkreis_vl).state);
+
+  - platform: template
+    name: Solarkreis Differenz oben-unten
+    id: solarkreis_diff_ou
+    state_class: measurement
+    device_class: temperature
+    unit_of_measurement: K
     accuracy_decimals: 1
     update_interval: never
     lambda: |-
       return (id(sonnenkollektor).state - id(warmwasserspeicher_unten).state);
 
   - platform: template
-    name: "Heizkreis Differenz"
+    name: Heizkreis Differenz
     id: heizkreis_diff
     state_class: measurement
     device_class: temperature
-    unit_of_measurement: "K"
+    unit_of_measurement: K
     accuracy_decimals: 1
     update_interval: never
     lambda: |-
       return (id(heizkreis_vl).state - id(heizkreis_rl).state);
 
   - platform: template
-    name: "Warmwasser Differenz"
+    name: Warmwasser Differenz
     id: warmwasser_diff
     state_class: measurement
     device_class: temperature
-    unit_of_measurement: "K"
+    unit_of_measurement: K
     accuracy_decimals: 1
     update_interval: never
     lambda: |-
       return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
 
   - platform: template
-    name: "Kessel Differenz"
+    name: Kessel Differenz
     id: kessel_diff
     state_class: measurement
     device_class: temperature
-    unit_of_measurement: "K"
+    unit_of_measurement: K
     accuracy_decimals: 1
     update_interval: never
     lambda: |-
       return (id(kessel_vl).state - id(kessel_rl).state);
 
   - platform: template
-    name: "Kesselpufferkreis Differenz"
+    name: Kesselpufferkreis Differenz
     id: kesselpufferkreis_diff
     state_class: measurement
     device_class: temperature
-    unit_of_measurement: "K"
+    unit_of_measurement: K
     accuracy_decimals: 1
     update_interval: never
     lambda: |-

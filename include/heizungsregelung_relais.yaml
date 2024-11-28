@@ -10,6 +10,7 @@ switch:
   # Relais 2
   - platform: gpio
     name: "Solarkreis Umwaelzpumpe"
+    id: switch_solarkreis_pumpe
     pin:
       number: GPIO0
       inverted: true
