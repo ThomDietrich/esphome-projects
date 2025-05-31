@@ -43,7 +43,8 @@ esp32:
 
 external_components:
   # https://github.com/SzczepanLeon/esphome-components
-  - source: github://SzczepanLeon/esphome-components@main
+  # Beware: Version 5 does not support CC1101
+  - source: github://SzczepanLeon/esphome-components@version_4
     refresh: 0d
     components: [wmbus]
 
