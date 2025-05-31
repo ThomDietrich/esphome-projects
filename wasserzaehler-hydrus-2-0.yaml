@@ -289,6 +289,7 @@ sensor:
     unit_of_measurement: s
     accuracy_decimals: 0
     entity_category: diagnostic
+    internal: true
 
   - platform: template
     name: Wassermenge letztes Telegram
@@ -298,6 +299,7 @@ sensor:
     unit_of_measurement: L
     accuracy_decimals: 0
     entity_category: diagnostic
+    internal: true
 
   - platform: template
     name: Wassermenge letzte Stunde
@@ -306,6 +308,7 @@ sensor:
     device_class: water
     unit_of_measurement: L
     accuracy_decimals: 0
+    internal: false
 
   - platform: template
     name: Zeit seit stundenweiser Null-Wassermenge
@@ -313,6 +316,16 @@ sensor:
     icon: mdi:timer-sand-complete
     device_class: duration
     unit_of_measurement: h
+    accuracy_decimals: 0
+
+  - platform: copy
+    source_id: wmbus_watermeter_total
+    name: Wassermenge Total 2
+    filters:
+      - lambda: return x * 1000;
+    unit_of_measurement: L
+    device_class: water
+    state_class: total_increasing
     accuracy_decimals: 0
 
   #
