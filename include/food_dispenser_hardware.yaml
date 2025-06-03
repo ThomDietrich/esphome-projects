@@ -32,7 +32,7 @@ sensor:
           # Attention: These need to be set once per new load cell
           - 90000 -> 0
           - 608000 -> 5000
-      - lambda: if (x < 0.0 & x > -300.0) return 0.0; else return x;
+      - lambda: if ((x < 0.0) & (x > -300.0)) return 0.0; else return x;
       - delta: 25
     icon: mdi:beer-outline
     device_class: weight
