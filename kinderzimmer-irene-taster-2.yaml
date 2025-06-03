@@ -1,0 +1,97 @@
+substitutions:
+  device_name: kinderzimmer-irene-taster-2
+  device_friendly_name: Kinderzimmer Irene Taster Zwischentuer
+  device_area: Kinderzimmer
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+# Shelly 1 Mini Gen3
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+    version: recommended
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+# wifi: { use_address: 192.168.23.224 }
+
+status_led:
+  pin:
+    number: GPIO0
+    inverted: true
+
+# https://esphome.io/components/event/index.html
+# https://esphome.io/components/event/template.html
+event:
+  - platform: template
+    name: Taster Ereignis
+    id: button_input_event
+    device_class: button
+    event_types:
+      - button_pressed_short
+
+binary_sensor:
+  - platform: gpio
+    name: External Button
+    pin: GPIO10
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      then:
+        - event.trigger:
+            id: button_input_event
+            event_type: button_pressed_short
+
+  - platform: gpio
+    name: On-board Button
+    pin:
+      number: GPIO1
+      inverted: yes
+      mode:
+        input: true
+        pullup: true
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      - button.press: esp_restart_button
+
+# output:
+#   - platform: gpio
+#     id: "relay_output"
+#     pin: 7
+# switch:
+#   - platform: output
+#     id: "relay"
+#     name: "Relay"
+#     output: "relay_output"
+
+sensor:
+  - platform: ntc
+    sensor: temp_resistance_reading
+    name: On-board Temperature
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer"
+    calibration:
+      b_constant: 3350
+      reference_resistance: 10kOhm
+      reference_temperature: 298.15K
+    entity_category: diagnostic
+  - platform: resistance
+    id: temp_resistance_reading
+    sensor: temp_analog_reading
+    configuration: DOWNSTREAM
+    resistor: 10kOhm
+  - platform: adc
+    id: temp_analog_reading
+    pin: GPIO3
+    attenuation: 12db
