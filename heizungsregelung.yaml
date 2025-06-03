@@ -32,12 +32,13 @@ packages:
   include_02: !include include/heizungsregelung_relais.yaml
   include_03: !include include/heizungsregelung_em10_pwm.yaml
   include_04: !include include/heizungsregelung_temp_pt1000_spi.yaml
-  include_05: !include include/heizungsregelung_temp_ds18b20.yaml
-  include_06: !include include/heizungsregelung_temp_diff.yaml
-  include_07: !include include/heizungsregelung_energy_heat_counter.yaml
-  include_08: !include include/heizungsregelung_energy_heat_flow.yaml
-  include_09: !include include/heizungsregelung_energy_solar_production.yaml
-  include_10: !include include/heizungsregelung_energy_electric.yaml
+  include_05: !include include/heizungsregelung_temp_ds18b20_gpio32.yaml
+  include_06: !include include/heizungsregelung_temp_ds18b20_gpio33.yaml
+  include_07: !include include/heizungsregelung_temp_diff.yaml
+  include_08: !include include/heizungsregelung_energy_heat_counter.yaml
+  include_09: !include include/heizungsregelung_energy_heat_flow.yaml
+  include_10: !include include/heizungsregelung_energy_solar_production.yaml
+  include_11: !include include/heizungsregelung_energy_electric.yaml
 
 # wifi: { use_address: 192.168.23.x }
 
@@ -84,3 +85,43 @@ light:
 #    filters:
 #      - delayed_on: 100ms
 #      - delayed_off: 100ms
+
+
+# https://esphome.io/components/debug.html
+debug:
+  #update_interval: 5s
+sensor:
+  - platform: debug
+    free:
+      name: Heap Free
+      id: heap_free
+    block:
+      name: Heap Max Block
+      id: heap_max_block
+    loop_time:
+      name: Loop Time
+      id: loop_time
+
+  - platform: template
+    name: Heap Free (relative)
+    id: heap_free_percent
+    unit_of_measurement: '%'
+    accuracy_decimals: 1
+    icon: mdi:percent
+    # update_interval: 5s
+    entity_category: diagnostic
+    # 524288 B (SRAM total)
+    # 327680 B (DRAM usable)
+    lambda: return ( id(heap_free).state * 100 / 327680 );
+
+  - platform: template
+    name: Heap Max Block (relative)
+    id: heap_max_block_percent
+    unit_of_measurement: '%'
+    accuracy_decimals: 1
+    icon: mdi:percent
+    # update_interval: 5s
+    entity_category: diagnostic
+    # 524288 B (SRAM total)
+    # 327680 B (DRAM usable)
+    lambda: return ( id(heap_max_block).state * 100 / 327680 );

@@ -2,12 +2,14 @@
 # https://esphome.io/components/one_wire.html
 one_wire:
   - platform: gpio
+    id: one_wire_gpio32
     pin: GPIO32
 
 sensor:
   # DS18B20 Temperatursensoren
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xaa041684630cff28
     name: Solarkreis Vorlauf # zum Solarthermiefeld
     id: solarkreis_vl
@@ -16,6 +18,7 @@ sensor:
       - component.update: solarkreis_diff_rlvl
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xd33c97f6491fd728
     name: Solarkreis Ruecklauf # vom Solarthermiefeld
     id: solarkreis_rl
@@ -24,6 +27,7 @@ sensor:
       - component.update: solarkreis_diff_rlvl
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x540316839e33ff28
     name: Warmwasserspeicher unten
     id: warmwasserspeicher_unten
@@ -31,11 +35,13 @@ sensor:
       - component.update: solarkreis_diff_ou
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xa25469481f64ff28
     name: Warmwasserspeicher oben
     id: warmwasserspeicher_oben
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x2500000cf8822e28
     name: Heizkreis Vorlauf
     id: heizkreis_vl
@@ -44,6 +50,7 @@ sensor:
       - component.update: heizkreis_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x94626a481f64ff28
     name: Heizkreis Ruecklauf
     id: heizkreis_rl
@@ -51,6 +58,7 @@ sensor:
       - component.update: heizkreis_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x4400000cf8ea0528
     name: Gastherme Vorlauf
     id: gastherme_vl
@@ -58,6 +66,7 @@ sensor:
       - component.update: warmwasser_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x9500000cf8984828
     name: Gastherme Ruecklauf Warmwasserbereitung
     id: gastherme_rl_wwb
@@ -65,14 +74,17 @@ sensor:
       - component.update: warmwasser_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x45000005fa787a28
     name: Pufferspeicher blau 550 Liter
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xd6000005faf54928
     name: Pufferspeicher grau 600 Liter
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xc400000cf8624528
     name: Kessel Vorlauf
     id: kessel_vl
@@ -80,6 +92,7 @@ sensor:
       - component.update: kessel_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xd900000cf8d4ca28
     name: Kessel Ruecklauf
     id: kessel_rl
@@ -87,6 +100,7 @@ sensor:
       - component.update: kessel_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x0ebe6d481f64ff28
     name: Kesselpufferkreis Vorlauf
     id: kesselpufferkreis_vl
@@ -94,6 +108,7 @@ sensor:
       - component.update: kesselpufferkreis_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0xe73f69481f64ff28
     name: Kesselpufferkreis Ruecklauf
     id: kesselpufferkreis_rl
@@ -101,5 +116,6 @@ sensor:
       - component.update: kesselpufferkreis_diff
 
   - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio32
     address: 0x7c186d481f64ff28
     name: Warmwasserspeicher Abfluss

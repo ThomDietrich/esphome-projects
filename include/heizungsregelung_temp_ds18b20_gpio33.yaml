@@ -1,0 +1,81 @@
+# DS18B20 Temperatursensoren Pin
+# https://esphome.io/components/one_wire.html
+one_wire:
+  - platform: gpio
+    id: one_wire_gpio33
+    pin: GPIO33
+
+sensor:
+  # DS18B20 Temperatursensoren
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0x6d3ce1d4446bde28
+    name: Pufferspeicher Sensor 01
+    id: puffer_sensor_01
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0xa33ce1d444932128
+    name: Pufferspeicher Sensor 02
+    id: puffer_sensor_02
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0x8f3ce1d444961f28
+    name: Pufferspeicher Sensor 03
+    id: puffer_sensor_03
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0x073ce1d4440ca828
+    name: Pufferspeicher Sensor 04
+    id: puffer_sensor_04
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0x283ce1d444ea1a28
+    name: Pufferspeicher Sensor 05
+    id: puffer_sensor_05
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0x5b3ce1d4440f2328
+    name: Pufferspeicher Sensor 06
+    id: puffer_sensor_06
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0xde3ce1d444097228
+    name: Pufferspeicher Sensor 07
+    id: puffer_sensor_07
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0xb53ce1d458b4be28
+    name: Pufferspeicher Sensor 08
+    id: puffer_sensor_08
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0x233ce1d4445b7728
+    name: Pufferspeicher Sensor 09
+    id: puffer_sensor_09
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0xe63ce1d444cefa28
+    name: Pufferspeicher Sensor 10
+    id: puffer_sensor_10
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0xa63ce1d4442afd28
+    name: Pufferspeicher Sensor 11
+    id: puffer_sensor_11
+
+  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+    one_wire_id: one_wire_gpio33
+    address: 0xc03ce1d444099328
+    name: Pufferspeicher Sensor 12
+    id: puffer_sensor_12
