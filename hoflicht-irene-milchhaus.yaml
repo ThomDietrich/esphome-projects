@@ -1,0 +1,48 @@
+substitutions:
+  device_name: hoflicht-irene-milchhaus
+  device_friendly_name: Hoflicht Irene Milchhaus
+  device_area: Hof
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+# Sonoff BASIC R1
+esp8266:
+  board: esp01_1m
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+binary_sensor:
+  - platform: gpio
+    name: Status
+    id: irene_light_sensing_gpio
+    pin:
+      number: GPIO14
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+
+switch:
+  - platform: gpio
+    pin: GPIO12
+    id: relay_1
+    internal: true
+
+button:
+  - platform: template
+    name: Auslöser
+    icon: mdi:button-pointer
+    on_press:
+      - switch.turn_on: relay_1
+      - delay: 500ms
+      - switch.turn_off: relay_1
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: yes
