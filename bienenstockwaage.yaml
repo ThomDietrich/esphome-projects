@@ -10,6 +10,16 @@
 
 # esphome -s scale_id 01 run --device 192.168.23.41 bienenstockwaage.yaml
 
+  
+# Bienenstockwaage
+#
+# Beispielhafte Umrechnungsformel: weight = 0.00004194443 * raw + 6.318476
+# Wenn sich das Gewicht stark ändert (z.B. beim Kalibrieren) dauert es bis der Wert völlig stabil ist.
+#   Nach 15 Minuten: Circa 15 Gramm vom unmittelbaren Messwert
+#   Nach 60 Minuten: Circa 22 Gramm vom unmittelbaren Messwert, stabil
+# Erfahrungswert: Konvertierter Messwert (ohne Filter) schwankt mit Standardabweichung von circa 0,002 kg
+
+
 substitutions:
   scale_id: "00"
 
@@ -34,9 +44,9 @@ substitutions:
   scale_02_refweight_30kg_raw:       "362451"
   scale_02_refweight_78_5kg_raw:    "1526746"
   #
-  scale_03_refweight_0kg_raw:       "-153511"
-  scale_03_refweight_30kg_raw:       "562120"
-  scale_03_refweight_78_5kg_raw:    "1730073"
+  scale_03_refweight_0kg_raw:       "-150316"
+  scale_03_refweight_30kg_raw:       "564070"
+  scale_03_refweight_78_5kg_raw:    "1721084"
   #
   scale_04_refweight_0kg_raw:        "-33351" # Nicht gemessen, nur angenähert! Muss noch ermittelt werden.
   scale_04_refweight_30kg_raw:       "599000"
@@ -53,10 +63,6 @@ substitutions:
   scale_07_refweight_0kg_raw:        "284244"
   scale_07_refweight_30kg_raw:       "974875"
   scale_07_refweight_78_5kg_raw:    "2098076"
-  
-# Bienenstockwaage
-#
-# Erfahrungswert: Konvertierter Messwert (ohne Filter) schwankt mit Standardabweichung von circa 0,002 kg
 
 esphome:
   name: ${device_name}
