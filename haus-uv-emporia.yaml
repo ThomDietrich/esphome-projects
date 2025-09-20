@@ -86,13 +86,14 @@ i2c:
   sda: 21
   scl: 22
   scan: false
-  frequency: 200kHz  # recommended range is 50-200kHz
+  frequency: 400kHz
+  timeout: 1ms
   id: i2c_a
 
 # needed for total_daily_energy
 time:
-  - platform: sntp
-    id: time_sntp
+  - platform: homeassistant
+    id: homeassistant_time
     timezone: Europe/Berlin
 
 # these are called references in YAML. They allow you to reuse
