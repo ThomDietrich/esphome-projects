@@ -14,12 +14,6 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
-  platform: esp32
-  board: pico32
-
-  project:
-    name: "M5Stack.M5Stamp-Pico"
-    version: "0.0"
 
   on_boot:
     - priority: -10
@@ -33,6 +27,7 @@ esphome:
 #   hardware_uart: USB_SERIAL_JTAG
 
 packages:
+  system: !include system/stamp_pico.yaml
   wifi: !include common/wifi.yaml
   general: !include common/general.yaml
   status_led: !include include/on_board_status_led_sk6812.yaml

@@ -1,0 +1,11 @@
+# https://docs.m5stack.com/en/core/stamp_pico
+
+esphome:
+  project:
+    name: "M5Stack.M5Stamp-Pico"
+    version: "0.0"
+
+esp32:
+  board: pico32
+  framework:
+    type: esp-idf
