@@ -9,7 +9,8 @@ python_version = "3.11"
 [dev-packages]
 
 [packages]
-esphome = "*"
+#esphome = ">2025.9.0"
+esphome = "==2025.6.3"
 pillow = "==10.4.0"
 esptool = "*"
 yamllint = "*"
