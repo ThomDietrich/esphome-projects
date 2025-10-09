@@ -40,6 +40,8 @@ esphome:
 esp32:
   board: esp32-c3-devkitm-1
   variant: esp32c3
+  framework:
+    type: arduino
 
 external_components:
   # https://github.com/SzczepanLeon/esphome-components
@@ -59,8 +61,6 @@ wifi:
   ap:
     ssid: "${device_name}"
     password: !secret wifi_fallback_pw
-
-  # use_address: 192.168.23.116
 
 captive_portal:
 
@@ -176,7 +176,6 @@ light:
     pin: ${status_led_pin}
     rgb_order: GRB
     num_leds: 1
-    rmt_channel: 0
     chipset: SK6812
     restore_mode: ALWAYS_OFF
 #   - platform: status_led
