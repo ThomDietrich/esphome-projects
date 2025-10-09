@@ -240,7 +240,7 @@ light:
     pin: ${status_led_pin}
     rgb_order: GRB
     num_leds: 1
-    rmt_channel: 0
+    rmt_channel: 0 # Nicht löschen solang wmbus nicht mit der neuesten ESPHome Version kompatibel ist.
     chipset: SK6812
     restore_mode: ALWAYS_OFF
 #   - platform: status_led
