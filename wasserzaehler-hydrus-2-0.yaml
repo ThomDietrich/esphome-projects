@@ -29,6 +29,70 @@ substitutions:
 #   "timestamp":"2024-06-26T14:28:21Z"
 # }
 
+# Home Assistant Benachrichtigung bei Leckage:
+#
+# automation:
+#   - alias: Wasserzähler Leckage letzte Nacht erkannt
+#     trigger:
+#       - trigger: time
+#         at: "09:00"
+#     condition:
+#       - condition: numeric_state
+#         entity_id: sensor.wasserzaehler_zeit_seit_stundenweiser_null_wassermenge
+#         above: 12
+#     action:
+#       - action: notify.phone
+#         data:
+#           title: "Wasserzähler"
+#           message: "Anhaltender Wasserfluss über Nacht festgestellt. Bitte prüfen."
+#           data:
+#             channel: Info
+
+# Home Assistant UI card config:
+#
+#   type: custom:vertical-stack-in-card
+#   title: Wasserzähler Diehl HYDRUS 2.0
+#   cards:
+#     - type: entities
+#       entities:
+#         - entity: sensor.wasserzaehler_zaehlernummer
+#           name: Zählernummer
+#         - entity: sensor.wasserzaehler_wassermenge_total
+#           name: Zählerstand (total)
+#     - type: custom:mini-graph-card
+#       icon: mdi:water-pump
+#       entities:
+#         - entity: sensor.wasserzaehler_wassermenge_total_2
+#           name: Wasserverbrauch täglich
+#           color: darkblue
+#       show:
+#         graph: bar
+#         labels: true
+#         legend: false
+#       aggregate_func: diff
+#       hours_to_show: 336
+#       group_by: date
+#       hour24: true
+#       height: 100
+#       bar_spacing: 2
+#     - type: entities
+#       entities:
+#         - entity: sensor.wasserzaehler_wassertemperatur
+#           name: Wassertemperatur
+#         - type: divider
+#         - entity: binary_sensor.wasserzaehler_cc1101_i2c
+#           name: CC1101 I2C
+#         - entity: sensor.wasserzaehler_cc1101_rssi
+#           name: CC1101 RSSI
+#         - entity: sensor.wasserzaehler_zeit_seit_stundenweiser_null_wassermenge
+#           name: Zeit seit stundenweisem Null-Wasserverbrauch
+#         - type: divider
+#         - entity: sensor.wasserzaehler_raum_temperatur
+#           name: Raum Temperatur
+#         - entity: sensor.wasserzaehler_raum_luftfeuchte
+#           name: Raum Luftfeuchte
+
+
 esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
