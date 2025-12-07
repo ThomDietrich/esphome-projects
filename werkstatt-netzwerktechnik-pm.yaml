@@ -1,0 +1,128 @@
+substitutions:
+  device_name: werkstatt-netzwerktechnik-pm
+  device_friendly_name: Werkstatt Netzwerkschrank PM
+  device_area: Hof
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  platformio_options:
+    board_build.flash_mode: dio
+
+# Shelly PM Mini Gen3
+esp32:
+  board: esp32-c3-devkitm-1
+  flash_size: 8MB
+  framework:
+    type: esp-idf
+    version: recommended
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+
+# external_components:
+#   - source: github://asergunov/esphome_esphome@uart-rx-pullup
+#     components: [ uart ]
+
+packages:
+  wifi: !include common/wifi.yaml
+  general: !include common/general.yaml
+
+time:
+  - platform: homeassistant
+
+uart:
+  id: uart_0
+  tx_pin: GPIO6
+  rx_pin: 
+    number: GPIO7
+    mode:
+      pullup: true
+      input: true
+  baud_rate: 9600
+  stop_bits: 1
+
+status_led:
+  pin:
+    number: 0
+    inverted: true
+
+binary_sensor:
+  - platform: gpio
+    name: On-board Button
+    pin:
+      number: GPIO1
+      inverted: yes
+      mode:
+        input: true
+        pullup: true
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      - button.press: esp_restart_button
+
+sensor:
+  - platform: ntc
+    sensor: temp_resistance_reading
+    name: On-board Temperature
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer"
+    calibration:
+      b_constant: 3350
+      reference_resistance: 10kOhm
+      reference_temperature: 298.15K
+    entity_category: diagnostic
+  - platform: resistance
+    id: temp_resistance_reading
+    sensor: temp_analog_reading
+    configuration: DOWNSTREAM
+    resistor: 10kOhm
+  - platform: adc
+    id: temp_analog_reading
+    pin: GPIO3
+    attenuation: 12db
+
+  - platform: bl0942
+    uart_id: uart_0
+    # voltage:
+    #   name: Voltage
+    #   id: bvoltage
+    #   icon: mdi:alpha-v-circle-outline
+    #   device_class: voltage
+    # current:
+    #   name: Current
+    #   id: bcurrent
+    #   icon: mdi:alpha-a-circle-outline
+    #   device_class: current
+    power:
+      name: Power
+      id: bpower
+      icon: mdi:transmission-tower
+      device_class: power
+      accuracy_decimals: 1
+    energy:
+      name: Energy
+      id: benergy
+      icon: mdi:lightning-bolt
+      device_class: energy
+      accuracy_decimals: 3
+    # frequency:
+    #   name: Frequency
+    #   id: bfreq
+    #   accuracy_decimals: 2
+    #   icon: mdi:cosine-wave
+    #   device_class: frequency
+    update_interval: 5s
+
+  - platform: total_daily_energy
+    name: Energy Daily
+    power_id: bpower
+    icon: mdi:meter-electric
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001

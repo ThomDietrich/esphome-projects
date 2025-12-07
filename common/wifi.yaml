@@ -10,6 +10,7 @@ wifi:
   ap:
     ssid: "${device_name}"
     password: !secret wifi_fallback_pw
+  min_auth_mode: WPA2
 
 sensor:
   # Reports the WiFi signal strength/RSSI in dB
