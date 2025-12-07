@@ -87,41 +87,46 @@ light:
 #      - delayed_off: 100ms
 
 
-# https://esphome.io/components/debug.html
-debug:
-  #update_interval: 5s
-sensor:
-  - platform: debug
-    free:
-      name: Heap Free
-      id: heap_free
-    block:
-      name: Heap Max Block
-      id: heap_max_block
-    loop_time:
-      name: Loop Time
-      id: loop_time
+# # https://esphome.io/components/debug.html
+# debug:
+#   #update_interval: 5s
+# sensor:
+#   - platform: debug
+#     free:
+#       name: Heap Free
+#       id: heap_free
+#     block:
+#       name: Heap Max Block
+#       id: heap_max_block
+#     loop_time:
+#       name: Loop Time
+#       id: loop_time
 
-  - platform: template
-    name: Heap Free (relative)
-    id: heap_free_percent
-    unit_of_measurement: '%'
-    accuracy_decimals: 1
-    icon: mdi:percent
-    # update_interval: 5s
-    entity_category: diagnostic
-    # 524288 B (SRAM total)
-    # 327680 B (DRAM usable)
-    lambda: return ( id(heap_free).state * 100 / 327680 );
+#   - platform: template
+#     name: Heap Free (relative)
+#     id: heap_free_percent
+#     unit_of_measurement: '%'
+#     accuracy_decimals: 1
+#     icon: mdi:percent
+#     # update_interval: 5s
+#     entity_category: diagnostic
+#     # 524288 B (SRAM total)
+#     # 327680 B (DRAM usable)
+#     lambda: return ( id(heap_free).state * 100 / 327680 );
 
-  - platform: template
-    name: Heap Max Block (relative)
-    id: heap_max_block_percent
-    unit_of_measurement: '%'
-    accuracy_decimals: 1
-    icon: mdi:percent
-    # update_interval: 5s
-    entity_category: diagnostic
-    # 524288 B (SRAM total)
-    # 327680 B (DRAM usable)
-    lambda: return ( id(heap_max_block).state * 100 / 327680 );
+#   - platform: template
+#     name: Heap Max Block (relative)
+#     id: heap_max_block_percent
+#     unit_of_measurement: '%'
+#     accuracy_decimals: 1
+#     icon: mdi:percent
+#     # update_interval: 5s
+#     entity_category: diagnostic
+#     # 524288 B (SRAM total)
+#     # 327680 B (DRAM usable)
+#     lambda: return ( id(heap_max_block).state * 100 / 327680 );
+
+# # https://esphome.io/components/runtime_stats/
+# # This component is intended for debugging and troubleshooting
+# runtime_stats:
+#   log_interval: 60s

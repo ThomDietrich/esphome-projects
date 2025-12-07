@@ -17,7 +17,7 @@ sensor:
     rtd_wires: 2
     unit_of_measurement: °C
     accuracy_decimals: 1
-    update_interval: 10s
+    update_interval: 3s  # Fast update but (see delta) only when it actually changes
     filters:
       - filter_out: NaN
       - or:
