@@ -82,6 +82,7 @@ sensor:
   - platform: template
     name: "${heat_counter_name} Volumen"
     id: sensor_${heat_counter_id}_wasser
+    device_id: ${heat_counter_device_id}
     state_class: total_increasing
     device_class: water
     unit_of_measurement: L
@@ -97,6 +98,7 @@ sensor:
   - platform: template
     name: "${heat_counter_name} Energie"
     id: sensor_${heat_counter_id}_energie
+    device_id: ${heat_counter_device_id}
     state_class: total_increasing
     device_class: energy
     unit_of_measurement: kWh

@@ -49,8 +49,9 @@ switch:
   # pausiert. Die Pumpe wird NICHT beeinflusst — sie hat ihren eigenen
   # Schalter (keller_fbh_pumpe.yaml).
   - platform: template
-    name: "Mischkreis Automatik"
+    name: "Automatik"
     id: fbh_betrieb
+    device_id: mischkreis
     icon: "mdi:auto-fix"
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true
@@ -90,8 +91,9 @@ switch:
 
 text_sensor:
   - platform: template
-    name: "Mischkreis Reglerzustand"
+    name: "Reglerzustand"
     id: reglerzustand
+    device_id: mischkreis
     icon: "mdi:information-outline"
     update_interval: 15s
     lambda: |-

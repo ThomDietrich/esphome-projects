@@ -70,8 +70,9 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
     address: 0x7d3cd20457252528
-    name: "Primaerkreis Vorlauftemperatur"  # T_Prim_VL
+    name: "Zufluss Vorlauftemperatur"  # T_Prim_VL
     id: t_prim_vl
+    device_id: mischkreis
     update_interval: 10s
     on_value:
       then:
@@ -83,8 +84,9 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
     address: 0xe73c1e045720b528
-    name: "Mischkreis Vorlauftemperatur"  # T_FBH_VL
+    name: "Vorlauftemperatur"  # T_FBH_VL
     id: t_fbh_vl
+    device_id: mischkreis
     update_interval: 5s
     on_value:
       then:
@@ -95,8 +97,9 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
     address: 0x933cd6045779db28
-    name: "Mischkreis Ruecklauftemperatur"  # T_FBH_RL
+    name: "Ruecklauftemperatur"  # T_FBH_RL
     id: t_fbh_rl
+    device_id: mischkreis
     update_interval: 10s
     on_value:
       then:
@@ -107,8 +110,9 @@ sensor:
 
   # ΔT des FBH-Kreises (Vorlauf − Rücklauf)
   - platform: template
-    name: "Mischkreis Differenz"
+    name: "Differenz"
     id: t_fbh_diff
+    device_id: mischkreis
     unit_of_measurement: "K"
     accuracy_decimals: 1
     icon: "mdi:thermometer-lines"
@@ -119,8 +123,9 @@ sensor:
 
   # Übertemperatur des Primärkreises gegenüber dem Sollwert
   - platform: template
-    name: "Primaerkreis Uebertemperatur"
+    name: "Zufluss Uebertemperatur"
     id: t_prim_headroom
+    device_id: mischkreis
     unit_of_measurement: "K"
     accuracy_decimals: 1
     icon: "mdi:thermometer-chevron-up"

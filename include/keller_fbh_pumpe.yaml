@@ -57,8 +57,9 @@
 switch:
   - platform: gpio
     pin: GPIO32
-    name: "Umwaelzpumpe"
+    name: "Schalter"
     id: pumpe_fbh
+    device_id: umwaelzpumpe
     icon: "mdi:pump"
     restore_mode: RESTORE_DEFAULT_ON
 
@@ -94,8 +95,9 @@ interval:
 
 sensor:
   - platform: template
-    name: "Umwaelzpumpe Betriebsstunden"
+    name: "Betriebsstunden"
     id: pumpe_betriebsstunden_sensor
+    device_id: umwaelzpumpe
     unit_of_measurement: "h"
     accuracy_decimals: 1
     icon: "mdi:pump"

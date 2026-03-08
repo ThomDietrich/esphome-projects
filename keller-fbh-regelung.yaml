@@ -98,6 +98,19 @@ esphome:
   project:
     name: "ASTRA.BR4A4AL"
     version: "0.0"
+  areas:
+    - id: area_main
+      name: ${device_area}
+  devices:
+    - id: mischkreis
+      name: "Keller FBH Mischkreis"
+      area_id: area_main
+    - id: umwaelzpumpe
+      name: "Keller FBH Umwaelzpumpe"
+      area_id: area_main
+    - id: waermezaehler
+      name: "Keller FBH Waermezaehler"
+      area_id: area_main
 
 esp32:
   board: esp32dev
@@ -121,6 +134,7 @@ packages:
       heat_counter_id: "fbh"
       heat_counter_gpio: "GPIO39"
       heat_counter_temp_diff: "t_fbh_diff"
+      heat_counter_device_id: "waermezaehler"
 
 logger:
   logs:
