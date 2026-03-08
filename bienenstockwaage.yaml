@@ -21,7 +21,7 @@
 
 
 substitutions:
-  scale_id: "00"
+  scale_id: "00"  # Intentional: no valid default. Must pass -s scale_id <01..07|test>
 
   device_name: bienenstockwaage-${scale_id}
   device_friendly_name: Bienenstockwaage ${scale_id}
@@ -76,10 +76,8 @@ esp8266:
   board: d1_mini
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-
-# wifi: { use_address: 192.168.23.45 }  # Better: esphome run --device 192.168.23.45 bienenstockwaage.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
 
 # https://esphome.io/components/sensor/hx711.html
 sensor:
