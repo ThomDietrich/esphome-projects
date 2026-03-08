@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "esphome@aurora-smart-home": true
+  }
+}
