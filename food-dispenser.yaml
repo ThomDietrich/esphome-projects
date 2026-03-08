@@ -25,7 +25,7 @@ packages:
   - !include include/food_dispenser_output_script.yaml
 
 api:
-  services:
+  actions:
     #
     # Home Assistant Service
     #
@@ -39,7 +39,7 @@ api:
     # You have to identify this value over the course of a few trial runs.
     # Internal target = target_g - offset_g
     #
-    - service: output
+    - action: output
       variables:
         timeout_sec: int
         target_g: int

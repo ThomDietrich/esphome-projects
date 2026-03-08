@@ -14,7 +14,7 @@ esphome:
   on_boot:
     - priority: 500
       # When hardware initialized
-      # Failsafe temperature, approx. 30°C = 20% PWM
+      # Failsafe: ~30°C (20% PWM) — safe default to prevent freezing without overheating
       then:
         - lambda: |-
             id(heiz_sollwert_pwm_output).set_level(0.2);
@@ -45,13 +45,14 @@ sensor:
     update_interval: never
 
 api:
-  services:
-    - service: gastherme_solltemperatur_set  # Wird erweitert um "esphome.heizungsregelung_"
+  actions:
+    - action: gastherme_solltemperatur_set  # Wird erweitert um "esphome.heizungsregelung_"
       variables:
         temperature: float
       then:
         - lambda: |-
-            double degc = 1.0 * temperature;
+            double degc = temperature;
+            // Coefficients from linear fit (spreadsheet) of measured °C-to-V and V-to-PWM% curves
             double volt = degc * 0.1253 - 1.2751;
             double pwm_pct = (volt - 0.4535) * 10.05;
 
