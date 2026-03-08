@@ -153,7 +153,7 @@ sensor:
   - platform: template
     name: Solarkreis Energie
     id: sensor_solarkreis_energie_kwh
-    state_class: total
+    state_class: total_increasing
     device_class: energy
     unit_of_measurement: kWh
     icon: mdi:home-lightning-bolt-outline

@@ -2,7 +2,7 @@
 i2c:
   sda: GPIO22
   scl: GPIO21
-  scan: true
+  scan: false
 
 # SHT3X-D Temperature+Humidity Sensor
 # https://esphome.io/components/sensor/sht3xd.html
