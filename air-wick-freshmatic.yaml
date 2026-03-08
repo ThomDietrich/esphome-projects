@@ -18,8 +18,8 @@ esp8266:
   board: d1_mini
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
 
 status_led:
   pin:

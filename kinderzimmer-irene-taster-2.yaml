@@ -17,10 +17,8 @@ esp32:
     version: recommended
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-
-# wifi: { use_address: 192.168.23.224 }
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
 
 status_led:
   pin:

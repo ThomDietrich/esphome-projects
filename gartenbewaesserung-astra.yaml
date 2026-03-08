@@ -26,16 +26,14 @@ esp32:
     type: arduino
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-  include_rtttl: !include include/buzzer_rtttl.yaml
-  include_1: !include include/gartenbewaesserung_valves.yaml
-  include_2: !include include/gartenbewaesserung_sensors.yaml
-  include_3: !include include/gartenbewaesserung_controller.yaml
-  include_4: !include include/gartenbewaesserung_controller_boot.yaml
-  include_5: !include include/gartenbewaesserung_controller_extra.yaml
-
-# wifi: { use_address: 192.168.23.x }
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+  - !include include/buzzer_rtttl.yaml
+  - !include include/gartenbewaesserung_valves.yaml
+  - !include include/gartenbewaesserung_sensors.yaml
+  - !include include/gartenbewaesserung_controller.yaml
+  - !include include/gartenbewaesserung_controller_boot.yaml
+  - !include include/gartenbewaesserung_controller_extra.yaml
 
 ################################################################################
 

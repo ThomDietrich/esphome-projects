@@ -25,8 +25,8 @@ esp32:
 #     components: [ uart ]
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
 
 time:
   - platform: homeassistant

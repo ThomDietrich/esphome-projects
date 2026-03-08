@@ -15,10 +15,8 @@ esp32:
   board: esp32dev
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-
-# wifi: { use_address: 192.168.23.x }
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
 
 
 light:

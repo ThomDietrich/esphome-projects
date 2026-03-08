@@ -15,13 +15,11 @@ esphome:
   area: ${device_area}
 
 packages:
-  system: !include system/esp32_c3_supermini.yaml
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-  status_led: !include include/on_board_status_led_single.yaml
-  include_rtttl: !include include/buzzer_rtttl.yaml
-
-# wifi: { use_address: 192.168.23.x }
+  - !include system/esp32_c3_supermini.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+  - !include include/on_board_status_led_single.yaml
+  - !include include/buzzer_rtttl.yaml
 
 
 i2c:
@@ -70,8 +68,8 @@ sensor:
         const float alpha = 6.112;  // hPa
         const float beta = 17.62;
         const float lambda = 243.12;  // °C
-        float T = id(technikraum_temp).raw_state;  // Temperature in °C
-        float RH = id(technikraum_hum).raw_state;  // Relative Humidity
+        float T = id(technikraum_temp).get_raw_state;  // Temperature in °C
+        float RH = id(technikraum_hum).get_raw_state;  // Relative Humidity
         float H = log(RH / 100) + beta * T / (lambda + T);
         return lambda * H / (beta - H);
     update_interval: never
@@ -112,8 +110,8 @@ sensor:
         const float alpha = 6.112;  // hPa
         const float beta = 17.62;
         const float lambda = 243.12;  // °C
-        float T = id(dachboden_temp).raw_state;  // Temperature in °C
-        float RH = id(dachboden_hum).raw_state;  // Relative Humidity
+        float T = id(dachboden_temp).get_raw_state;  // Temperature in °C
+        float RH = id(dachboden_hum).get_raw_state;  // Relative Humidity
         float H = log(RH / 100) + beta * T / (lambda + T);
         return lambda * H / (beta - H);
     update_interval: never

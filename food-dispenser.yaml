@@ -16,18 +16,13 @@ esphome:
 
 
 packages:
-  system: !include system/stamp_c3u.yaml
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-  status_led: !include include/on_board_status_led_sk6812.yaml
-  include_1: !include include/food_dispenser_hardware.yaml
-  include_2: !include include/food_dispenser_entities.yaml
-  include_3: !include include/food_dispenser_output_script.yaml
-
-
-# Manual IP overwrite
-# wifi: { use_address: 192.168.23.x }
-
+  - !include system/stamp_c3u.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+  - !include include/on_board_status_led_sk6812.yaml
+  - !include include/food_dispenser_hardware.yaml
+  - !include include/food_dispenser_entities.yaml
+  - !include include/food_dispenser_output_script.yaml
 
 api:
   services:

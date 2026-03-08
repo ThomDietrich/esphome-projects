@@ -27,15 +27,13 @@ esphome:
 #   hardware_uart: USB_SERIAL_JTAG
 
 packages:
-  system: !include system/stamp_pico.yaml
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-  status_led: !include include/on_board_status_led_sk6812.yaml
-  include_1: !include include/epaper_display_fonts.yaml
-  include_2: !include include/epaper_display_homeassistant.yaml
-  include_3: !include include/epaper_display_screen.yaml
-
-# wifi: { use_address: 192.168.23.x }
+  - !include system/stamp_pico.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+  - !include include/on_board_status_led_sk6812.yaml
+  - !include include/epaper_display_fonts.yaml
+  - !include include/epaper_display_homeassistant.yaml
+  - !include include/epaper_display_screen.yaml
 
 sensor:
   - platform: template

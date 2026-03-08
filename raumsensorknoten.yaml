@@ -16,13 +16,11 @@ esphome:
     version: "0.0"
 
 packages:
-  system: !include system/stamp_c3u.yaml
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-  status_led: !include include/on_board_status_led_sk6812.yaml
-  include_rtttl: !include include/buzzer_rtttl.yaml
-
-# wifi: { use_address: 192.168.23.x }
+  - !include system/stamp_c3u.yaml
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+  - !include include/on_board_status_led_sk6812.yaml
+  - !include include/buzzer_rtttl.yaml
 
 
 i2c:

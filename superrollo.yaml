@@ -30,11 +30,8 @@ esp8266:
   board: d1_mini
 
 packages:
-  wifi: !include common/wifi.yaml
-  general: !include common/general.yaml
-
-# wifi: { use_address: 192.168.1.72 } # Küche
-# wifi: { use_address: 192.168.1.67 } # Schlafzimmer
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
 
 switch:
   - platform: gpio
