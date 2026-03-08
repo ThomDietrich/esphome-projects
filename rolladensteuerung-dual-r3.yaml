@@ -13,6 +13,8 @@ esphome:
 
 esp32:
   board: esp32dev
+  framework:
+    type: esp-idf
 
 packages:
   - !include common/wifi.yaml
@@ -52,9 +54,6 @@ cover:
     stop_action:
       - switch.turn_off: relay_open_led_1
       - switch.turn_off: relay_close_led_2
-      - sensor.template.publish:
-          id: position_percentage
-          state: !lambda 'return 100.0 * id(my_cover).position;'
 
     max_duration: 20s
     obstacle_rollback: 30%
@@ -68,6 +67,7 @@ switch:
     name: Motorfahrt hoch
     pin: GPIO27
     id: relay_open_led_1
+    restore_mode: ALWAYS_OFF
     interlock: [relay_close_led_2]
     interlock_wait_time: 250ms
     internal: true
@@ -76,6 +76,7 @@ switch:
     name: Motorfahrt runter
     pin: GPIO14
     id: relay_close_led_2
+    restore_mode: ALWAYS_OFF
     interlock: [relay_open_led_1]
     interlock_wait_time: 250ms
     internal: true
@@ -99,6 +100,8 @@ binary_sensor:
     on_press:
       - button.press: esp_restart_button
 
+  # Taster UX: Kurzer Druck togglet Fahrt (start/stop),
+  # langer Druck faehrt nur solange gehalten (stoppt bei Loslassen).
   - platform: gpio
     name: Externer Taster hoch
     pin:
@@ -111,18 +114,17 @@ binary_sensor:
     filters:
       - delayed_on_off: 50ms
     on_press:
-      - lambda: |-
-          auto call = id(my_cover).make_call();
-          if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE) {
-            call.set_command_open();
-          } else {
-            call.set_command_stop();
-          }
-          call.perform();
+      - if:
+          condition:
+            lambda: 'return id(my_cover).current_operation == COVER_OPERATION_IDLE;'
+          then:
+            - cover.open: my_cover
+          else:
+            - cover.stop: my_cover
     on_click:
       - min_length: 0.5s
         max_length: 999s
-        then: # falling edge action
+        then:
           - cover.stop: my_cover
 
   - platform: gpio
@@ -137,18 +139,17 @@ binary_sensor:
     filters:
       - delayed_on_off: 50ms
     on_press:
-      - lambda: |-
-          auto call = id(my_cover).make_call();
-          if (id(my_cover).current_operation == CoverOperation::COVER_OPERATION_IDLE) {
-            call.set_command_close();
-          } else {
-            call.set_command_stop();
-          }
-          call.perform();
+      - if:
+          condition:
+            lambda: 'return id(my_cover).current_operation == COVER_OPERATION_IDLE;'
+          then:
+            - cover.close: my_cover
+          else:
+            - cover.stop: my_cover
     on_click:
       - min_length: 0.5s
         max_length: 999s
-        then: # falling edge action
+        then:
           - cover.stop: my_cover
 
 
@@ -180,15 +181,6 @@ sensor:
     # active_power_2:
     #   name: Power 2
 
-  - platform: template
-    name: Rollo Position
-    id: position_percentage
-    update_interval: never
-    unit_of_measurement: "%"
-    accuracy_decimals: 0
-    icon: mdi:roller-shade
-    state_class: measurement
-    device_class: ""
 
 logger:
   logs:
