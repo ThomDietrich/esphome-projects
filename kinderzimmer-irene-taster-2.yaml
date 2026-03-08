@@ -7,6 +7,9 @@ esphome:
   name: ${device_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
+  project:
+    name: "Shelly.Mini-Gen3"
+    version: "0.0"
 
 # Shelly 1 Mini Gen3
 esp32:
@@ -62,6 +65,8 @@ binary_sensor:
     on_press:
       - button.press: esp_restart_button
 
+# Relay intentionally disabled - this device functions as a button/event trigger only
+# Uncomment below if relay control is needed in the future:
 # output:
 #   - platform: gpio
 #     id: "relay_output"
@@ -77,13 +82,13 @@ sensor:
     sensor: temp_resistance_reading
     name: On-board Temperature
     unit_of_measurement: "°C"
+    entity_category: diagnostic
     accuracy_decimals: 1
     icon: "mdi:thermometer"
     calibration:
       b_constant: 3350
       reference_resistance: 10kOhm
       reference_temperature: 298.15K
-    entity_category: diagnostic
   - platform: resistance
     id: temp_resistance_reading
     sensor: temp_analog_reading

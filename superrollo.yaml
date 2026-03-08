@@ -5,8 +5,8 @@ substitutions:
   device_name: kueche-superrollo
   device_friendly_name: Küche Superrollo
   device_area: Küche
-  #open_seconds: 9.9
-  #close_seconds: 9.9
+  open_seconds: "9.9"
+  close_seconds: "9.9"
   #
   # superrollo-kueche
   #open_seconds: 18.0

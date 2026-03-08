@@ -90,7 +90,7 @@ sensor:
       name: "AHT21 Humidity"
       id: aht21_humi
 
-  - platform: ens160
+  - platform: ens160_i2c
     id: ens160_sensor
     address: 0x53
     update_interval: 10s
@@ -110,7 +110,7 @@ sensor:
 
 binary_sensor:
   - platform: gpio
-    name: "On-board Button"
+    name: On-board Button
     internal: false
     pin:
       number: GPIO9
