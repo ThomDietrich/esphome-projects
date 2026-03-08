@@ -1,164 +1,28 @@
-# Zenner Warmwasserzähler
+packages:
+  - !include
+    file: water_meter_heat_counter_template.yaml
+    vars:
+      heat_counter_name: "Heizkreis"
+      heat_counter_id: "heizkreis"
+      heat_counter_gpio: "GPIO34"
+      heat_counter_temp_diff: "heizkreis_diff"
 
-# https://www.spewa.de/systemtechnik-m-bus-impuls-zaehler/impuls-zaehler-m-bus-zaehler/impulszaehler/einstrahler/wasserzaehler-0-25-liter-impuls/828/zenner-warmwasserzaehler-q3-2-5/3/4-ag/bl-110-mm-mit-impulsausgang-0-25-liter-eichung-2024
-# Volumenstrom: 0,25 Liter pro Impuls
-#
-# Energieverbrauch (Wärmeenergie Q in Kilowatt):
-#   - m_g: Bezugsmenge Wasser 0.25 Liter * 990g/l = 248g pro Impuls
-#   - c_wh_kgk: Spezifische Wärmekapazität Wasser = 1.1625 Wh/(kg·K)
-#   - k_k: Zugeführte Wärme in Kelvin
-#
-# Siehe auch: https://www.endenergie.de/
-#
-
-globals:
-  - id: global_heizkreis_volumen_l
-    type: float
-    restore_value: no
-    initial_value: '0.0'
-  - id: global_heizkreis_energie_kwh
-    type: float
-    restore_value: no
-    initial_value: '0.0'
-  - id: global_wwb_volumen_l
-    type: float
-    restore_value: no
-    initial_value: '0.0'
-  - id: global_wwb_energie_kwh
-    type: float
-    restore_value: no
-    initial_value: '0.0'
-
-binary_sensor:
-  # https://esphome.io/components/binary_sensor/gpio.html
-  - platform: gpio
-    name: Heizkreis Volumenstrommessung Tick Sensor
-    id: intern_heizkreis_gpio_tick
-    pin: GPIO34
-    icon: mdi:square-wave
-    internal: true
-    entity_category: diagnostic
-    filters:
-      - delayed_on: 100ms
-      - delayed_off: 100ms
-    on_release:
-      - globals.set:
-          id: global_heizkreis_volumen_l
-          value: !lambda |-
-            return id(global_heizkreis_volumen_l) + 0.25;
-      - if:
-          condition:
-            lambda: |-
-              return !isnan(id(heizkreis_diff).state);
-          then:
-            - globals.set:
-                id: global_heizkreis_energie_kwh
-                value: !lambda |-
-                  const int m_g = 248;
-                  const float c_wh_kgk = 1.1625;
-                  const float k_k = id(heizkreis_diff).state;
-                  return id(global_heizkreis_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
-
-  - platform: gpio
-    name: Warmwasser Volumenstrommessung Tick Sensor
-    id: intern_wwb_gpio_tick
-    pin: GPIO35
-    icon: mdi:square-wave
-    internal: true
-    entity_category: diagnostic
-    filters:
-      - delayed_on: 100ms
-      - delayed_off: 100ms
-    on_release:
-      - globals.set:
-          id: global_wwb_volumen_l
-          value: !lambda |-
-            return id(global_wwb_volumen_l) + 0.25;
-      - if:
-          condition:
-            lambda: |-
-              return !isnan(id(warmwasser_diff).state);
-          then:
-            - globals.set:
-                id: global_wwb_energie_kwh
-                value: !lambda |-
-                  const int m_g = 248;
-                  const float c_wh_kgk = 1.1625;
-                  const float k_k = id(warmwasser_diff).state;
-                  return id(global_wwb_energie_kwh) + m_g * c_wh_kgk * k_k / 1000 / 1000;
-
-sensor:
-  - platform: template
-    name: Heizkreis Volumen
-    id: sensor_heizkreis_wasser
-    state_class: total
-    device_class: water
-    unit_of_measurement: L
-    icon: mdi:waves-arrow-right
-    accuracy_decimals: 1
-    lambda: return id(global_heizkreis_volumen_l);
-    update_interval: 10s
-    filters:
-      - or:
-        - delta: 0.01
-        - heartbeat: 5min
-
-  - platform: template
-    name: Heizkreis Energie
-    id: sensor_heizkreis_energie
-    state_class: total
-    device_class: energy
-    unit_of_measurement: kWh
-    icon: mdi:home-lightning-bolt-outline
-    accuracy_decimals: 2
-    lambda: return id(global_heizkreis_energie_kwh);
-    update_interval: 10s
-    filters:
-      - or:
-        - delta: 0.01
-        - heartbeat: 5min
-
-  - platform: template
-    name: Warmwasser Volumen
-    id: sensor_wwb_wasser
-    state_class: total
-    device_class: water
-    unit_of_measurement: L
-    icon: mdi:waves-arrow-right
-    accuracy_decimals: 1
-    lambda: return id(global_wwb_volumen_l);
-    update_interval: 10s
-    filters:
-      - or:
-        - delta: 0.01
-        - heartbeat: 5min
-
-  - platform: template
-    name: Warmwasser Energie
-    id: sensor_wwb_energie
-    state_class: total
-    device_class: energy
-    unit_of_measurement: kWh
-    icon: mdi:home-lightning-bolt-outline
-    accuracy_decimals: 2
-    lambda: return id(global_wwb_energie_kwh);
-    update_interval: 10s
-    filters:
-      - or:
-        - delta: 0.01
-        - heartbeat: 5min
+  - !include
+    file: water_meter_heat_counter_template.yaml
+    vars:
+      heat_counter_name: "Warmwasser"
+      heat_counter_id: "wwb"
+      heat_counter_gpio: "GPIO35"
+      heat_counter_temp_diff: "warmwasser_diff"
 
 switch:
-  # Aktualisiere die Sensoren oberen in jedem Fall sofort wenn die wwb_anforderung wechselt
   - id: !extend wwb_anforderung
     on_turn_on:
-      # Warmwasserbereitung
       - component.update: sensor_heizkreis_wasser
       - component.update: sensor_heizkreis_energie
       - component.update: sensor_wwb_wasser
       - component.update: sensor_wwb_energie
     on_turn_off:
-      # Heizungsmodus
       - component.update: sensor_heizkreis_wasser
       - component.update: sensor_heizkreis_energie
       - component.update: sensor_wwb_wasser

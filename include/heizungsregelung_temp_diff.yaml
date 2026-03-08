@@ -7,6 +7,7 @@ sensor:
     device_class: temperature
     unit_of_measurement: K
     accuracy_decimals: 1
+    icon: mdi:thermometer-lines
     update_interval: never
     lambda: |-
       return (id(solarkreis_rl).state - id(solarkreis_vl).state);
@@ -18,6 +19,7 @@ sensor:
     device_class: temperature
     unit_of_measurement: K
     accuracy_decimals: 1
+    icon: mdi:thermometer-lines
     update_interval: never
     lambda: |-
       return (id(sonnenkollektor).state - id(warmwasserspeicher_unten).state);
@@ -29,6 +31,7 @@ sensor:
     device_class: temperature
     unit_of_measurement: K
     accuracy_decimals: 1
+    icon: mdi:thermometer-lines
     update_interval: never
     lambda: |-
       return (id(heizkreis_vl).state - id(heizkreis_rl).state);
@@ -40,6 +43,7 @@ sensor:
     device_class: temperature
     unit_of_measurement: K
     accuracy_decimals: 1
+    icon: mdi:thermometer-lines
     update_interval: never
     lambda: |-
       return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
@@ -51,6 +55,7 @@ sensor:
     device_class: temperature
     unit_of_measurement: K
     accuracy_decimals: 1
+    icon: mdi:thermometer-lines
     update_interval: never
     lambda: |-
       return (id(kessel_vl).state - id(kessel_rl).state);
@@ -62,6 +67,7 @@ sensor:
     device_class: temperature
     unit_of_measurement: K
     accuracy_decimals: 1
+    icon: mdi:thermometer-lines
     update_interval: never
     lambda: |-
       return (id(kesselpufferkreis_vl).state - id(kesselpufferkreis_rl).state);

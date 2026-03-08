@@ -8,7 +8,7 @@ one_wire:
 sensor:
   # DS18B20 Temperatursensoren
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xaa041684630cff28
     name: Solarkreis Vorlauf # zum Solarthermiefeld
@@ -17,7 +17,7 @@ sensor:
     on_value:
       - component.update: solarkreis_diff_rlvl
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xd33c97f6491fd728
     name: Solarkreis Ruecklauf # vom Solarthermiefeld
@@ -26,7 +26,7 @@ sensor:
     on_value:
       - component.update: solarkreis_diff_rlvl
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x540316839e33ff28
     name: Warmwasserspeicher unten
@@ -34,13 +34,13 @@ sensor:
     on_value:
       - component.update: solarkreis_diff_ou
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xa25469481f64ff28
     name: Warmwasserspeicher oben
     id: warmwasserspeicher_oben
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x2500000cf8822e28
     name: Heizkreis Vorlauf
@@ -49,7 +49,7 @@ sensor:
     on_value:
       - component.update: heizkreis_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x94626a481f64ff28
     name: Heizkreis Ruecklauf
@@ -57,7 +57,7 @@ sensor:
     on_value:
       - component.update: heizkreis_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x4400000cf8ea0528
     name: Gastherme Vorlauf
@@ -65,7 +65,7 @@ sensor:
     on_value:
       - component.update: warmwasser_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x9500000cf8984828
     name: Gastherme Ruecklauf Warmwasserbereitung
@@ -73,17 +73,17 @@ sensor:
     on_value:
       - component.update: warmwasser_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x45000005fa787a28
     name: Pufferspeicher blau 550 Liter
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xd6000005faf54928
     name: Pufferspeicher grau 600 Liter
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xc400000cf8624528
     name: Kessel Vorlauf
@@ -91,7 +91,7 @@ sensor:
     on_value:
       - component.update: kessel_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xd900000cf8d4ca28
     name: Kessel Ruecklauf
@@ -99,7 +99,7 @@ sensor:
     on_value:
       - component.update: kessel_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x0ebe6d481f64ff28
     name: Kesselpufferkreis Vorlauf
@@ -107,7 +107,7 @@ sensor:
     on_value:
       - component.update: kesselpufferkreis_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xe73f69481f64ff28
     name: Kesselpufferkreis Ruecklauf
@@ -115,7 +115,7 @@ sensor:
     on_value:
       - component.update: kesselpufferkreis_diff
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x7c186d481f64ff28
     name: Warmwasserspeicher Abfluss

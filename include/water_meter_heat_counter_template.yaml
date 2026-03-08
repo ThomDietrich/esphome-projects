@@ -1,0 +1,110 @@
+# heat_counter_template.yaml
+#
+# Reusable ESPHome package for a Zenner pulse water meter (0.25 L/pulse)
+# with thermal energy calculation (Wärmemengenzähler).
+#
+# Required substitutions:
+#   heat_counter_name        – Human-readable name prefix  (e.g. "Heizkreis")
+#   heat_counter_id          – ID-safe slug                 (e.g. "heizkreis")
+#   heat_counter_gpio        – GPIO pin for pulse input     (e.g. "GPIO34")
+#   heat_counter_temp_diff   – ID of the ΔT sensor          (e.g. "heizkreis_diff")
+#
+# Usage in your main YAML:
+#
+#   packages:
+#     heizkreis_heat_counter:
+#       file: heat_counter_template.yaml
+#       vars:
+#         heat_counter_name:      "Heizkreis"
+#         heat_counter_id:        "heizkreis"
+#         heat_counter_gpio:      "GPIO34"
+#         heat_counter_temp_diff: "heizkreis_diff"
+#
+# Zenner Warmwasserzähler Q3 2,5
+# https://www.spewa.de/systemtechnik-m-bus-impuls-zaehler/impuls-zaehler-m-bus-zaehler/impulszaehler/einstrahler/wasserzaehler-0-25-liter-impuls/828/zenner-warmwasserzaehler-q3-2-5/3/4-ag/bl-110-mm-mit-impulsausgang-0-25-liter-eichung-2024
+#
+# Energieverbrauch (Wärmeenergie Q):
+#   m_g      = 0.25 L × 990 g/L = 248 g pro Impuls
+#   c_wh_kgk = 1.1625 Wh/(kg·K)
+#   k_k      = Temperaturdifferenz in Kelvin (from heat_counter_temp_diff sensor)
+
+# ---------------------------------------------------------------------------
+# Globals – running totals, lost on reboot (state_class: total_increasing
+#           lets Home Assistant handle that correctly)
+# ---------------------------------------------------------------------------
+globals:
+  - id: global_${heat_counter_id}_volumen_l
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+  - id: global_${heat_counter_id}_energie_kwh
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+# ---------------------------------------------------------------------------
+# Binary sensor – GPIO pulse input from Zenner meter
+# ---------------------------------------------------------------------------
+binary_sensor:
+  - platform: gpio
+    name: "${heat_counter_name} Volumenstrommessung Tick Sensor"
+    id: intern_${heat_counter_id}_gpio_tick
+    pin: ${heat_counter_gpio}
+    icon: mdi:square-wave
+    internal: true
+    entity_category: diagnostic
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_release:
+      - globals.set:
+          id: global_${heat_counter_id}_volumen_l
+          value: !lambda |-
+            return id(global_${heat_counter_id}_volumen_l) + 0.25;
+      - if:
+          condition:
+            lambda: |-
+              return !isnan(id(${heat_counter_temp_diff}).state);
+          then:
+            - globals.set:
+                id: global_${heat_counter_id}_energie_kwh
+                value: !lambda |-
+                  const int m_g = 248;
+                  const float c_wh_kgk = 1.1625;
+                  const float k_k = id(${heat_counter_temp_diff}).state;
+                  return id(global_${heat_counter_id}_energie_kwh) + m_g * c_wh_kgk * k_k / 1000.0 / 1000.0;
+
+# ---------------------------------------------------------------------------
+# Template sensors – volume (L) and thermal energy (kWh)
+# ---------------------------------------------------------------------------
+sensor:
+  - platform: template
+    name: "${heat_counter_name} Volumen"
+    id: sensor_${heat_counter_id}_wasser
+    state_class: total_increasing
+    device_class: water
+    unit_of_measurement: L
+    icon: mdi:waves-arrow-right
+    accuracy_decimals: 1
+    lambda: return id(global_${heat_counter_id}_volumen_l);
+    update_interval: 10s
+    filters:
+      - or:
+        - delta: 0.01
+        - heartbeat: 5min
+
+  - platform: template
+    name: "${heat_counter_name} Energie"
+    id: sensor_${heat_counter_id}_energie
+    state_class: total_increasing
+    device_class: energy
+    unit_of_measurement: kWh
+    icon: mdi:home-lightning-bolt-outline
+    accuracy_decimals: 2
+    lambda: return id(global_${heat_counter_id}_energie_kwh);
+    update_interval: 10s
+    filters:
+      - or:
+        - delta: 0.01
+        - heartbeat: 5min

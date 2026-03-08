@@ -8,8 +8,11 @@ one_wire:
 sensor:
 
   # Pufferspeicher blau: Sensorband DS18B20 Temperatursensoren
+  # Ladegrad update is only triggered by sensor 01 (bottom) and 11 (top).
+  # All 11 sensors share one 1-Wire bus and update nearly simultaneously,
+  # so triggering from every sensor would cause 11 redundant recalculations.
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0xa63ce1d4442afd28
     name: Pufferspeicher blau Ladegradsensor 01
@@ -18,61 +21,61 @@ sensor:
       then:
         - component.update: puffer_blau_ladegrad
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0xe63ce1d444cefa28
     name: Pufferspeicher blau Ladegradsensor 02
     id: puffer_blau_lg_sensor_02
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0x233ce1d4445b7728
     name: Pufferspeicher blau Ladegradsensor 03
     id: puffer_blau_lg_sensor_03
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0xb53ce1d458b4be28
     name: Pufferspeicher blau Ladegradsensor 04
     id: puffer_blau_lg_sensor_04
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0xde3ce1d444097228
     name: Pufferspeicher blau Ladegradsensor 05
     id: puffer_blau_lg_sensor_05
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0x5b3ce1d4440f2328
     name: Pufferspeicher blau Ladegradsensor 06
     id: puffer_blau_lg_sensor_06
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0x283ce1d444ea1a28
     name: Pufferspeicher blau Ladegradsensor 07
     id: puffer_blau_lg_sensor_07
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0x073ce1d4440ca828
     name: Pufferspeicher blau Ladegradsensor 08
     id: puffer_blau_lg_sensor_08
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0x8f3ce1d444961f28
     name: Pufferspeicher blau Ladegradsensor 09
     id: puffer_blau_lg_sensor_09
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0xa33ce1d444932128
     name: Pufferspeicher blau Ladegradsensor 10
     id: puffer_blau_lg_sensor_10
 
-  - <<: !include heizungsregelung_temp_ds18b20_template.yaml
+  - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
     address: 0x6d3ce1d4446bde28
     name: Pufferspeicher blau Ladegradsensor 11
