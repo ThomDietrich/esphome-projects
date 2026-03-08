@@ -13,6 +13,10 @@ esp32:
   framework:
     type: arduino
 
+psram:
+  mode: quad
+  speed: 80MHz
+
 packages:
   - !include common/wifi.yaml
   - !include common/boilerplate.yaml
@@ -39,14 +43,17 @@ status_led:
 
 # https://esphome.io/components/esp32_camera.html#configuration-for-ai-thinker-camera
 # https://github.com/AlexxIT/go2rtc/issues/292
+i2c:
+  sda: GPIO26
+  scl: GPIO27
+  id: camera_i2c
+
 esp32_camera:
   name: Videobild
   external_clock:
     pin: GPIO0
     frequency: 20MHz
-  i2c_pins:
-    sda: GPIO26
-    scl: GPIO27
+  i2c_id: camera_i2c
   data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
   vsync_pin: GPIO25
   href_pin: GPIO23
