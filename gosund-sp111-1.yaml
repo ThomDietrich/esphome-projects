@@ -1,0 +1,117 @@
+substitutions:
+  device_name: gosund-sp111-1
+  device_friendly_name: Gosund SP111 Test
+  device_area: Bad
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+# Gosund SP111 v1.1 (ESP8266 / TYWE2S)
+esp8266:
+  board: esp01_1m
+
+packages:
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+
+logger:
+  baud_rate: 0  # GPIO1 (TX) used for blue LED, GPIO3 (RX) used for button
+
+# LEDs
+status_led:
+  pin:
+    number: GPIO2
+    inverted: true
+
+output:
+  - platform: gpio
+    id: led_red
+    pin:
+      number: GPIO0
+      inverted: true
+
+# Relay
+switch:
+  - platform: gpio
+    id: relay
+    name: "${device_friendly_name} Relay"
+    pin: GPIO15
+    restore_mode: ALWAYS_OFF
+    on_turn_on:
+      - output.turn_on: led_red
+    on_turn_off:
+      - output.turn_off: led_red
+
+# Delays in milliseconds
+number:
+  - platform: template
+    id: delay_ms_1
+    name: "${device_friendly_name} Delay 1 (ms)"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 60000
+    step: 10
+    initial_value: 200
+
+  - platform: template
+    id: delay_ms_2
+    name: "${device_friendly_name} Delay 2 (ms)"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 60000
+    step: 10
+    initial_value: 200
+
+globals:
+  - id: seq_running
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+# Pure software buttons
+button:
+  # on -> off -> on
+  - platform: template
+    name: "${device_friendly_name} Sequence 2 switches"
+    on_press:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(seq_running);'
+            then:
+              - logger.log: "Sequence already running"
+            else:
+              - lambda: 'id(seq_running) = true;'
+              - switch.turn_on: relay
+              - delay: !lambda 'return (uint32_t) id(delay_ms_1).state;'
+              - switch.turn_off: relay
+              - delay: !lambda 'return (uint32_t) id(delay_ms_2).state;'
+              - switch.turn_on: relay
+              - lambda: 'id(seq_running) = false;'
+
+  # on -> off -> on -> off -> on
+  - platform: template
+    name: "${device_friendly_name} Sequence 3 switches"
+    on_press:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(seq_running);'
+            then:
+              - logger.log: "Sequence already running"
+            else:
+              - lambda: 'id(seq_running) = true;'
+              - switch.turn_on: relay
+              - delay: !lambda 'return (uint32_t) id(delay_ms_1).state;'
+              - switch.turn_off: relay
+              - delay: !lambda 'return (uint32_t) id(delay_ms_2).state;'
+              - switch.turn_on: relay
+              - delay: !lambda 'return (uint32_t) id(delay_ms_1).state;'
+              - switch.turn_off: relay
+              - delay: !lambda 'return (uint32_t) id(delay_ms_2).state;'
+              - switch.turn_on: relay
+              - lambda: 'id(seq_running) = false;'

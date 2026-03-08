@@ -1,0 +1,140 @@
+substitutions:
+  device_name: keller-fbh-regelung
+  device_friendly_name: Keller FBH Regelung
+  device_area: Keller
+
+  buzzer_pin: GPIO12
+  blue_led_pin: GPIO4
+
+  # Mischkreisregelung — Oventrop NR230-507
+  # Laufzeit des Stellantriebs von 0° bis 90° in Sekunden (Herstellerangabe)
+  stellantrieb_laufzeit_s: "140"
+  # Vorlauf-Solltemperatur Fussbodenheizung [°C]
+  sollwert_vorlauf: "35"
+  # PID-Parameter (Startwerte — Autotuning über Button empfohlen)
+  pid_kp: "0.6"
+  pid_ki: "0.0015"
+  pid_kd: "0.0"
+  # Sicherheitsgrenze: maximale FBH-Vorlauftemperatur [°C] (Estrichschutz)
+  max_vorlauf: "50"
+  # Mindest-Übertemperatur des Primärvorlaufs über dem Sollwert [K],
+  # unterhalb derer der Antrieb pausiert (weiteres Öffnen wäre wirkungslos)
+  min_uebertemperatur: "3"
+
+# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
+# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
+
+# ASTRA BR4G8AL
+# https://www.rocketcontroller.com/shop/astra-controller-4-relays-16a-8-gpio-ac-dc-power-led-br4g8-36#attribute_values=20,21
+
+# ============================================================================
+# ESPHome Default Configuration: Rocket Controller ASTRA BR4G8AL
+# 4 Relays 16A, 8 GPIO (3.3V), AC Power, LED
+# ============================================================================
+#
+# GPIO MAP (from Blakadder template / Rocket Controller documentation)
+# ====================================================================
+#
+#  GPIO  │ Function           │ Direction │ Notes
+# ───────┼────────────────────┼───────────┼──────────────────────────────
+#  GPIO4 │ WiFi Status LED    │ Output    │ Active LOW (inverted)
+#  GPIO12│ Buzzer (piezo)     │ Output    │ PWM capable (LEDC)
+#  GPIO25│ Relay 1            │ Output    │ 16A electromechanical
+#  GPIO26│ Relay 2            │ Output    │ 16A electromechanical
+#  GPIO33│ Relay 3            │ Output    │ 16A electromechanical
+#  GPIO32│ Relay 4            │ Output    │ 16A electromechanical
+# ───────┼────────────────────┼───────────┼──────────────────────────────
+#  8× GPIO (3.3V direct to MCU, NOT isolated)
+# ───────┼────────────────────┼───────────┼──────────────────────────────
+#  GPIO34│ GPIO 1             │ Input     │ Input-only (ESP32 limitation)
+#  GPIO35│ GPIO 2             │ Input     │ Input-only (ESP32 limitation)
+#  GPIO36│ GPIO 3             │ Input     │ Input-only (ESP32 limitation)
+#  GPIO39│ GPIO 4             │ Input     │ Input-only (ESP32 limitation)
+#  GPIO14│ GPIO 5 (IO14)      │ I/O       │ Bidirectional, 3.3V
+#  GPIO15│ GPIO 6 (IO15)      │ I/O       │ Bidirectional, 3.3V
+#  GPIO27│ GPIO 7 / RF433     │ I/O       │ Shared with optional RF module
+#  GPIO13│ GPIO 8 / Ser2 CS   │ I/O       │ Shared with Serial2 CS
+# ───────┼────────────────────┼───────────┼──────────────────────────────
+#  Interface Connectors
+# ───────┼────────────────────┼───────────┼──────────────────────────────
+#  GPIO21│ I2C SDA            │ Bidir     │ RJ connector (I2C socket)
+#  GPIO22│ I2C SCL            │ Bidir     │ RJ connector (I2C socket)
+#  GPIO2 │ I2C INT            │ Input     │ Interrupt from I2C devices
+#  GPIO5 │ SPI CS0            │ Output    │ RJ connector (SPI mode)
+#  GPIO18│ SPI CLK            │ Output    │ RJ connector (SPI mode)
+#  GPIO19│ SPI MISO           │ Input     │ RJ connector (SPI mode)
+#  GPIO23│ SPI MOSI           │ Output    │ RJ connector (SPI mode)
+#  GPIO16│ Serial2 RXD        │ Input     │ RJ connector (RS mode)
+#  GPIO17│ Serial2 TXD        │ Output    │ RJ connector (RS mode)
+#  GPIO13│ Serial2 CS         │ Output    │ RJ connector (RS mode)
+#  RXD0  │ Serial1 RXD        │ Input     │ Programming / debug UART
+#  TXD0  │ Serial1 TXD        │ Output    │ Programming / debug UART
+#  GPIO0 │ PROG (boot select) │ Input     │ Hold LOW for flash mode
+#  EN    │ RESET              │ Input     │ Active LOW reset
+#
+# IMPORTANT: BR4G8AL NOTES
+# ========================
+# - Power supply: AC 90–240V (50/60 Hz)
+# - The 8 GPIOs are 3.3V direct connections to the ESP32 — NOT isolated.
+#   Do NOT connect mains voltage to these GPIO pins.
+# - GPIO34–39 are input-only on the ESP32 (no output, no internal pull).
+# - GPIO14, 15, 27, 13 are fully bidirectional.
+# - GPIO27 shared with optional RF433 receiver module.
+# - GPIO13 shared with Serial2 CS (active in RS mode).
+#
+# RJ CONNECTOR DIP SWITCH MODES
+# ==============================
+# DIP switches ALL ON  → SPI mode (RJ pins = SPI bus)
+# DIP switches ALL OFF → RS mode  (RJ pins = Serial2/UART2)
+# I2C socket is on a separate RJ connector, always available.
+#
+# ============================================================================
+
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+  project:
+    name: "ASTRA.BR4A4AL"
+    version: "0.0"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+packages:
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+  - !include include/buzzer_rtttl.yaml
+  - !include include/keller_fbh_temperatursensoren.yaml
+  - !include include/keller_fbh_pid.yaml
+  - !include include/keller_fbh_mischventil.yaml
+  - !include include/keller_fbh_pumpe.yaml
+  - !include include/keller_fbh_betrieb.yaml
+  - !include include/keller_fbh_sicherheit.yaml
+  - !include
+    file: include/water_meter_heat_counter_template.yaml
+    vars:
+      heat_counter_name: "Primaerkreis"
+      heat_counter_id: "fbh"
+      heat_counter_gpio: "GPIO39"
+      heat_counter_temp_diff: "t_fbh_diff"
+
+logger:
+  logs:
+    # By default, every reading will be printed to the UART, which is very slow
+    # This will disable printing the readings but keep other helpful messages
+    sensor: INFO
+
+status_led:
+  pin:
+    number: ${blue_led_pin}
+    inverted: true
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+  id: i2c_bus

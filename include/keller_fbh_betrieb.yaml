@@ -1,0 +1,114 @@
+# ============================================================================
+# Betrieb und Zustandsanzeige — Fussbodenheizung
+# ============================================================================
+# Zentrale Betriebssteuerung und Statusanzeige der FBH-Anlage:
+#
+#   - Mischkreis Automatik: Aktiviert/deaktiviert die automatische
+#     Mischventil-Regelung (PID + Positionsregler).
+#     Beim Einschalten wird der Positionsregler sofort aufgerufen, damit
+#     die aktuelle PID-Stellgröße ohne 10s-Wartezeit wirksam wird.
+#     Beim Ausschalten werden beide Ventilrelais abgeschaltet und der
+#     Positionsregler gestoppt. Die Pumpe bleibt unberührt.
+#     Manuelle Ventilsteuerung (Tasten, Override) funktioniert unabhängig.
+#
+#   - FBH Umwaelzpumpe: Separater Schalter in keller_fbh_pumpe.yaml.
+#     Pumpe und Automatik sind unabhängig voneinander steuerbar.
+#
+#   - Relais 3 (Reserve): GPIO33, standardmäßig deaktiviert.
+#
+#   - FBH Reglerzustand: Textsensor, der den aktuellen Betriebsmodus anzeigt:
+#       „Automatik AUS"           — Mischkreis Automatik deaktiviert
+#       „Sensorfehler"            — FBH-Vorlauf liefert keine Daten
+#       „Uebertemperaturschutz"   — T_FBH_VL > max_vorlauf (Estrichschutz)
+#       „Primaerkreis zu kalt"    — Übertemperatur < min_uebertemperatur
+#       „Manuell — Override aktiv"— Override-Wert ≥ 0 gesetzt
+#       „Aktiv — PID regelt"      — Normalbetrieb
+#
+# ============================================================================
+
+
+# ============================================================================
+# Globale Variablen — Betriebszustand
+# ============================================================================
+
+globals:
+  # Mischkreis-Automatik aktiv (true) oder deaktiviert (false)
+  - id: controller_enabled
+    type: bool
+    restore_value: true
+    initial_value: "true"
+
+
+# ============================================================================
+# Mischkreis Automatik — PID-Regelung und Positionsregler steuern
+# ============================================================================
+
+switch:
+  # Aktiviert/deaktiviert die automatische Mischventil-Regelung.
+  # Bei AUS werden die Ventilrelais abgeschaltet, der Positionsregler
+  # pausiert. Die Pumpe wird NICHT beeinflusst — sie hat ihren eigenen
+  # Schalter (keller_fbh_pumpe.yaml).
+  - platform: template
+    name: "Mischkreis Automatik"
+    id: fbh_betrieb
+    icon: "mdi:auto-fix"
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    turn_on_action:
+      - globals.set:
+          id: controller_enabled
+          value: "true"
+      - script.execute: position_controller
+      - component.update: reglerzustand
+      - logger.log: "Mischkreis Automatik EIN — PID-Regelung aktiviert"
+    turn_off_action:
+      - globals.set:
+          id: controller_enabled
+          value: "false"
+      - lambda: "id(manual_valve_override) = -1.0f;"
+      - number.set:
+          id: ventil_override_nr
+          value: -1
+      - switch.turn_off: relais_ventil_auf
+      - switch.turn_off: relais_ventil_zu
+      - component.update: reglerzustand
+      - logger.log: "Mischkreis Automatik AUS — Ventilrelais abgeschaltet"
+
+  # Reserve-Relais (GPIO33) — nicht belegt
+  - platform: gpio
+    pin: GPIO33
+    name: "Relais 3 (Reserve)"
+    id: relais_reserve
+    icon: "mdi:electric-switch"
+    restore_mode: ALWAYS_OFF
+    disabled_by_default: true
+
+
+# ============================================================================
+# Textsensor — FBH Reglerzustand
+# ============================================================================
+
+text_sensor:
+  - platform: template
+    name: "Mischkreis Reglerzustand"
+    id: reglerzustand
+    icon: "mdi:information-outline"
+    update_interval: 15s
+    lambda: |-
+      if (id(manual_valve_override) >= 0.0f)
+        return std::string("Manuell — Override aktiv");
+
+      if (!id(controller_enabled)) return std::string("Automatik AUS");
+      if (!id(t_fbh_vl).has_state()) return std::string("Sensorfehler");
+
+      float vl = id(t_fbh_vl).state;
+      if (vl > ${max_vorlauf}) return std::string("Uebertemperaturschutz");
+
+      if (id(t_prim_vl).has_state()) {
+        float headroom = id(t_prim_vl).state
+                         - id(pid_mischkreis).target_temperature;
+        if (headroom < ${min_uebertemperatur})
+          return std::string("Primaerkreis zu kalt");
+      }
+
+      return std::string("Aktiv — PID regelt");

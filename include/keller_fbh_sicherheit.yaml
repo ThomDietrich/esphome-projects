@@ -1,0 +1,90 @@
+# ============================================================================
+# Sicherheitsüberwachung — Fussbodenheizung
+# ============================================================================
+# Unabhängige Schutzfunktionen, die parallel zum Regler laufen und bei
+# Gefahrenzuständen direkt in die Ventilsteuerung eingreifen.
+#
+# Übertemperaturschutz (10s-Intervall):
+#   Wenn die FBH-Vorlauftemperatur den Grenzwert max_vorlauf überschreitet,
+#   wird das Mischventil zwangsweise geschlossen. Dies schützt den Estrich
+#   vor thermischer Überlastung (typischer Grenzwert: 50°C).
+#   Solange die Übertemperatur besteht, bleibt das Ventil geschlossen —
+#   der PID-Regler kann nicht gegenregeln.
+#
+# Primärkreis-Untertemperatur (30s-Intervall):
+#   Wenn die Primär-Vorlauftemperatur nicht ausreichend über dem Sollwert
+#   liegt (Übertemperatur < min_uebertemperatur), wird ein laufendes
+#   AUF-Fahren des Ventils gestoppt. Weiteres Öffnen wäre wirkungslos,
+#   da der Primärkreis nicht genug Wärme liefert.
+#
+# Sensorfehler-Watchdog (30s-Intervall):
+#   Wenn die FBH-Vorlauftemperatur ungültig ist (kein Messwert, NaN,
+#   < 5°C oder > 80°C), werden beide Ventilrelais sofort abgeschaltet.
+#   Dies verhindert unkontrolliertes Aufheizen bei Sensorausfall.
+#
+# Alle drei Funktionen arbeiten unabhängig vom Reglerzustand und vom
+# FBH Hauptschalter. Sie greifen direkt auf die Relais zu.
+#
+# ============================================================================
+
+
+interval:
+  # ---- ÜBERTEMPERATURSCHUTZ ----
+  # Estrichschutz: Ventil sofort schließen bei zu hoher Vorlauftemperatur
+  - interval: 10s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(t_fbh_vl).has_state()
+                     && id(t_fbh_vl).state > ${max_vorlauf};
+          then:
+            - switch.turn_off: relais_ventil_auf
+            - switch.turn_on: relais_ventil_zu
+            - component.update: reglerzustand
+            - logger.log:
+                level: WARN
+                format: "SICHERHEIT: Vorlauf %.1f°C > ${max_vorlauf}°C — Ventil wird geschlossen!"
+                args: ['id(t_fbh_vl).state']
+
+  # ---- PRIMÄRKREIS UNTERTEMPERATUR ----
+  # Ventil pausieren, wenn Primärkreis nicht genug Wärme liefert
+  - interval: 30s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              if (!id(t_prim_vl).has_state()) return false;
+              float sollwert = id(pid_mischkreis).target_temperature;
+              float headroom = id(t_prim_vl).state - sollwert;
+              return headroom < ${min_uebertemperatur};
+          then:
+            - if:
+                condition:
+                  switch.is_on: relais_ventil_auf
+                then:
+                  - switch.turn_off: relais_ventil_auf
+                  - switch.turn_off: relais_ventil_zu
+                  - component.update: reglerzustand
+                  - logger.log:
+                      level: INFO
+                      format: "Primaerkreis Uebertemperatur zu gering (%.1f K) — Ventil pausiert"
+                      args: ['id(t_prim_vl).state - id(pid_mischkreis).target_temperature']
+
+  # ---- SENSORFEHLER-WATCHDOG ----
+  # Beide Relais abschalten bei ungültigen Messwerten
+  - interval: 30s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              if (!id(t_fbh_vl).has_state()) return true;
+              float t = id(t_fbh_vl).state;
+              return isnan(t) || t < 5.0 || t > 80.0;
+          then:
+            - switch.turn_off: relais_ventil_auf
+            - switch.turn_off: relais_ventil_zu
+            - component.update: reglerzustand
+            - logger.log:
+                level: ERROR
+                format: "SENSORFEHLER: Vorlauftemperatur ungueltig — Ventil gestoppt!"

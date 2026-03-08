@@ -1,0 +1,150 @@
+# ============================================================================
+# PID-Regler — Vorlauftemperatur-Regelung Fussbodenheizung
+# ============================================================================
+# Stufe 1 der zweistufigen Mischkreisregelung.
+#
+# Der PID-Regler arbeitet als Positionsregler (nicht inkrementell):
+#   Regelgröße:    FBH-Vorlauftemperatur T_FBH_VL (DS18B20, 5s Intervall)
+#   Führungsgröße: Vorlauf-Solltemperatur (z.B. 35°C, einstellbar über HA)
+#   Stellgröße:    Gewünschte Ventilöffnung 0.0–1.0
+#                  (0.0 = vollständig ZU, 1.0 = vollständig AUF)
+#
+# Die PID-Ausgabe wird auf den Template-Output pid_output_position geschrieben,
+# der die gewünschte Ventilöffnung in der Variablen desired_valve_position
+# speichert. Der Positionsregler (in keller_fbh_mischventil.yaml) übernimmt
+# dann die Umsetzung in diskrete Relaisimpulse für den 3-Punkt-Antrieb.
+#
+# Totzone (Deadband): ±0,5 K um den Sollwert
+#   Innerhalb der Totzone wird nur ein sehr langsamer I-Anteil
+#   (ki_multiplier=0,05) wirksam, um Drift zu kompensieren ohne
+#   den Antrieb unnötig zu bewegen.
+#
+# Bei manuellem Override (siehe keller_fbh_mischventil.yaml) wird die
+# PID-Ausgabe vom Positionsregler ignoriert und die Soll-Öffnung direkt
+# aus dem Override-Wert übernommen.
+#
+# PID-Autotuning:
+#   Über den Button „PID Autotuning starten" kann das automatische
+#   Parametertuning der ESPHome PID-Komponente gestartet werden.
+#   Empfehlung: Einmalig nach Inbetriebnahme bei stabilen Bedingungen.
+#
+# Diagnosesensoren:
+#   P-, I-, D-Anteil, Regelfehler und Stellgröße werden als separate
+#   Sensoren bereitgestellt. Sie dienen der Regelungsdiagnose und dem
+#   Feintuning der PID-Parameter.
+#
+# ============================================================================
+
+
+# ============================================================================
+# Globale Variablen — PID-Soll-Öffnung
+# ============================================================================
+
+globals:
+  # Gewünschte Ventilöffnung vom PID-Regler (0.0–1.0)
+  - id: desired_valve_position
+    type: float
+    restore_value: false
+    initial_value: "0.5"
+
+
+# ============================================================================
+# Template-Output — Schnittstelle zwischen PID und Positionsregler
+# ============================================================================
+# Die PID climate-Komponente schreibt ihre Stellgröße auf diesen Output.
+# Der eigentliche Stellantrieb wird NICHT direkt vom PID angesteuert,
+# sondern vom Positionsregler in keller_fbh_mischventil.yaml.
+
+output:
+  - platform: template
+    id: pid_output_position
+    type: float
+    write_action:
+      - lambda: |-
+          // PID-Stellgröße (0.0–1.0) als Soll-Öffnung speichern
+          id(desired_valve_position) = state;
+      - component.update: ventilstellung_soll_sensor
+
+
+# ============================================================================
+# PID Climate — Vorlauftemperatur-Regelung
+# ============================================================================
+
+climate:
+  - platform: pid
+    id: pid_mischkreis
+    name: "Mischkreis Vorlaufregelung"
+    sensor: t_fbh_vl
+    default_target_temperature: ${sollwert_vorlauf}
+    heat_output: pid_output_position
+    visual:
+      min_temperature: 20
+      max_temperature: 50
+      temperature_step: 0.5
+    control_parameters:
+      kp: ${pid_kp}
+      ki: ${pid_ki}
+      kd: ${pid_kd}
+      max_integral: 0.8
+      output_averaging_samples: 5
+      derivative_averaging_samples: 8
+    on_control:
+      then:
+        - component.update: t_prim_headroom
+        - component.update: reglerzustand
+    deadband_parameters:
+      threshold_high: 0.5
+      threshold_low: -0.5
+      kp_multiplier: 0.0
+      ki_multiplier: 0.05
+      kd_multiplier: 0.0
+      deadband_output_averaging_samples: 15
+
+
+# ============================================================================
+# PID-Diagnosesensoren
+# ============================================================================
+
+sensor:
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID P-Anteil"
+    type: PROPORTIONAL
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID I-Anteil"
+    type: INTEGRAL
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID D-Anteil"
+    type: DERIVATIVE
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID Regelfehler"
+    type: ERROR
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID Stellgroesse"
+    type: HEAT
+    unit_of_measurement: "%"
+
+
+# ============================================================================
+# Taste — PID-Autotuning
+# ============================================================================
+
+button:
+  - platform: template
+    name: "PID Autotuning"
+    icon: "mdi:tune"
+    entity_category: config
+    on_press:
+      - climate.pid.autotune:
+          id: pid_mischkreis
+          noiseband: 0.5
+          positive_output: 1.0
+          negative_output: 0.0

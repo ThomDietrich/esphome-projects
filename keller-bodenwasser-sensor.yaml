@@ -1,0 +1,68 @@
+substitutions:
+  device_name: keller-bodenwasser-sensor
+  device_friendly_name: Keller Bodenwasser Sensor
+  device_area: Keller
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+# Sonoff BASIC R1
+esp8266:
+  board: esp01_1m
+
+packages:
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+
+# TODO: GPIO1: DS18B20??
+
+binary_sensor:
+  - platform: gpio
+    name: Wasserwarnung
+    device_class: smoke
+    icon: mdi:waves-arrow-up
+    pin:
+      number: GPIO3
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    on_press:
+      then:
+        - light.turn_on: on_board_led
+    on_release:
+      then:
+        - light.turn_off: on_board_led
+
+  - platform: gpio
+    name: On-board Button
+    id: button_onboard
+    pin:
+      number: GPIO0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    internal: true
+    filters:
+      - delayed_on: 50ms
+    on_press:
+      - button.press: esp_restart_button
+
+switch:
+  - platform: gpio
+    pin: GPIO12
+    id: relay_1
+    internal: true
+
+light:
+  - platform: status_led
+    id: on_board_led
+    name: On-board LED
+    pin:
+      number: GPIO13
+      inverted: yes
+    internal: true
+

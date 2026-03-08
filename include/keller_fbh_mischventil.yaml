@@ -1,0 +1,448 @@
+# ============================================================================
+# Dreiweg-Mischventil — Positionsregelung und Ansteuerung
+# ============================================================================
+# Stellantrieb: Oventrop NR230-507 (3-Punkt, 230V AC, 140s Laufzeit, 5 Nm)
+#
+# Dieses File enthält die vollständige Mischventil-Steuerung:
+#   - Relais: Mischventil AUF (GPIO25) / ZU (GPIO26), verriegelt
+#   - Positionsregler: Vergleicht Soll- und Ist-Öffnung (10s-Zyklus)
+#   - Fahr-Skripte: Zeitgesteuerte Relaisimpulse mit sekundlicher Nachführung
+#   - Rekalibrierung: Grundstellung durch volle Fahrt in Endlage ZU
+#   - Öffnungssensoren: Geschätzte Ist-Öffnung und Soll-Öffnung
+#   - Betriebszähler: Motorlaufzeit und Schaltzyklen
+#   - Override: Manuelle Öffnungsvorgabe (0–100%) oder Auto (-1)
+#   - Tasten: Manuelle Ventilfahrt (10s AUF/ZU), Rekalibrierung
+#
+#
+# REGELUNGSSTRATEGIE — Stufe 2: Positionsregler
+# ==============================================
+#
+#   Die PID-Ausgabe (Stufe 1, siehe keller_fbh_pid.yaml) liefert die
+#   gewünschte Ventilöffnung als Wert von 0.0 bis 1.0. Der Positionsregler
+#   vergleicht diese Soll-Öffnung mit der geschätzten Ist-Öffnung und
+#   berechnet daraus Relaisimpulse:
+#
+#   ┌──────────────────────────────────────────────────────────────┐
+#   │  Positionsregler (Skript, 10s-Zyklus + Ereignisauslösung)   │
+#   │                                                              │
+#   │  Vergleicht Soll-Öffnung (vom PID oder Override) mit         │
+#   │  geschätzter Ist-Öffnung des Ventils.                        │
+#   │                                                              │
+#   │  Totzone: 3% (≈ 4,2s Laufzeit). Unterhalb dieser Schwelle   │
+#   │  erfolgt keine Korrektur → Antrieb steht still.              │
+#   │                                                              │
+#   │  Bei Abweichung > Totzone:                                   │
+#   │    Impulsdauer = |Soll − Ist| × Gesamtlaufzeit (140s)       │
+#   │    Mindestimpuls: 2s (Anlaufzeit des Motors)                 │
+#   │    Richtung: AUF wenn Soll > Ist, ZU wenn Soll < Ist        │
+#   └──────────────────────┬───────────────────────────────────────┘
+#                          │ Relaisimpuls (Dauer + Richtung)
+#                          ▼
+#   ┌──────────────────────────────────────────────────────────────┐
+#   │  Fahr-Skripte (drive_valve_open / drive_valve_close)         │
+#   │                                                              │
+#   │  Steuern das Relais für die berechnete Impulsdauer an.       │
+#   │  Die Stoppzeit wird absolut berechnet (millis() + Dauer).    │
+#   │  Während der Fahrt wird die geschätzte Ventilöffnung         │
+#   │  alle 1,4s um ±1% nachgeführt und an die UI gemeldet.    │
+#   │  Nach Abschluss: Motorlaufzeit und Schaltzyklen zählen.     │
+#   └──────────────────────┬───────────────────────────────────────┘
+#                          │
+#                          ▼
+#   ┌──────────────────────────────────────────────────────────────┐
+#   │  Stellantrieb: Oventrop NR230-507                            │
+#   │                                                              │
+#   │  3-Punkt-Steuerung: AUF (Relay 1) / ZU (Relay 2) / HALT    │
+#   │  Laufzeit 0→90°: 140s | Drehmoment: 5 Nm | 230V AC         │
+#   │  Kein Positionsfeedback — Öffnung wird in Software           │
+#   │  geschätzt (Open-Loop auf Basis der Relais-Einschaltdauer).  │
+#   └──────────────────────────────────────────────────────────────┘
+#
+# Verhalten im eingeschwungenen Zustand:
+#   Wenn die Vorlauftemperatur den Sollwert erreicht hat, konvergieren
+#   Soll- und Ist-Öffnung. Die Differenz fällt unter die Totzone (3%).
+#   Beide Relais bleiben AUS — der Antrieb steht still. Korrekturen
+#   erfolgen nur bei Störgrößenänderungen (Außentemperatur, Rücklauf-
+#   temperatur, Sollwertverstellung).
+#
+# Positionsdrift und Rekalibrierung:
+#   Da der Stellantrieb keine Positionsrückmeldung besitzt, ist die
+#   Software-Schätzung der Ventilöffnung unvermeidlich driftbehaftet.
+#   Ursachen: Relais-Schaltzeiten, Motoranlauf/-auslauf, mechanische
+#   Toleranzen, Spannungsunterbrechungen.
+#
+#   Gegenmaßnahmen:
+#   - Periodische Rekalibrierung: Das Ventil wird für eine volle
+#     Laufzeit (140s) in Endlage ZU gefahren und die geschätzte
+#     Öffnung auf 0% zurückgesetzt. Empfehlung: 1× täglich
+#     während einer Schwachlastphase (z.B. nachts per HA-Automation).
+#   - Die Rekalibrierung kann manuell über einen Button in Home
+#     Assistant oder per Automation ausgelöst werden.
+#   - Die Regelung über den PID-Regler kompensiert moderate Drift
+#     selbsttätig, da die Regelgröße (Temperatur) unabhängig von
+#     der Öffnungsschätzung gemessen wird.
+#
+# Betriebszähler:
+#   - Stellantrieb Motorlaufzeit: Exakte Summe aller Impulsdauern [s],
+#     berechnet aus den tatsächlichen pulse_duration_ms-Werten nach
+#     jedem Fahr-Skript. Persistent über Neustarts (restore_value).
+#   - Stellantrieb Schaltzyklen: Anzahl aller Ventilbewegungen
+#     (AUF, ZU und Rekalibrierung). Persistent über Neustarts.
+#
+# ============================================================================
+
+
+# ============================================================================
+# Relais — Mischventil AUF / ZU (verriegelt)
+# ============================================================================
+# Software-Verriegelung verhindert gleichzeitiges AUF+ZU (mit 500ms Totzeit).
+# Als internal markiert — werden nur von den Fahr-Skripten angesteuert.
+
+switch:
+  - platform: gpio
+    pin: GPIO25
+    name: "Relais Mischventil AUF"
+    id: relais_ventil_auf
+    icon: "mdi:valve-open"
+    restore_mode: ALWAYS_OFF
+    internal: true
+    interlock: &ventil_verriegelung
+      - relais_ventil_auf
+      - relais_ventil_zu
+    interlock_wait_time: 500ms
+
+  - platform: gpio
+    pin: GPIO26
+    name: "Relais Mischventil ZU"
+    id: relais_ventil_zu
+    icon: "mdi:valve-closed"
+    restore_mode: ALWAYS_OFF
+    internal: true
+    interlock: *ventil_verriegelung
+    interlock_wait_time: 500ms
+
+
+# ============================================================================
+# Globale Variablen — Ventilsteuerung
+# ============================================================================
+
+globals:
+  # Geschätzte aktuelle Ventilöffnung (0.0–1.0), persistent über Neustarts
+  - id: estimated_valve_position
+    type: float
+    restore_value: true
+    initial_value: "0.5"
+
+  # Impulsdauer für das nächste Fahr-Skript [ms]
+  - id: pulse_duration_ms
+    type: int
+    restore_value: false
+    initial_value: "0"
+
+  # Absolute Stoppzeit für laufende Ventilbewegung [millis()]
+  - id: valve_stop_time_ms
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+  # Gesamte Motorlaufzeit des Stellantriebs [Sekunden]
+  - id: valve_motor_runtime_s
+    type: int
+    restore_value: true
+    initial_value: "0"
+
+  # Anzahl der Ventilbewegungen (AUF/ZU/Rekalibrierung)
+  - id: valve_cycle_count
+    type: int
+    restore_value: true
+    initial_value: "0"
+
+  # Manuelle Ventilöffnung (-1 = Auto/PID, 0–100 = Override in Prozent)
+  - id: manual_valve_override
+    type: float
+    restore_value: true
+    initial_value: "-1.0"
+
+
+# ============================================================================
+# Fahr-Skripte und Positionsregler
+# ============================================================================
+# Fahr-Skripte (mode: restart): Neuer Impuls unterbricht laufenden sauber.
+# Positionsregler (mode: single): Verhindert Mehrfachausführung.
+
+script:
+  # Ventil AUF fahren — Öffnung wird alle 1,4s um ±1% nachgeführt
+  - id: drive_valve_open
+    mode: restart
+    then:
+      - switch.turn_off: relais_ventil_zu
+      - delay: 300ms
+      - lambda: |-
+          id(valve_stop_time_ms) = millis() + id(pulse_duration_ms);
+      - switch.turn_on: relais_ventil_auf
+      - binary_sensor.template.publish:
+          id: ventil_faehrt
+          state: !lambda "return id(drive_valve_open).is_running() || id(drive_valve_close).is_running() || id(recalibrate_valve).is_running();"
+      - while:
+          condition:
+            lambda: "return millis() < id(valve_stop_time_ms);"
+          then:
+            - delay: !lambda "return ${stellantrieb_laufzeit_s} * 10;  // 1% der Laufzeit in ms"
+            - lambda: |-
+                id(estimated_valve_position) = std::min(
+                  id(estimated_valve_position) + 0.01f, 1.0f);
+            - component.update: ventilstellung_ist_sensor
+      - switch.turn_off: relais_ventil_auf
+      - binary_sensor.template.publish:
+          id: ventil_faehrt
+          state: !lambda "return id(drive_valve_open).is_running() || id(drive_valve_close).is_running() || id(recalibrate_valve).is_running();"
+      - lambda: |-
+          id(valve_motor_runtime_s) += id(pulse_duration_ms) / 1000;
+          id(valve_cycle_count) += 1;
+      - component.update: valve_motor_runtime_sensor
+      - component.update: valve_cycle_count_sensor
+
+  # Ventil ZU fahren — Öffnung wird alle 1,4s um ±1% nachgeführt
+  - id: drive_valve_close
+    mode: restart
+    then:
+      - switch.turn_off: relais_ventil_auf
+      - delay: 300ms
+      - lambda: |-
+          id(valve_stop_time_ms) = millis() + id(pulse_duration_ms);
+      - switch.turn_on: relais_ventil_zu
+      - binary_sensor.template.publish:
+          id: ventil_faehrt
+          state: !lambda "return id(drive_valve_open).is_running() || id(drive_valve_close).is_running() || id(recalibrate_valve).is_running();"
+      - while:
+          condition:
+            lambda: "return millis() < id(valve_stop_time_ms);"
+          then:
+            - delay: !lambda "return ${stellantrieb_laufzeit_s} * 10;  // 1% der Laufzeit in ms"
+            - lambda: |-
+                id(estimated_valve_position) = std::max(
+                  id(estimated_valve_position) - 0.01f, 0.0f);
+            - component.update: ventilstellung_ist_sensor
+      - switch.turn_off: relais_ventil_zu
+      - binary_sensor.template.publish:
+          id: ventil_faehrt
+          state: !lambda "return id(drive_valve_open).is_running() || id(drive_valve_close).is_running() || id(recalibrate_valve).is_running();"
+      - lambda: |-
+          id(valve_motor_runtime_s) += id(pulse_duration_ms) / 1000;
+          id(valve_cycle_count) += 1;
+      - component.update: valve_motor_runtime_sensor
+      - component.update: valve_cycle_count_sensor
+
+  # Rekalibrierung: Ventil komplett zufahren → Öffnung auf 0% setzen
+  - id: recalibrate_valve
+    mode: single
+    then:
+      - logger.log: "Rekalibrierung: Ventil fährt in Grundstellung..."
+      - switch.turn_off: relais_ventil_auf
+      - delay: 300ms
+      - lambda: |-
+          id(valve_stop_time_ms) = millis() + ${stellantrieb_laufzeit_s} * 1000;
+      - switch.turn_on: relais_ventil_zu
+      - binary_sensor.template.publish:
+          id: ventil_faehrt
+          state: !lambda "return id(drive_valve_open).is_running() || id(drive_valve_close).is_running() || id(recalibrate_valve).is_running();"
+      - while:
+          condition:
+            lambda: "return millis() < id(valve_stop_time_ms);"
+          then:
+            - delay: !lambda "return ${stellantrieb_laufzeit_s} * 10;  // 1% der Laufzeit in ms"
+            - lambda: |-
+                id(estimated_valve_position) = std::max(
+                  id(estimated_valve_position) - 0.01f, 0.0f);
+            - component.update: ventilstellung_ist_sensor
+      - switch.turn_off: relais_ventil_zu
+      - binary_sensor.template.publish:
+          id: ventil_faehrt
+          state: !lambda "return id(drive_valve_open).is_running() || id(drive_valve_close).is_running() || id(recalibrate_valve).is_running();"
+      - lambda: |-
+          id(estimated_valve_position) = 0.0;
+          id(valve_motor_runtime_s) += ${stellantrieb_laufzeit_s};
+          id(valve_cycle_count) += 1;
+      - component.update: ventilstellung_ist_sensor
+      - component.update: valve_motor_runtime_sensor
+      - component.update: valve_cycle_count_sensor
+      - logger.log: "Rekalibrierung abgeschlossen — Position = 0%"
+
+  # Positionsregler: Vergleicht Soll- und Ist-Öffnung, startet Fahr-Skript.
+  # Wird periodisch (10s-Intervall) und ereignisgesteuert (Override,
+  # Hauptschalter) aufgerufen. mode: single verhindert Mehrfachausführung.
+  - id: position_controller
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(controller_enabled) && id(manual_valve_override) < 0.0f) return;
+          if (id(drive_valve_open).is_running()) return;
+          if (id(drive_valve_close).is_running()) return;
+          if (id(recalibrate_valve).is_running()) return;
+
+          float soll = (id(manual_valve_override) >= 0.0f)
+                       ? id(manual_valve_override) / 100.0f
+                       : id(desired_valve_position);
+          float ist = id(estimated_valve_position);
+          float diff = soll - ist;
+
+          const float TOTZONE = 0.03f;
+          const int MIN_IMPULS_MS = 2000;
+          const int LAUFZEIT_MS = ${stellantrieb_laufzeit_s} * 1000;
+
+          if (abs(diff) < TOTZONE) return;
+
+          int dauer_ms = (int)(abs(diff) * LAUFZEIT_MS);
+          if (dauer_ms < MIN_IMPULS_MS) dauer_ms = MIN_IMPULS_MS;
+          if (dauer_ms > LAUFZEIT_MS) dauer_ms = LAUFZEIT_MS;
+
+          id(pulse_duration_ms) = dauer_ms;
+
+          if (diff > 0) {
+            id(drive_valve_open).execute();
+          } else {
+            id(drive_valve_close).execute();
+          }
+
+          ESP_LOGD("mischer", "Soll=%.1f%% Ist=%.1f%% Diff=%.1f%% Impuls=%dms %s",
+            soll * 100, ist * 100, diff * 100, dauer_ms,
+            diff > 0 ? "AUF" : "ZU");
+
+
+# ============================================================================
+# Positionsregler — Periodischer Aufruf
+# ============================================================================
+
+interval:
+  - interval: 10s
+    then:
+      - script.execute: position_controller
+
+
+# ============================================================================
+# Öffnungssensoren — Ist und Soll
+# ============================================================================
+
+sensor:
+  # Geschätzte aktuelle Ventilöffnung (Open-Loop-Schätzung)
+  - platform: template
+    name: "Mischventil Oeffnung"
+    id: ventilstellung_ist_sensor
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: "mdi:valve"
+    update_interval: 30s
+    lambda: |-
+      return id(estimated_valve_position) * 100.0;
+
+  # Soll-Öffnung (vom PID-Regler oder Override)
+  - platform: template
+    name: "Mischventil Oeffnung Soll"
+    id: ventilstellung_soll_sensor
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: "mdi:valve"
+    update_interval: 30s
+    lambda: |-
+      return id(desired_valve_position) * 100.0;
+
+  # ---- Betriebszähler ----
+
+  # Gesamte Motorlaufzeit des Stellantriebs
+  - platform: template
+    name: "Mischventil Stellantrieb Motorlaufzeit"
+    id: valve_motor_runtime_sensor
+    unit_of_measurement: "h"
+    accuracy_decimals: 1
+    icon: "mdi:timer-cog-outline"
+    device_class: duration
+    state_class: total_increasing
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(valve_motor_runtime_s) / 3600.0;
+
+  # Anzahl aller Ventilbewegungen
+  - platform: template
+    name: "Mischventil Stellantrieb Schaltzyklen"
+    id: valve_cycle_count_sensor
+    accuracy_decimals: 0
+    icon: "mdi:counter"
+    state_class: total_increasing
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(valve_cycle_count);
+
+
+# ============================================================================
+# Binärsensor — Ventilbewegung aktiv
+# ============================================================================
+
+binary_sensor:
+  - platform: template
+    name: "Mischventil faehrt"
+    id: ventil_faehrt
+    icon: "mdi:valve"
+    device_class: running
+    lambda: |-
+      return id(drive_valve_open).is_running()
+             || id(drive_valve_close).is_running()
+             || id(recalibrate_valve).is_running();
+
+
+# ============================================================================
+# Manuelle Öffnungsvorgabe (Override)
+# ============================================================================
+# Setzt eine feste Mischventil-Öffnung und umgeht den PID-Regler.
+# Wert -1 = Auto (PID regelt), 0–100 = feste Öffnung in Prozent.
+# Nützlich für: Sommerbetrieb (0%), Spülen (100%), Testen.
+# Der Reglerzustand-Textsensor zeigt „Manuell — Override aktiv" an.
+
+number:
+  - platform: template
+    name: "Mischventil Oeffnung Override"
+    id: ventil_override_nr
+    icon: "mdi:valve"
+    entity_category: config
+    unit_of_measurement: "%"
+    min_value: -1
+    max_value: 100
+    step: 1
+    initial_value: -1
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          id(manual_valve_override) = x;
+      - component.update: reglerzustand
+      - script.execute: position_controller
+
+
+# ============================================================================
+# Tasten — Manuelle Ventilsteuerung
+# ============================================================================
+
+button:
+  - platform: template
+    name: "Mischventil Manuell Auf (10s)"
+    icon: "mdi:valve-open"
+    entity_category: diagnostic
+    on_press:
+      - lambda: "id(pulse_duration_ms) = 10000;"
+      - script.execute: drive_valve_open
+
+  - platform: template
+    name: "Mischventil Manuell Zu (10s)"
+    icon: "mdi:valve-closed"
+    entity_category: diagnostic
+    on_press:
+      - lambda: "id(pulse_duration_ms) = 10000;"
+      - script.execute: drive_valve_close
+
+  - platform: template
+    name: "Mischventil Rekalibrierung (Grundstellung geschlossen)"
+    icon: "mdi:restart"
+    entity_category: diagnostic
+    on_press:
+      - script.execute: recalibrate_valve

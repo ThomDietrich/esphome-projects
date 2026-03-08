@@ -1,0 +1,133 @@
+# ============================================================================
+# Temperatursensoren — Fussbodenheizung Mischkreis
+# ============================================================================
+# Drei DS18B20-Sensoren am 1-Wire-Bus (GPIO13) erfassen die Temperaturen
+# im Primär- und Sekundärkreis der Fussbodenheizung:
+#
+#   - T_Prim_VL:  Primärkreis-Vorlauf (vom Wärmeerzeuger kommend)
+#   - T_FBH_VL:   FBH-Vorlauf (nach Mischventil, vor Heizkreisverteiler)
+#   - T_FBH_RL:   FBH-Rücklauf (vom Heizkreisverteiler zurück)
+#
+# Abgeleitete Werte:
+#   - FBH-Kreis Differenz (ΔT):  T_FBH_VL − T_FBH_RL [K]
+#     Maß für die Wärmeabgabe an den Estrich. Typisch 3–7 K.
+#   - Primärkreis Übertemperatur:  T_Prim_VL − Sollwert [K]
+#     Zeigt, ob der Primärkreis genug Temperaturreserve bietet.
+#     Unterhalb von min_uebertemperatur ist weiteres Ventilöffnen wirkungslos.
+#
+#
+# DS18B20 VERDRAHTUNG — 1-Wire Bus auf GPIO13
+# ============================================
+# Alle drei Sensoren hängen parallel am selben 1-Wire-Bus.
+# Ein 4,7 kΩ Pull-Up-Widerstand zwischen GPIO13 und 3,3V ist erforderlich.
+#
+#   3,3V ──┬──[4k7]──┬──────────┬──────────┬── GPIO13 (Daten)
+#           │         │          │          │
+#         ┌─┴─┐     ┌─┴─┐     ┌─┴─┐       │
+#         │VDD│     │VDD│     │VDD│       │
+#         │   │     │   │     │   │       │
+#         │ 1 │     │ 2 │     │ 3 │       │
+#         │   │     │   │     │   │       │
+#         │DQ ├─────┤DQ ├─────┤DQ ├───────┘
+#         │   │     │   │     │   │
+#         │GND│     │GND│     │GND│
+#         └─┬─┘     └─┬─┘     └─┬─┘
+#           │         │          │
+#   GND ────┴─────────┴──────────┘
+#
+#   Sensor 1: Primär-Vorlauf (T_Prim_VL) — am Eintritt des Mischventils
+#   Sensor 2: FBH-Vorlauf   (T_FBH_VL)  — nach dem Mischventil, vor Verteiler
+#   Sensor 3: FBH-Rücklauf  (T_FBH_RL)  — Rücklauf vom Heizkreisverteiler
+#
+# DS18B20 Pinbelegung (Ansicht von unten, flache Seite oben):
+#   Pin 1 = GND | Pin 2 = DQ (Daten) | Pin 3 = VDD (3,3V)
+#
+# Hinweise:
+#   - Kabellänge unter 5m für zuverlässigen Betrieb an GPIO halten
+#   - Geschirmtes Kabel empfohlen, Schirm einseitig an GND
+#   - GPIO13 wird mit Serial2 CS geteilt — DIP-Schalter NICHT auf RS-Modus
+#
+# ============================================================================
+
+
+# ============================================================================
+# 1-Wire Bus — GPIO13
+# https://esphome.io/components/one_wire.html
+# ============================================================================
+
+one_wire:
+  - platform: gpio
+    id: one_wire_bus
+    pin: GPIO13
+
+
+# ============================================================================
+# DS18B20 Temperatursensoren
+# ============================================================================
+
+sensor:
+  # Primärkreis-Vorlauf (vom Wärmeerzeuger kommend, vor dem Mischventil)
+  - <<: !include ds18b20_template.yaml
+    one_wire_id: one_wire_bus
+    address: 0x7d3cd20457252528
+    name: "Primaerkreis Vorlauftemperatur"  # T_Prim_VL
+    id: t_prim_vl
+    update_interval: 10s
+    on_value:
+      then:
+        - component.update: t_prim_headroom
+
+  # FBH-Vorlauf (nach dem Mischventil, vor dem Heizkreisverteiler)
+  # Kürzeres Update-Intervall, da PID-Regelgröße.
+  # Löst nach jedem Messwert die Aktualisierung der abgeleiteten Sensoren aus.
+  - <<: !include ds18b20_template.yaml
+    one_wire_id: one_wire_bus
+    address: 0xe73c1e045720b528
+    name: "Mischkreis Vorlauftemperatur"  # T_FBH_VL
+    id: t_fbh_vl
+    update_interval: 5s
+    on_value:
+      then:
+        - component.update: t_fbh_diff
+        - component.update: t_prim_headroom
+
+  # FBH-Rücklauf (vom Heizkreisverteiler zurück)
+  - <<: !include ds18b20_template.yaml
+    one_wire_id: one_wire_bus
+    address: 0x933cd6045779db28
+    name: "Mischkreis Ruecklauftemperatur"  # T_FBH_RL
+    id: t_fbh_rl
+    update_interval: 10s
+    on_value:
+      then:
+        - component.update: t_fbh_diff
+
+
+  # ---- Abgeleitete Werte ----
+
+  # ΔT des FBH-Kreises (Vorlauf − Rücklauf)
+  - platform: template
+    name: "Mischkreis Differenz"
+    id: t_fbh_diff
+    unit_of_measurement: "K"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer-lines"
+    update_interval: never
+    lambda: |-
+      if (!id(t_fbh_vl).has_state() || !id(t_fbh_rl).has_state()) return {};
+      return id(t_fbh_vl).state - id(t_fbh_rl).state;
+
+  # Übertemperatur des Primärkreises gegenüber dem Sollwert
+  - platform: template
+    name: "Primaerkreis Uebertemperatur"
+    id: t_prim_headroom
+    unit_of_measurement: "K"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer-chevron-up"
+    update_interval: never
+    lambda: |-
+      if (id(t_prim_vl).has_state()) {
+        float sollwert = id(pid_mischkreis).target_temperature;
+        return id(t_prim_vl).state - sollwert;
+      }
+      return {};
