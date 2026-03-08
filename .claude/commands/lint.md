@@ -8,5 +8,5 @@ For each file, run:
 pipenv run esphome config <file>
 ```
 
-Collect and summarize all errors and warnings. Ignore INFO-level output.
+Collect and summarize all errors, warnings, and deprecation notices. Ignore INFO-level output.
 If a file requires substitution variables passed via `-s` (like bienenstockwaage.yaml), check the file header comments for the correct invocation and use appropriate values.

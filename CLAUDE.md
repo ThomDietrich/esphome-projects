@@ -16,3 +16,7 @@ Rules:
 
 Reference examples: `Mischkreis Vorlauftemperatur`, `PID Regelfehler`, `Mischventil Oeffnung Soll`,
 `Umwaelzpumpe Betriebsstunden`, `Primaerkreis Uebertemperatur`, `Mischkreis Automatik`
+
+## Working with Device Files
+
+When reviewing or editing a device YAML file, always read its referenced packages and includes first (`packages:`, `!include`). These define shared IDs, entities, and conventions that the device file depends on.
