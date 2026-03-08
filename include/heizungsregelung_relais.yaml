@@ -2,12 +2,15 @@ switch:
   # Relais 1
   - platform: gpio
     name: "Kesselpufferkreis Umwaelzpumpe"
+    id: switch_kesselpufferkreis_pumpe
     pin:
       number: GPIO4
       inverted: true
     restore_mode: ALWAYS_OFF
 
   # Relais 2
+  # GPIO0 is a strapping pin (must be HIGH during boot for normal boot mode).
+  # inverted: true + ALWAYS_OFF ensures physical HIGH at boot = relay OFF.
   - platform: gpio
     name: "Solarkreis Umwaelzpumpe"
     id: switch_solarkreis_pumpe
@@ -18,12 +21,12 @@ switch:
 
   # Relais 3
   - platform: gpio
-    name: "Relais 3 ungenutzt"
+    name: "Warmwasser Zirkulationspumpe"
+    id: switch_warmwasser_zirkulation
     pin:
       number: GPIO2
       inverted: true
     restore_mode: ALWAYS_OFF
-    disabled_by_default: true
 
   # Relais 4
   - platform: gpio
@@ -43,3 +46,33 @@ switch:
       # Heizungsmodus
       - component.update: heizkreis_diff
       - component.update: warmwasser_diff
+
+# Pump runtime counters (reset on reboot, HA tracks total via total_increasing)
+# https://esphome.io/components/sensor/duty_time.html
+sensor:
+  - platform: duty_time
+    name: "Kesselpufferkreis Umwaelzpumpe Betriebsstunden"
+    lambda: return id(switch_kesselpufferkreis_pumpe).state;
+    unit_of_measurement: h
+    device_class: duration
+    state_class: total_increasing
+    accuracy_decimals: 2
+    update_interval: 60s
+
+  - platform: duty_time
+    name: "Solarkreis Umwaelzpumpe Betriebsstunden"
+    lambda: return id(switch_solarkreis_pumpe).state;
+    unit_of_measurement: h
+    device_class: duration
+    state_class: total_increasing
+    accuracy_decimals: 2
+    update_interval: 60s
+
+  - platform: duty_time
+    name: "Warmwasser Zirkulationspumpe Betriebsstunden"
+    lambda: return id(switch_warmwasser_zirkulation).state;
+    unit_of_measurement: h
+    device_class: duration
+    state_class: total_increasing
+    accuracy_decimals: 2
+    update_interval: 60s
