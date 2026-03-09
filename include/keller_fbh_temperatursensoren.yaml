@@ -1,10 +1,11 @@
 # ============================================================================
 # Temperatursensoren — Fussbodenheizung Mischkreis
 # ============================================================================
-# Drei DS18B20-Sensoren am 1-Wire-Bus (GPIO13) erfassen die Temperaturen
+# Vier DS18B20-Sensoren am 1-Wire-Bus (GPIO13) erfassen die Temperaturen
 # im Primär- und Sekundärkreis der Fussbodenheizung:
 #
 #   - T_Prim_VL:  Primärkreis-Vorlauf (vom Wärmeerzeuger kommend)
+#   - T_Prim_RL:  Primärkreis-Rücklauf (aus dem Mischventil zurück zum Erzeuger)
 #   - T_FBH_VL:   FBH-Vorlauf (nach Mischventil, vor Heizkreisverteiler)
 #   - T_FBH_RL:   FBH-Rücklauf (vom Heizkreisverteiler zurück)
 #
@@ -18,7 +19,7 @@
 #
 # DS18B20 VERDRAHTUNG — 1-Wire Bus auf GPIO13
 # ============================================
-# Alle drei Sensoren hängen parallel am selben 1-Wire-Bus.
+# Alle vier Sensoren hängen parallel am selben 1-Wire-Bus.
 # Ein 4,7 kΩ Pull-Up-Widerstand zwischen GPIO13 und 3,3V ist erforderlich.
 #
 #   3,3V ──┬──[4k7]──┬──────────┬──────────┬── GPIO13 (Daten)
@@ -35,9 +36,10 @@
 #           │         │          │
 #   GND ────┴─────────┴──────────┘
 #
-#   Sensor 1: Primär-Vorlauf (T_Prim_VL) — am Eintritt des Mischventils
-#   Sensor 2: FBH-Vorlauf   (T_FBH_VL)  — nach dem Mischventil, vor Verteiler
-#   Sensor 3: FBH-Rücklauf  (T_FBH_RL)  — Rücklauf vom Heizkreisverteiler
+#   Sensor 1: Primär-Vorlauf   (T_Prim_VL) — am Eintritt des Mischventils
+#   Sensor 2: Primär-Rücklauf (T_Prim_RL) — am Austritt des Mischventils
+#   Sensor 3: FBH-Vorlauf     (T_FBH_VL)  — nach dem Mischventil, vor Verteiler
+#   Sensor 4: FBH-Rücklauf    (T_FBH_RL)  — Rücklauf vom Heizkreisverteiler
 #
 # DS18B20 Pinbelegung (Ansicht von unten, flache Seite oben):
 #   Pin 1 = GND | Pin 2 = DQ (Daten) | Pin 3 = VDD (3,3V)
@@ -70,13 +72,25 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
     address: 0x7d3cd20457252528
-    name: "Zufluss Vorlauftemperatur"  # T_Prim_VL
+    name: "Primaer Vorlauftemperatur"  # T_Prim_VL
     id: t_prim_vl
-    device_id: mischkreis
+    device_id: mischer
     update_interval: 10s
     on_value:
       then:
         - component.update: t_prim_headroom
+
+  # Primärkreis-Rücklauf (aus dem Mischventil zurück zum Wärmeerzeuger)
+  - <<: !include ds18b20_template.yaml
+    one_wire_id: one_wire_bus
+    address: 0xc93c8904579c8528
+    name: "Primaer Ruecklauftemperatur"  # T_Prim_RL
+    id: t_prim_rl
+    device_id: mischer
+    update_interval: 10s
+    on_value:
+      then:
+        - component.update: t_rl_diff
 
   # FBH-Vorlauf (nach dem Mischventil, vor dem Heizkreisverteiler)
   # Kürzeres Update-Intervall, da PID-Regelgröße.
@@ -84,9 +98,9 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
     address: 0xe73c1e045720b528
-    name: "Vorlauftemperatur"  # T_FBH_VL
+    name: "Sekundaer Vorlauftemperatur"  # T_FBH_VL
     id: t_fbh_vl
-    device_id: mischkreis
+    device_id: mischer
     update_interval: 5s
     on_value:
       then:
@@ -97,22 +111,23 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
     address: 0x933cd6045779db28
-    name: "Ruecklauftemperatur"  # T_FBH_RL
+    name: "Sekundaer Ruecklauftemperatur"  # T_FBH_RL
     id: t_fbh_rl
-    device_id: mischkreis
+    device_id: mischer
     update_interval: 10s
     on_value:
       then:
         - component.update: t_fbh_diff
+        - component.update: t_rl_diff
 
 
   # ---- Abgeleitete Werte ----
 
   # ΔT des FBH-Kreises (Vorlauf − Rücklauf)
   - platform: template
-    name: "Differenz"
+    name: "Sekundaer Spreizung"
     id: t_fbh_diff
-    device_id: mischkreis
+    device_id: mischer
     unit_of_measurement: "K"
     accuracy_decimals: 1
     icon: "mdi:thermometer-lines"
@@ -123,9 +138,9 @@ sensor:
 
   # Übertemperatur des Primärkreises gegenüber dem Sollwert
   - platform: template
-    name: "Zufluss Uebertemperatur"
+    name: "Primaer Uebertemperatur"
     id: t_prim_headroom
-    device_id: mischkreis
+    device_id: mischer
     unit_of_measurement: "K"
     accuracy_decimals: 1
     icon: "mdi:thermometer-chevron-up"
@@ -136,3 +151,102 @@ sensor:
         return id(t_prim_vl).state - sollwert;
       }
       return {};
+
+  # ΔT zwischen primärem und sekundärem Rücklauf (T_Prim_RL − T_FBH_RL)
+  # Bei korrekter Hydraulik nahe 0 K, da beide vom selben T-Stück kommen.
+  # Deutlich positiver Wert → hydraulischer Kurzschluss im Mischventil.
+  - platform: template
+    name: "Ruecklauf Abweichung"
+    id: t_rl_diff
+    device_id: mischer
+    unit_of_measurement: "K"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer-alert"
+    update_interval: never
+    lambda: |-
+      if (!id(t_prim_rl).has_state() || !id(t_fbh_rl).has_state()) return {};
+      return id(t_prim_rl).state - id(t_fbh_rl).state;
+
+
+# ============================================================================
+# Binärsensoren — Fehlerdiagnose
+# ============================================================================
+#
+# Sensorfehler:
+#   Einer oder mehrere der vier DS18B20-Sensoren liefern ungültige Werte
+#   (kein Messwert, NaN, < 5°C oder > 80°C). Hinweis auf Kabelbruch,
+#   Kurzschluss, lose Verbindung oder defekten Sensor.
+#
+# Hydraulischer Kurzschluss (Pumpe EIN):
+#   Heißes Primärwasser fließt durch ein undichtes Mischventil direkt
+#   in den Primär-Rücklauf, ohne den FBH-Kreis vollständig zu durchlaufen.
+#   Ursachen: Verschlissener Ventilsitz, Stellantrieb schließt nicht.
+#
+# Schwerkraftzirkulation (Pumpe AUS):
+#   Heißes Primärwasser zirkuliert durch natürliche Konvektion (Thermosiphon)
+#   durch das Mischventil in den Sekundärkreis — unkontrollierte Wärmeabgabe.
+#   Ursachen: Fehlende/defekte Rückschlagklappe, Ventil schließt nicht.
+#
+# Durchflussmangel (Pumpe EIN, kein Durchfluss):
+#   Pumpe läuft, Ventil offen (>20%), Primärkreis hat Temperaturreserve
+#   (>10 K über FBH-Vorlauf), aber FBH-Kreis ΔT < 1 K — kein Durchfluss.
+#   Verzögerung 30 min um Anlaufphasen auszuschließen.
+#   Ursachen: Luftblase, Pumpe defekt, Heizkreisverteiler geschlossen.
+
+binary_sensor:
+  - platform: template
+    name: "Sensorfehler"
+    id: sensor_fehler
+    device_id: mischer
+    icon: "mdi:thermometer-off"
+    device_class: problem
+    entity_category: diagnostic
+    lambda: |-
+      auto check = [](sensor::Sensor *s) -> bool {
+        if (!s->has_state()) return true;
+        float t = s->state;
+        return isnan(t) || t < 5.0f || t > 80.0f;
+      };
+      return check(id(t_prim_vl)) || check(id(t_prim_rl))
+             || check(id(t_fbh_vl)) || check(id(t_fbh_rl));
+
+  - platform: template
+    name: "Hydraulischer Kurzschluss"
+    id: hydraulischer_kurzschluss
+    device_id: mischer
+    icon: "mdi:pipe-leak"
+    device_class: problem
+    lambda: |-
+      if (!id(pumpe_fbh).state) return false;
+      if (id(estimated_valve_position) < 0.05f) return false;
+      if (!id(t_prim_rl).has_state() || !id(t_fbh_rl).has_state()) return false;
+      return (id(t_prim_rl).state - id(t_fbh_rl).state) > 3.0f;
+
+  - platform: template
+    name: "Schwerkraftzirkulation"
+    id: schwerkraftzirkulation
+    device_id: mischer
+    icon: "mdi:waves-arrow-up"
+    device_class: problem
+    lambda: |-
+      if (id(pumpe_fbh).state) return false;
+      if (!id(t_prim_rl).has_state() || !id(t_fbh_rl).has_state()) return false;
+      return (id(t_prim_rl).state - id(t_fbh_rl).state) > 3.0f;
+
+  - platform: template
+    name: "Durchflussmangel"
+    id: durchflussmangel
+    device_id: mischer
+    icon: "mdi:pump-off"
+    device_class: problem
+    filters:
+      - delayed_on: 30min
+    lambda: |-
+      if (!id(pumpe_fbh).state) return false;
+      if (id(estimated_valve_position) < 0.20f) return false;
+      if (!id(t_prim_vl).has_state() || !id(t_fbh_vl).has_state()) return false;
+      if (!id(t_fbh_rl).has_state()) return false;
+      float potential = id(t_prim_vl).state - id(t_fbh_vl).state;
+      if (potential < 10.0f) return false;
+      float delta_t = id(t_fbh_vl).state - id(t_fbh_rl).state;
+      return delta_t < 1.0f;
