@@ -175,6 +175,8 @@ script:
   - id: drive_valve_open
     mode: restart
     then:
+      - script.stop: drive_valve_close
+      - script.stop: recalibrate_valve
       - switch.turn_off: relais_ventil_zu
       - delay: 300ms
       - lambda: |-
@@ -206,6 +208,8 @@ script:
   - id: drive_valve_close
     mode: restart
     then:
+      - script.stop: drive_valve_open
+      - script.stop: recalibrate_valve
       - switch.turn_off: relais_ventil_auf
       - delay: 300ms
       - lambda: |-
@@ -238,6 +242,8 @@ script:
     mode: single
     then:
       - logger.log: "Rekalibrierung: Ventil fährt in Grundstellung..."
+      - script.stop: drive_valve_open
+      - script.stop: drive_valve_close
       - switch.turn_off: relais_ventil_auf
       - delay: 300ms
       - lambda: |-
