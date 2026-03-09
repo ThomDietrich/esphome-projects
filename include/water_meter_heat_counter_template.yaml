@@ -43,6 +43,17 @@ globals:
     restore_value: no
     initial_value: '0.0'
 
+  # Flow rate calculation — previous snapshot for delta computation
+  - id: global_${heat_counter_id}_prev_vol_l
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+  - id: global_${heat_counter_id}_prev_time_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
 # ---------------------------------------------------------------------------
 # Binary sensor – GPIO pulse input from Zenner meter
 # ---------------------------------------------------------------------------
@@ -110,3 +121,57 @@ sensor:
       - or:
         - delta: 0.01
         - heartbeat: 5min
+
+  # Flow rate — averaged over 60s windows, smoothed with 3-sample sliding window.
+  # At typical FBH flow (~5 L/min) one window captures ~20 pulses (±5% quantization).
+  # The sliding window reduces this to ~2%. Reports 0 when no flow detected.
+  - platform: template
+    name: "${heat_counter_name} Durchfluss"
+    id: sensor_${heat_counter_id}_durchfluss
+    device_id: ${heat_counter_device_id}
+    unit_of_measurement: "L/min"
+    icon: mdi:water-pump
+    accuracy_decimals: 1
+    update_interval: 60s
+    lambda: |-
+      uint32_t now = millis();
+      uint32_t prev = id(global_${heat_counter_id}_prev_time_ms);
+      if (prev == 0) {
+        // First call after boot — seed snapshot, skip this cycle
+        id(global_${heat_counter_id}_prev_vol_l) = id(global_${heat_counter_id}_volumen_l);
+        id(global_${heat_counter_id}_prev_time_ms) = now;
+        return {};
+      }
+      uint32_t dt_ms = now - prev;
+      if (dt_ms < 1000) return {};
+      float dv = id(global_${heat_counter_id}_volumen_l) - id(global_${heat_counter_id}_prev_vol_l);
+      id(global_${heat_counter_id}_prev_vol_l) = id(global_${heat_counter_id}_volumen_l);
+      id(global_${heat_counter_id}_prev_time_ms) = now;
+      return dv / (dt_ms / 60000.0f);
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 1
+
+  # Thermal power — derived from flow rate and temperature spread.
+  # P = flow [L/min] / 60 × ρ [kg/L] × c_p [kJ/(kg·K)] × ΔT [K]
+  # With ρ ≈ 0.99 kg/L and c_p ≈ 4.182 kJ/(kg·K) at ~35°C.
+  - platform: template
+    name: "${heat_counter_name} Leistung"
+    id: sensor_${heat_counter_id}_leistung
+    device_id: ${heat_counter_device_id}
+    unit_of_measurement: "kW"
+    device_class: power
+    icon: mdi:heat-wave
+    accuracy_decimals: 2
+    update_interval: 60s
+    lambda: |-
+      if (!id(sensor_${heat_counter_id}_durchfluss).has_state()) return {};
+      if (isnan(id(${heat_counter_temp_diff}).state)) return {};
+      float flow_l_min = id(sensor_${heat_counter_id}_durchfluss).state;
+      float dt_k = id(${heat_counter_temp_diff}).state;
+      return (flow_l_min / 60.0f) * 0.99f * 4.182f * dt_k;
+    filters:
+      - sliding_window_moving_average:
+          window_size: 3
+          send_every: 1
