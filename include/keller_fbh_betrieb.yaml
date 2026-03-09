@@ -97,6 +97,9 @@ text_sensor:
     icon: "mdi:information-outline"
     update_interval: 15s
     lambda: |-
+      if (id(safety_lockout))
+        return std::string("Sicherheitsabschaltung");
+
       if (id(manual_valve_override) >= 0.0f)
         return std::string("Manuell — Override aktiv");
 

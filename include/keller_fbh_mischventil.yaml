@@ -281,6 +281,7 @@ script:
     mode: single
     then:
       - lambda: |-
+          if (id(safety_lockout)) return;
           if (!id(controller_enabled) && id(manual_valve_override) < 0.0f) return;
           if (id(drive_valve_open).is_running()) return;
           if (id(drive_valve_close).is_running()) return;
