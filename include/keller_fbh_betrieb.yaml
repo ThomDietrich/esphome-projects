@@ -51,7 +51,7 @@ switch:
   - platform: template
     name: "Automatik"
     id: fbh_betrieb
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:auto-fix"
     restore_mode: RESTORE_DEFAULT_ON
     optimistic: true
@@ -93,7 +93,7 @@ text_sensor:
   - platform: template
     name: "Reglerzustand"
     id: reglerzustand
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:information-outline"
     update_interval: 15s
     lambda: |-

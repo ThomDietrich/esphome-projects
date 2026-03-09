@@ -102,8 +102,8 @@ esphome:
     - id: area_main
       name: ${device_area}
   devices:
-    - id: mischkreis
-      name: "Keller FBH Mischkreis"
+    - id: mischer
+      name: "Keller FBH Mischer"
       area_id: area_main
     - id: umwaelzpumpe
       name: "Keller FBH Umwaelzpumpe"

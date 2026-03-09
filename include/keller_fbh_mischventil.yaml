@@ -334,7 +334,7 @@ sensor:
   - platform: template
     name: "Mischventil Oeffnung"
     id: ventilstellung_ist_sensor
-    device_id: mischkreis
+    device_id: mischer
     unit_of_measurement: "%"
     accuracy_decimals: 0
     icon: "mdi:valve"
@@ -346,7 +346,7 @@ sensor:
   - platform: template
     name: "Mischventil Oeffnung Soll"
     id: ventilstellung_soll_sensor
-    device_id: mischkreis
+    device_id: mischer
     unit_of_measurement: "%"
     accuracy_decimals: 0
     icon: "mdi:valve"
@@ -360,7 +360,7 @@ sensor:
   - platform: template
     name: "Mischventil Stellantrieb Motorlaufzeit"
     id: valve_motor_runtime_sensor
-    device_id: mischkreis
+    device_id: mischer
     unit_of_measurement: "h"
     accuracy_decimals: 1
     icon: "mdi:timer-cog-outline"
@@ -375,7 +375,7 @@ sensor:
   - platform: template
     name: "Mischventil Stellantrieb Schaltzyklen"
     id: valve_cycle_count_sensor
-    device_id: mischkreis
+    device_id: mischer
     accuracy_decimals: 0
     icon: "mdi:counter"
     state_class: total_increasing
@@ -393,7 +393,7 @@ binary_sensor:
   - platform: template
     name: "Mischventil faehrt"
     id: ventil_faehrt
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:valve"
     device_class: running
     lambda: |-
@@ -414,7 +414,7 @@ number:
   - platform: template
     name: "Mischventil Oeffnung Override"
     id: ventil_override_nr
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:valve"
     entity_category: config
     unit_of_measurement: "%"
@@ -438,7 +438,7 @@ number:
 button:
   - platform: template
     name: "Mischventil Manuell Auf (10s)"
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:valve-open"
     entity_category: diagnostic
     on_press:
@@ -447,7 +447,7 @@ button:
 
   - platform: template
     name: "Mischventil Manuell Zu (10s)"
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:valve-closed"
     entity_category: diagnostic
     on_press:
@@ -456,7 +456,7 @@ button:
 
   - platform: template
     name: "Mischventil Rekalibrierung (Grundstellung geschlossen)"
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:restart"
     entity_category: diagnostic
     on_press:

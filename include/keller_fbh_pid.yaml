@@ -74,7 +74,7 @@ climate:
   - platform: pid
     id: pid_mischkreis
     name: "Vorlaufregelung"
-    device_id: mischkreis
+    device_id: mischer
     sensor: t_fbh_vl
     default_target_temperature: ${sollwert_vorlauf}
     heat_output: pid_output_position
@@ -110,31 +110,31 @@ sensor:
   - platform: pid
     climate_id: pid_mischkreis
     name: "PID P-Anteil"
-    device_id: mischkreis
+    device_id: mischer
     type: PROPORTIONAL
 
   - platform: pid
     climate_id: pid_mischkreis
     name: "PID I-Anteil"
-    device_id: mischkreis
+    device_id: mischer
     type: INTEGRAL
 
   - platform: pid
     climate_id: pid_mischkreis
     name: "PID D-Anteil"
-    device_id: mischkreis
+    device_id: mischer
     type: DERIVATIVE
 
   - platform: pid
     climate_id: pid_mischkreis
     name: "PID Regelfehler"
-    device_id: mischkreis
+    device_id: mischer
     type: ERROR
 
   - platform: pid
     climate_id: pid_mischkreis
     name: "PID Stellgroesse"
-    device_id: mischkreis
+    device_id: mischer
     type: HEAT
     unit_of_measurement: "%"
 
@@ -146,7 +146,7 @@ sensor:
 button:
   - platform: template
     name: "PID Autotuning"
-    device_id: mischkreis
+    device_id: mischer
     icon: "mdi:tune"
     entity_category: config
     on_press:
