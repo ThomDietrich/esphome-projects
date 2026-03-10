@@ -128,6 +128,13 @@ packages:
   - !include include/keller_fbh_betrieb.yaml
   - !include include/keller_fbh_sicherheit.yaml
   - !include
+    file: include/s0_energy_meter_template.yaml
+    vars:
+      energy_meter_id: "fbh"
+      energy_meter_gpio: "GPIO34"
+      energy_meter_imp_kwh: "2000"
+      energy_meter_device_id: ""
+  - !include
     file: include/water_meter_heat_counter_template.yaml
     vars:
       heat_counter_name: "Primaerkreis"

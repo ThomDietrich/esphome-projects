@@ -1,0 +1,63 @@
+# s0_energy_meter_template.yaml
+#
+# Reusable ESPHome package for a DIN rail energy meter with S0 pulse output.
+#
+# Required substitutions:
+#   energy_meter_id         – ID-safe slug                (e.g. "fbh")
+#   energy_meter_gpio       – GPIO pin for S0 input       (e.g. "GPIO34")
+#   energy_meter_imp_kwh    – Pulse rate of the meter     (e.g. "2000")
+#
+# Optional substitutions:
+#   energy_meter_device_id  – Sub-device ID, empty for main device
+#
+# Usage in your main YAML:
+#
+#   packages:
+#     - !include
+#       file: include/s0_energy_meter_template.yaml
+#       vars:
+#         energy_meter_id:        "fbh"
+#         energy_meter_gpio:      "GPIO34"
+#         energy_meter_imp_kwh:   "2000"
+#         energy_meter_device_id: ""
+#
+# S0 interface wiring:
+#   S0+ ── 3,3V (via external 10 kΩ pull-up if GPIO has no internal pull-up)
+#   S0- ── ${energy_meter_gpio}
+#
+#   IMPORTANT: ESP32 GPIO34–39 are input-only and have NO internal pull-up.
+#   An external 10 kΩ resistor between the GPIO pin and 3,3V is required.
+#
+# pulse_meter measures the time between pulses to derive instantaneous power.
+# On timeout (no pulse for 5 min) it reports 0 W. The total sub-sensor
+# counts pulses for cumulative energy (state_class: total_increasing).
+
+sensor:
+  - platform: pulse_meter
+    pin: ${energy_meter_gpio}
+    name: "Elektrische Leistung"
+    id: sensor_${energy_meter_id}_el_leistung
+    device_id: ${energy_meter_device_id}
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    icon: "mdi:flash"
+    accuracy_decimals: 0
+    internal_filter: 50ms
+    timeout: 5min
+    filters:
+      # pulse_meter reports pulses/min.
+      # X imp/min × (60 min/h ÷ imp_kwh) × 1000 W/kW = X × 60000 / imp_kwh
+      - lambda: "return x * 60000.0f / ${energy_meter_imp_kwh};"
+    total:
+      name: "Elektrischer Verbrauch"
+      id: sensor_${energy_meter_id}_el_verbrauch
+      device_id: ${energy_meter_device_id}
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: "mdi:meter-electric-outline"
+      accuracy_decimals: 3
+      filters:
+        # 1 pulse = 1 / imp_kwh kWh
+        - lambda: "return x / ${energy_meter_imp_kwh}.0f;"
