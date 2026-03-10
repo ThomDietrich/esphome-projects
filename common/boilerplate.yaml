@@ -1,8 +1,8 @@
 captive_portal:
 
 api:
-    encryption:
-      key: !secret api_encryption_key
+  encryption:
+    key: !secret api_encryption_key
 
 ota:
   platform: esphome
@@ -28,12 +28,14 @@ binary_sensor:
   # https://esphome.io/components/binary_sensor/status.html
   - platform: status
     name: ESP Device Status
+    entity_category: diagnostic
 
 button:
   # https://esphome.io/components/button/restart.html
   - platform: restart
     id: esp_restart_button
     name: ESP Device Restart
+    entity_category: diagnostic
 
 sensor:
   # https://esphome.io/components/sensor/uptime.html
@@ -41,9 +43,11 @@ sensor:
     name: ESP Device Uptime
     update_interval: 60s
     device_class: duration
+    entity_category: diagnostic
 
 text_sensor:
   # https://esphome.io/components/text_sensor/version.html
   - platform: version
     name: ESPHome Version
+    entity_category: diagnostic
     # hide_timestamp: true
