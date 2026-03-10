@@ -8,7 +8,7 @@
 #   - Positionsregler: Vergleicht Soll- und Ist-Öffnung (10s-Zyklus)
 #   - Fahr-Skripte: Zeitgesteuerte Relaisimpulse mit sekundlicher Nachführung
 #   - Rekalibrierung: Grundstellung durch volle Fahrt in Endlage ZU
-#   - Öffnungssensoren: Geschätzte Ist-Öffnung und Soll-Öffnung
+#   - Öffnungssensoren: Geschätzte Ist-Öffnung und effektive Soll-Öffnung
 #   - Betriebszähler: Motorlaufzeit und Schaltzyklen
 #   - Override: Manuelle Öffnungsvorgabe (0–100%) oder Auto (-1)
 #   - Tasten: Manuelle Ventilfahrt (10s AUF/ZU), Rekalibrierung
@@ -353,6 +353,8 @@ sensor:
     icon: "mdi:valve"
     update_interval: 30s
     lambda: |-
+      if (id(manual_valve_override) >= 0.0f)
+        return id(manual_valve_override);
       return id(desired_valve_position) * 100.0;
 
   # ---- Betriebszähler ----
