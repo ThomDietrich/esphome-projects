@@ -140,7 +140,7 @@ packages:
       heat_counter_name: "Primaerkreis"
       heat_counter_id: "fbh"
       heat_counter_gpio: "GPIO39"
-      heat_counter_temp_diff: "t_fbh_diff"
+      heat_counter_temp_diff: "t_prim_diff"
       heat_counter_device_id: "waermezaehler"
 
 logger:

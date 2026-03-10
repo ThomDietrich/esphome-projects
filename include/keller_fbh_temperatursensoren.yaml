@@ -10,11 +10,17 @@
 #   - T_FBH_RL:   FBH-Rücklauf (vom Heizkreisverteiler zurück)
 #
 # Abgeleitete Werte:
-#   - FBH-Kreis Differenz (ΔT):  T_FBH_VL − T_FBH_RL [K]
+#   - Primärkreis Spreizung (ΔT):  T_Prim_VL − T_Prim_RL [K]
+#     Maß für die vom Wärmeerzeuger entnommene Energie.
+#     Wird vom Wärmezähler für die Energieberechnung verwendet.
+#   - Sekundärkreis Spreizung (ΔT):  T_FBH_VL − T_FBH_RL [K]
 #     Maß für die Wärmeabgabe an den Estrich. Typisch 3–7 K.
 #   - Primärkreis Übertemperatur:  T_Prim_VL − Sollwert [K]
 #     Zeigt, ob der Primärkreis genug Temperaturreserve bietet.
 #     Unterhalb von min_uebertemperatur ist weiteres Ventilöffnen wirkungslos.
+#   - Rücklauf Abweichung:  T_Prim_RL − T_FBH_RL [K]
+#     Bei korrekter Hydraulik nahe 0 K. Deutlich positiver Wert
+#     deutet auf hydraulischen Kurzschluss im Mischventil.
 #
 #
 # DS18B20 VERDRAHTUNG — 1-Wire Bus auf GPIO13
@@ -78,6 +84,7 @@ sensor:
     update_interval: 10s
     on_value:
       then:
+        - component.update: t_prim_diff
         - component.update: t_prim_headroom
 
   # Primärkreis-Rücklauf (aus dem Mischventil zurück zum Wärmeerzeuger)
@@ -90,6 +97,7 @@ sensor:
     update_interval: 10s
     on_value:
       then:
+        - component.update: t_prim_diff
         - component.update: t_rl_diff
 
   # FBH-Vorlauf (nach dem Mischventil, vor dem Heizkreisverteiler)
@@ -122,6 +130,21 @@ sensor:
 
 
   # ---- Abgeleitete Werte ----
+
+  # ΔT des Primärkreises (Vorlauf − Rücklauf)
+  # Maß für die vom Wärmeerzeuger entnommene Energie.
+  # Wird vom Wärmezähler für die Energieberechnung verwendet.
+  - platform: template
+    name: "Primaer Spreizung"
+    id: t_prim_diff
+    device_id: waermezaehler
+    unit_of_measurement: "K"
+    accuracy_decimals: 1
+    icon: "mdi:thermometer-lines"
+    update_interval: never
+    lambda: |-
+      if (!id(t_prim_vl).has_state() || !id(t_prim_rl).has_state()) return {};
+      return id(t_prim_vl).state - id(t_prim_rl).state;
 
   # ΔT des FBH-Kreises (Vorlauf − Rücklauf)
   - platform: template
