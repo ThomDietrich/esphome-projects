@@ -106,9 +106,9 @@ sensor:
     name: Gewicht
     filters:
       - median:
-          window_size: 3
-          send_every: 3
-          send_first_at: 3
+          window_size: 5
+          send_every: 5
+          send_first_at: 5
       - calibrate_linear:
           datapoints:
           - from: ${scale_${scale_id}_refweight_0kg_raw}
@@ -123,4 +123,5 @@ sensor:
     accuracy_decimals: 2
     icon: mdi:scale
     device_class: weight
+    state_class: measurement
     unit_of_measurement: kg
