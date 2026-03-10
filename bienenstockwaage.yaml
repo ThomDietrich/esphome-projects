@@ -110,7 +110,7 @@ sensor:
           send_every: 5
           send_first_at: 5
       - calibrate_linear:
-          datapoints:
+          datapoints:  # nested substitutions resolve at compile time; linter warnings are false positives
           - from: ${scale_${scale_id}_refweight_0kg_raw}
             to: ${refweight_0kg}
           - from: ${scale_${scale_id}_refweight_30kg_raw}
