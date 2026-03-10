@@ -25,6 +25,7 @@
 #     (kein Messwert, NaN, < 5°C oder > 80°C). Verhindert unkontrolliertes
 #     Aufheizen bei Sensorausfall. Die 60s Karenzzeit nach Boot verhindert
 #     Fehlauslösung bevor die Sensoren ihre ersten Messwerte liefern.
+#     Ventil wird sofort aktiv geschlossen (identisch zu Übertemperaturschutz).
 #
 # Nicht-kritische Optimierung (kein Lockout):
 #
@@ -139,7 +140,8 @@ interval:
             - script.stop: drive_valve_close
             - script.stop: position_controller
             - switch.turn_off: relais_ventil_auf
-            - switch.turn_off: relais_ventil_zu
+            - delay: 500ms
+            - switch.turn_on: relais_ventil_zu
             - switch.turn_off: pumpe_fbh
             - component.update: reglerzustand
             - homeassistant.service:
