@@ -1,24 +1,30 @@
-# Solarthermie
-
+# ============================================================================
+# Solarthermie Energieberechnung — Solarkreis
+# ============================================================================
+# Berechnet die thermische Energieproduktion der zwei Solarkollektoren
+# auf dem Dach. Waermetraegermedium: TYFOCOR L (Propylenglykol 44 Vol.-%,
+# Kaelteschutz bis -28°C).
+#
 # TacoSetter Inline 100 (223.1238.000) DN15 3/4" x 3/4"
 # https://www.taconova.com/de/hydraulischer-abgleich/c/abgleichventile/v/tacosetter-inline
-
-# Solar Fluid TYFOCOR L / WTF 10, Fertigmischung 44 Vol.-% - Kälteschutz -28°C
+# Der Volumenstrom wird manuell am TacoSetter abgelesen und als
+# Konstante hinterlegt (TODO: temperaturabhaengige Korrektur).
+#
+# Solarfluid TYFOCOR L / WTF 10
 # https://tyfo.de/downloads/TYFOCOR-L_de_TI.pdf
-# Dichte: 1042 kg/m³
-# Viskosität: 68–72 mm²/s
-
-# Volumenstrom: 0,25 Liter pro Impuls
+#   Dichte:     1042 kg/m³ (bei 20°C), temperaturabhaengig via LUT
+#   Viskositaet: 5,12 mm²/s (bei 20°C), temperaturabhaengig via LUT
+#   cp:         3,50–3,98 kJ/(kg·K), temperaturabhaengig via LUT
 #
-# Energieverbrauch (Wärmeenergie Q in Kilowatt):
-#   - m_l_per_minute: Messwert am Tacosetter, korrigiert nach Viskosität
-#   - m_l: Volumenstrom Solarfluid in delta_t
-#   - m_g: Menge Solarfluid m_l * ...g/l = ...g in delta_t
-#   - c_wh_kgk: Spezifische Wärmekapazität Solarfluid = ... Wh/(kg·K)
-#   - k_k: Zugeführte Wärme in Kelvin
+# Energieberechnung (bei jedem Update der Solarkreis-Spreizung):
+#   1. delta_t [s] seit letztem Update bestimmen
+#   2. Masse m_g [g] = delta_t × Volumenstrom [L/s] × Dichte [g/L]
+#   3. Energie [kWh] = m_g/1000 × Spreizung [K] × cp [kWh/(kg·K)]
+#   4. Kumuliert in global_solarkreis_energie_kwh (total_increasing)
 #
-# Siehe auch: https://www.endenergie.de/
-#
+# Die Berechnung laeuft nur bei eingeschalteter Solarkreispumpe.
+# Bei ausgeschalteter Pumpe werden delta_t und m_g auf 0 zurueckgesetzt.
+# ============================================================================
 
 globals:
   - id: global_dt_last_increment
@@ -46,7 +52,7 @@ sensor:
     #   - Viskosität abhängig von Temperatur: https://tyfo.de/downloads/TYFOCOR-L_de_TI.pdf
     #   - Tatsächlicher Volumenstrom abhängig von Viskosität und angezeigtem Volumenstrom: https://www.taconova.com/fileadmin/downloads/DB/HA/TacoSetter_Korrekturkurven_d.pdf
     # TODO
-    icon: mdi:car-speed-limiter
+    icon: mdi:water-pump
     lambda: |-
       return 2.0;
     device_class: volume_flow_rate
@@ -58,7 +64,7 @@ sensor:
   - platform: template
     name: Solarkreis SolarFluid Dichte
     id: sensor_solarkreis_solarfluid_density_kg_m3
-    icon: mdi:car-brake-low-pressure
+    icon: mdi:beaker-outline
     lambda: |-
       return id(solarkreis_rl).state;
     filters:
@@ -81,7 +87,7 @@ sensor:
   - platform: template
     name: Solarkreis SolarFluid Spezifische Waermekapazitaet
     id: sensor_solarkreis_solarfluid_capacity_kj_kgk
-    icon: mdi:car-brake-low-pressure
+    icon: mdi:beaker-outline
     lambda: |-
       return id(solarkreis_rl).state;
     filters:
@@ -99,7 +105,7 @@ sensor:
   - platform: template
     name: Solarkreis SolarFluid Kinematische Viskositaet
     id: sensor_solarkreis_solarfluid_viscosity_mm2_s
-    icon: mdi:car-brake-low-pressure
+    icon: mdi:beaker-outline
     lambda: |-
       return id(solarkreis_vl).state;
     filters:
@@ -223,15 +229,13 @@ sensor:
                       id: sensor_solarkreis_m_g
                       state: !lambda |-
                         float liter_per_minute = id(sensor_solarkreis_flow_rate).state;
-                        float solarfluid_g_per_l = id(sensor_solarkreis_solarfluid_density_kg_m3).state / 1000 * 1000;
+                        float solarfluid_g_per_l = id(sensor_solarkreis_solarfluid_density_kg_m3).state;  // kg/m³ == g/L
                         float m_g = id(sensor_solarkreis_delta_t_seconds).state * (liter_per_minute / 60.0) * solarfluid_g_per_l;
                         return m_g;
                   - globals.set:
                       id: global_solarkreis_energie_kwh
                       value: !lambda |-
-                        float liter_per_minute = id(sensor_solarkreis_flow_rate).state;
-                        float solarfluid_g_per_l = id(sensor_solarkreis_solarfluid_density_kg_m3).state / 1000 * 1000;
-                        float m_g = id(sensor_solarkreis_delta_t_seconds).state * (liter_per_minute / 60.0) * solarfluid_g_per_l;
+                        float m_g = id(sensor_solarkreis_m_g).state;
                         float c_kwh_kgk = id(sensor_solarkreis_solarfluid_capacity_kj_kgk).state * 0.000277778;
                         float k_k = id(solarkreis_diff_rlvl).state;
                         float energy_diff_kwh = m_g / 1000 * k_k * c_kwh_kgk;

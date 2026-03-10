@@ -1,3 +1,21 @@
+# ============================================================================
+# Waermemengenzaehler — Heizkreis und Warmwasser
+# ============================================================================
+# Zwei Zenner Warmwasserzaehler Q3 2,5 (0,25 L/Impuls) erfassen den
+# Volumenstrom in Heizkreis und Warmwasserkreis. Daraus werden berechnet:
+#
+#   - Volumen [L]:  Zaehlt Impulse × 0,25 L (state_class: total_increasing)
+#   - Energie [kWh]:  Volumen × Dichte × cp × Temperaturdifferenz
+#   - Durchfluss [L/min]:  Gemittelt ueber 60s-Fenster
+#   - Leistung [kW]:  Durchfluss × Spreizung
+#
+# Beide Zaehler verwenden das water_meter_heat_counter_template.yaml.
+#
+# Beim Umschalten der WWB-Anforderung werden alle vier Sensoren sofort
+# aktualisiert (extend auf wwb_anforderung), da sich der Volumenstrom
+# zwischen den Kreisen aendert.
+# ============================================================================
+
 packages:
   - !include
     file: water_meter_heat_counter_template.yaml
@@ -6,6 +24,7 @@ packages:
       heat_counter_id: "heizkreis"
       heat_counter_gpio: "GPIO34"
       heat_counter_temp_diff: "heizkreis_diff"
+      heat_counter_device_id: ""
 
   - !include
     file: water_meter_heat_counter_template.yaml
@@ -14,6 +33,7 @@ packages:
       heat_counter_id: "wwb"
       heat_counter_gpio: "GPIO35"
       heat_counter_temp_diff: "warmwasser_diff"
+      heat_counter_device_id: ""
 
 switch:
   - id: !extend wwb_anforderung

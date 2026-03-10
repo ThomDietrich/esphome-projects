@@ -1,5 +1,23 @@
-# DS18B20 Temperatursensoren Pin
-# https://esphome.io/components/one_wire.html
+# ============================================================================
+# DS18B20 Sensorband — 1-Wire Bus 2 (GPIO33)
+# ============================================================================
+# 11 DS18B20-Sensoren als vertikales Sensorband im Pufferspeicher blau
+# (550 Liter). Misst die Temperaturschichtung von unten (Sensor 01) bis
+# oben (Sensor 11).
+#
+# Daraus wird der Speicher-Ladegrad berechnet:
+#   Jeder Sensor liefert einen prozentualen Wert zwischen einer festen
+#   Untergrenze (30°C = 0%) und der aktuellen Temperatur am obersten
+#   Sensor (min. 60°C = 100%). Der Mittelwert aller 11 Sensoren ergibt
+#   den Gesamtladegrad in Prozent.
+#
+# Trigger-Optimierung:
+#   Alle 11 Sensoren teilen sich einen 1-Wire-Bus und aktualisieren
+#   nahezu gleichzeitig. Die Ladegrad-Neuberechnung wird nur von
+#   Sensor 01 (unten) und Sensor 11 (oben) ausgeloest, um 9 redundante
+#   Berechnungen pro Zyklus zu vermeiden.
+# ============================================================================
+
 one_wire:
   - platform: gpio
     id: one_wire_gpio33

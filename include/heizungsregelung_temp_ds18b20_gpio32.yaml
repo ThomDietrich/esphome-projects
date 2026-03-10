@@ -1,12 +1,36 @@
-# DS18B20 Temperatursensoren Pin
-# https://esphome.io/components/one_wire.html
+# ============================================================================
+# DS18B20 Temperatursensoren — 1-Wire Bus 1 (GPIO32)
+# ============================================================================
+# 15 DS18B20-Sensoren auf einem gemeinsamen 1-Wire-Bus erfassen die
+# Temperaturen an allen relevanten Punkten der Heizungsanlage:
+#
+# Solarkreis:
+#   - Solarkreis Vorlauf:  zum Solarthermiefeld (kalt hoch)
+#   - Solarkreis Ruecklauf:  vom Solarthermiefeld (warm zurueck)
+#
+# Warmwasserspeicher:
+#   - Warmwasserspeicher unten / oben:  Schichtladung
+#   - Warmwasserspeicher Abfluss:  Entnahmetemperatur
+#
+# Heizkreis (Gastherme → Heizkoerper):
+#   - Heizkreis Vorlauf / Ruecklauf
+#   - Gastherme Vorlauf / Ruecklauf Warmwasserbereitung
+#
+# Kessel und Puffer:
+#   - Kessel Vorlauf / Ruecklauf
+#   - Kesselpufferkreis Vorlauf / Ruecklauf
+#   - Pufferspeicher blau 550L / grau 600L:  je ein Einzelsensor
+#
+# Alle Sensoren: 15s Update, filter_out 85°C (Reset-Wert), Delta 0.3°C,
+# Heartbeat 30min. Relevante Sensoren triggern Differenzberechnungen.
+# ============================================================================
+
 one_wire:
   - platform: gpio
     id: one_wire_gpio32
     pin: GPIO32
 
 sensor:
-  # DS18B20 Temperatursensoren
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32

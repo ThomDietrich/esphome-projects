@@ -1,3 +1,28 @@
+# ============================================================================
+# Temperaturdifferenzen — Spreizungen aller Kreislaeufe
+# ============================================================================
+# Berechnete Temperaturdifferenzen (Spreizungen) in Kelvin fuer jeden
+# hydraulischen Kreislauf. Alle Sensoren haben update_interval: never
+# und werden on_value der zugehoerigen Temperatursensoren getriggert.
+#
+#   - Solarkreis Differenz Eintrag (RL−VL):
+#     Waermegewinn im Solarthermiefeld. Positiv = Kollektor heizt.
+#   - Solarkreis Differenz oben-unten (Kollektor−Speicher unten):
+#     Steuergrösse fuer Solarkreispumpe — positiv = Kollektor waermer.
+#   - Heizkreis Differenz (VL−RL):
+#     Waermeabgabe an Heizkoerper.
+#   - Warmwasser Differenz (VL−RL):
+#     Waermeabgabe an Warmwasserspeicher (nur bei WWB aktiv).
+#   - Kessel Differenz (VL−RL):
+#     Waermeabgabe des Brenners.
+#   - Kesselpufferkreis Differenz (VL−RL):
+#     Waermetransport zwischen Kessel und Pufferspeicher.
+#
+# Heizkreis- und Warmwasser-Differenz werden von den Waermezaehlern
+# (heizungsregelung_energy_heat_counter.yaml) fuer die Energieberechnung
+# verwendet.
+# ============================================================================
+
 sensor:
 
   - platform: template

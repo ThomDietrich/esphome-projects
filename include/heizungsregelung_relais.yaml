@@ -1,3 +1,29 @@
+# ============================================================================
+# Relais und Pumpensteuerung — 4x 230V Schaltausgaenge
+# ============================================================================
+# Vier Relais schalten 230V-Verbraucher:
+#
+#   Relais 1 (GPIO4):  Kesselpufferkreis Umwaelzpumpe
+#   Relais 2 (GPIO0):  Solarkreis Umwaelzpumpe (Strapping-Pin, s.u.)
+#   Relais 3 (GPIO2):  Warmwasser Zirkulationspumpe (Strapping-Pin)
+#   Relais 4 (GPIO15): Warmwasserbereitung Anforderung (potentialfreier
+#                       Kontakt zur Gastherme, Strapping-Pin)
+#
+# Alle Relais sind active-low (inverted: true) und starten im AUS-Zustand.
+# GPIO0 ist ein Strapping-Pin: HIGH beim Boot = normaler Bootmodus.
+# inverted: true + ALWAYS_OFF stellt sicher, dass der physische Pegel
+# beim Boot HIGH ist (Relais AUS).
+#
+# Relais 4 (WWB Anforderung) steuert, ob die Gastherme im Heizmodus
+# oder Warmwasserbereitungsmodus arbeitet. Beim Umschalten werden die
+# Temperaturdifferenz-Sensoren und Waermezaehler sofort aktualisiert.
+#
+# Betriebsstundenzaehler:
+#   Jede Pumpe hat einen duty_time-Sensor (state_class: total_increasing),
+#   der die Einschaltdauer in Stunden zaehlt. Werte gehen beim Neustart
+#   verloren — Home Assistant akkumuliert den Gesamtwert.
+# ============================================================================
+
 switch:
   # Relais 1
   - platform: gpio
@@ -17,6 +43,7 @@ switch:
     pin:
       number: GPIO0
       inverted: true
+      ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
 
   # Relais 3
@@ -26,6 +53,7 @@ switch:
     pin:
       number: GPIO2
       inverted: true
+      ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
 
   # Relais 4
@@ -35,6 +63,7 @@ switch:
     pin:
       number: GPIO15
       inverted: true
+      ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
 
     # Update relevant flow sensors

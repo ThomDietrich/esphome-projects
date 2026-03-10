@@ -1,7 +1,27 @@
-# SPI für PT1000 über MAX31865
+# ============================================================================
+# PT1000 Temperatursensoren — MAX31865 via SPI
+# ============================================================================
+# Zwei PT1000-Sensoren fuer Hochtemperatur-Messstellen, angebunden ueber
+# MAX31865 RTD-Wandler am SPI-Bus:
+#
+#   - Kessel Abgas (CS: GPIO5):  Abgastemperatur der Gastherme.
+#     Schnelles Update (3s) mit Delta-Filter — aendert sich bei
+#     Brennerstarts/-stopps schnell.
+#
+#   - Sonnenkollektor (CS: GPIO17):  Temperatur im Solarkollektor auf
+#     dem Dach. Offset +2°C als Korrektur fuer die Leitungslaenge.
+#     Triggert die Solarkreis-Differenzberechnung (oben–unten).
+#
+# Beide Sensoren: 2-Leiter PT1000, Referenzwiderstand 4002 Ohm,
+# 50 Hz Netzfilter, Heartbeat alle 30min.
+# ============================================================================
+
+# SPI fuer PT1000 ueber MAX31865
 spi:
   clk_pin: GPIO14
-  miso_pin: GPIO12
+  miso_pin:
+    number: GPIO12
+    ignore_strapping_warning: true
   mosi_pin: GPIO13
 
 # MAX31865 Platinum RTD Temperature Sensor (via SPI)
@@ -10,7 +30,9 @@ sensor:
   - platform: max31865
     name: Kessel Abgas
     id: kessel_abgas
-    cs_pin: GPIO5
+    cs_pin:
+      number: GPIO5
+      ignore_strapping_warning: true
     reference_resistance: 4002 Ω
     rtd_nominal_resistance: 1000 Ω
     mains_filter: 50 Hz

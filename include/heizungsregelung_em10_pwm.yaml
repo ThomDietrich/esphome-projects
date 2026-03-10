@@ -1,12 +1,29 @@
-# Temperatur zu Spannung zu PWM%
-# Für 0..10V Modul (EM10) zur Gastherme Temperatursteuerung
+# ============================================================================
+# Gastherme Sollwertsteuerung — 0-10V via EM10 PWM-Modul
+# ============================================================================
+# Steuert die Vorlauf-Solltemperatur der Gastherme ueber ein EM10-Modul,
+# das ein PWM-Signal (GPIO27) in eine 0–10V Analogspannung umsetzt.
+#
+# Signalkette:  Temperatur [°C] → Spannung [V] → PWM [%]
+#   Die Umrechnung basiert auf einer linearen Regression (Messwerte aus
+#   Kalibriertabelle). Die Koeffizienten sind im Lambda hinterlegt.
+#
+# Failsafe beim Booten:
+#   PWM wird auf 20% gesetzt (~30°C Sollwert) — sicher genug, um bei
+#   einem Neustart im Winter nicht einzufrieren, ohne zu ueberheizen.
+#
+# Steuerung ueber Home Assistant:
+#   Die API-Action "gastherme_solltemperatur_set" nimmt eine Temperatur
+#   in °C entgegen und setzt PWM-Ausgang sowie drei Diagnosesensoren
+#   (Temperatur, Spannung, PWM-Prozent).
+# ============================================================================
 
 output:
   - platform: ledc
     pin: GPIO27
     frequency: 1220 Hz
     id: heiz_sollwert_pwm_output
-    inverted: False
+    inverted: false
     min_power: 0.00
     max_power: 1.00
 

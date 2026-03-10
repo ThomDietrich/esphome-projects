@@ -1,3 +1,11 @@
+# ============================================================================
+# Gehaeuseueberwachung — Temperatur und Luftfeuchte
+# ============================================================================
+# SHT3x-D Sensor (I2C, Adresse 0x44) im Schaltschrankgehaeuse.
+# Ueberwacht Temperatur und Luftfeuchte zur Erkennung von Ueberhitzung
+# oder Kondensation im geschlossenen Gehaeuse.
+# ============================================================================
+
 # https://esphome.io/components/i2c.html
 i2c:
   sda: GPIO22
