@@ -1,51 +1,47 @@
-# ============================================================================
+# ======================================================================================================================
 # Sicherheitsüberwachung — Fussbodenheizung
-# ============================================================================
-# Unabhängige Schutzfunktionen, die parallel zum Regler laufen und bei
-# Gefahrenzuständen direkt in die Ventilsteuerung eingreifen.
+# ======================================================================================================================
+# Unabhängige Schutzfunktionen, die parallel zum Regler laufen und bei Gefahrenzuständen direkt in die Ventilsteuerung
+# eingreifen.
 #
 # SICHERHEITS-LOCKOUT (persistent, manueller Reset erforderlich):
-#   Bei kritischen Zuständen wird ein persistenter Lockout aktiviert, der
-#   nur durch manuellen Benutzer-Reset aufgehoben werden kann. Der Lockout:
+#   Bei kritischen Zuständen wird ein persistenter Lockout aktiviert, der nur durch manuellen Benutzer-Reset aufgehoben
+#   werden kann. Der Lockout:
 #     - Stoppt alle Ventil-Skripte (drive_valve_open/close, position_controller)
 #     - Schließt das Mischventil zwangsweise (relais_ventil_zu = EIN)
 #     - Schaltet die Umwälzpumpe ab
 #     - Sendet eine persistente HA-Benachrichtigung
-#   Der Lockout überlebt Neustarts (restore_value) und wird alle 10s
-#   durchgesetzt, sodass auch nach Reboot der sichere Zustand hergestellt wird.
+#   Der Lockout überlebt Neustarts (restore_value) und wird alle 10s durchgesetzt, sodass auch nach Reboot der sichere
+#   Zustand hergestellt wird.
 #
 # Lockout-Auslöser:
 #
 #   Übertemperaturschutz (10s-Intervall):
-#     Wenn die FBH-Vorlauftemperatur den Grenzwert max_vorlauf überschreitet.
-#     Schützt den Estrich vor thermischer Überlastung (typisch: 50°C).
+#     Wenn die FBH-Vorlauftemperatur den Grenzwert max_vorlauf überschreitet. Schützt den Estrich vor thermischer
+#     Überlastung (typisch: 50°C).
 #
 #   Sensorfehler-Watchdog (30s-Intervall, 60s Boot-Karenzzeit):
-#     Wenn einer der vier DS18B20-Sensoren ungültige Werte liefert
-#     (kein Messwert, NaN, < 5°C oder > 80°C). Verhindert unkontrolliertes
-#     Aufheizen bei Sensorausfall. Die 60s Karenzzeit nach Boot verhindert
-#     Fehlauslösung bevor die Sensoren ihre ersten Messwerte liefern.
-#     Ventil wird sofort aktiv geschlossen (identisch zu Übertemperaturschutz).
+#     Wenn einer der vier DS18B20-Sensoren ungültige Werte liefert (kein Messwert, NaN, < 5°C oder > 80°C). Verhindert
+#     unkontrolliertes Aufheizen bei Sensorausfall. Die 60s Karenzzeit nach Boot verhindert Fehlauslösung bevor die
+#     Sensoren ihre ersten Messwerte liefern. Ventil wird sofort aktiv geschlossen (identisch zu Übertemperaturschutz).
 #
 # Nicht-kritische Optimierung (kein Lockout):
 #
 #   Primärkreis-Untertemperatur (30s-Intervall):
-#     Wenn die Primär-Vorlauftemperatur nicht ausreichend über dem Sollwert
-#     liegt (Übertemperatur < min_uebertemperatur), wird ein laufendes
-#     AUF-Fahren des Ventils gestoppt. Weiteres Öffnen wäre wirkungslos,
-#     da der Primärkreis nicht genug Wärme liefert.
+#     Wenn die Primär-Vorlauftemperatur nicht ausreichend über dem Sollwert liegt (Übertemperatur <
+#     min_uebertemperatur), wird ein laufendes AUF-Fahren des Ventils gestoppt. Weiteres Öffnen wäre wirkungslos, da
+#     der Primärkreis nicht genug Wärme liefert.
 #
-# Alle Funktionen arbeiten unabhängig vom Reglerzustand und vom
-# FBH Hauptschalter. Sie greifen direkt auf die Relais zu.
-# Der Lockout wird zusätzlich vom Positionsregler geprüft
-# (keller_fbh_mischventil.yaml) und blockiert jede Ventilbewegung.
+# Alle Funktionen arbeiten unabhängig vom Reglerzustand und vom FBH Hauptschalter. Sie greifen direkt auf die Relais
+# zu. Der Lockout wird zusätzlich vom Positionsregler geprüft (keller_fbh_mischventil.yaml) und blockiert jede
+# Ventilbewegung.
 #
-# ============================================================================
+# ======================================================================================================================
 
 
-# ============================================================================
+# ======================================================================================================================
 # Globale Variablen — Sicherheitszustand
-# ============================================================================
+# ======================================================================================================================
 
 globals:
   # Sicherheits-Lockout: Bei true ist die Anlage abgeschaltet.
@@ -56,9 +52,9 @@ globals:
     initial_value: "false"
 
 
-# ============================================================================
+# ======================================================================================================================
 # Sicherheits-Intervalle
-# ============================================================================
+# ======================================================================================================================
 
 interval:
   # ---- LOCKOUT-DURCHSETZUNG + ÜBERTEMPERATURSCHUTZ (10s) ----
@@ -182,14 +178,12 @@ interval:
                       args: ['id(t_prim_vl).state - id(pid_mischkreis).target_temperature']
 
 
-# ============================================================================
+# ======================================================================================================================
 # Manueller Sicherheits-Reset
-# ============================================================================
-# Setzt den Sicherheits-Lockout zurück. Das System nimmt den Normalbetrieb
-# wieder auf: Der Positionsregler startet im nächsten 10s-Zyklus (sofern
-# die Mischkreis-Automatik aktiv ist). Die Umwälzpumpe muss separat
-# eingeschaltet werden, da sie bei der Sicherheitsabschaltung explizit
-# abgeschaltet wurde.
+# ======================================================================================================================
+# Setzt den Sicherheits-Lockout zurück. Das System nimmt den Normalbetrieb wieder auf: Der Positionsregler startet im
+# nächsten 10s-Zyklus (sofern die Mischkreis-Automatik aktiv ist). Die Umwälzpumpe muss separat eingeschaltet werden,
+# da sie bei der Sicherheitsabschaltung explizit abgeschaltet wurde.
 
 button:
   - platform: template

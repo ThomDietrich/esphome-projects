@@ -1,11 +1,11 @@
-# ============================================================================
+# ======================================================================================================================
 # Umwälzpumpe — Fussbodenheizung
-# ============================================================================
+# ======================================================================================================================
 # Pumpe: Wilo Stratos Pico Plus
 # Ansteuerung: Netzschaltung über Relay 4 (GPIO32, 230V AC EIN/AUS)
 #
-# Die Pumpe hat einen eigenen Schalter und ist unabhängig von der
-# Mischkreis-Automatik (keller_fbh_betrieb.yaml) steuerbar.
+# Die Pumpe hat einen eigenen Schalter und ist unabhängig von der Mischkreis-Automatik (keller_fbh_betrieb.yaml)
+# steuerbar.
 #
 # Anlaufstrom: < 5A — innerhalb der Relais-Schaltleistung (16A).
 #
@@ -13,18 +13,18 @@
 #   Δp-c (Proportionaldruck konstant) — empfohlen für Fussbodenheizung
 #   Alternativ: Δp-v oder Konstantdrehzahl je nach Anlage
 #
-# WICHTIG: Netzspannung nicht mit Phasenanschnitt schalten (kein Dimmer)!
-#          Die Elektronik der Pumpe verträgt nur sinusförmige Wechselspannung.
+# WICHTIG: Netzspannung nicht mit Phasenanschnitt schalten (kein Dimmer)! Die Elektronik der Pumpe verträgt nur
+#          sinusförmige Wechselspannung.
 #
 # Betriebsstundenzähler:
-#   Alle 15 Minuten wird geprüft, ob die Pumpe läuft. Wenn ja, werden
-#   900 Sekunden aufaddiert. Der Zähler ist persistent über Neustarts.
+#   Alle 15 Minuten wird geprüft, ob die Pumpe läuft. Wenn ja, werden 900 Sekunden aufaddiert. Der Zähler ist
+#   persistent über Neustarts.
 #
 #
 # Wilo-Connect BMS Modul — Erweiterungsoption
-# ============================================
-# Das BMS-Modul wird auf die Wilo-Connectivity-Schnittstelle der Pumpe
-# aufgesteckt (unter der abschließbaren Modulabdeckung).
+# ======================================================================================================================
+# Das BMS-Modul wird auf die Wilo-Connectivity-Schnittstelle der Pumpe aufgesteckt (unter der abschließbaren
+# Modulabdeckung).
 #
 # Eingänge des BMS-Moduls:
 #   Digitaleingang — potentialfreier Kontakt oder 24V Signal
@@ -41,18 +41,17 @@
 #
 # Mögliche Anbindung an ASTRA BR4G8AL (nicht implementiert):
 #   GPIO14 (I/O) → Digitaleingang BMS (Ext. OFF als Freigabe)
-#   GPIO15 (I/O) → Analogausgang wäre ideal, ESP32 hat aber keinen
-#                   echten DAC mit 0-10V — externer DAC (z.B. MCP4725
+#   GPIO15 (I/O) → Analogausgang wäre ideal, ESP32 hat aber keinen echten DAC mit 0-10V — externer DAC (z.B. MCP4725
 #                   über I2C + OPV) wäre nötig für Sollwertvorgabe
 #   GPIO34 (Input) → Störmeldung (SSM) vom BMS-Modul lesen
 #   GPIO35 (Input) → Betriebsmeldung (SBM) vom BMS-Modul lesen
 #
-# ============================================================================
+# ======================================================================================================================
 
 
-# ============================================================================
+# ======================================================================================================================
 # Relais — Umwälzpumpe EIN/AUS
-# ============================================================================
+# ======================================================================================================================
 
 switch:
   - platform: gpio
@@ -64,9 +63,9 @@ switch:
     restore_mode: RESTORE_DEFAULT_ON
 
 
-# ============================================================================
+# ======================================================================================================================
 # Globale Variablen — Betriebsstundenzähler
-# ============================================================================
+# ======================================================================================================================
 
 globals:
   # Gesamte Betriebszeit der Umwälzpumpe [Sekunden]
@@ -76,9 +75,9 @@ globals:
     initial_value: "0"
 
 
-# ============================================================================
+# ======================================================================================================================
 # Betriebsstundenzähler — 15-Minuten-Intervall
-# ============================================================================
+# ======================================================================================================================
 
 interval:
   - interval: 15min
@@ -89,9 +88,9 @@ interval:
           }
 
 
-# ============================================================================
+# ======================================================================================================================
 # Sensor — Betriebsstunden
-# ============================================================================
+# ======================================================================================================================
 
 sensor:
   - platform: template

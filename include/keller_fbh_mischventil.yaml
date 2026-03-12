@@ -1,6 +1,6 @@
-# ============================================================================
+# ======================================================================================================================
 # Dreiweg-Mischventil — Positionsregelung und Ansteuerung
-# ============================================================================
+# ======================================================================================================================
 # Stellantrieb: Oventrop NR230-507 (3-Punkt, 230V AC, 140s Laufzeit, 5 Nm)
 #
 # Dieses File enthält die vollständige Mischventil-Steuerung:
@@ -15,7 +15,7 @@
 #
 #
 # REGELUNGSSTRATEGIE — Stufe 2: Positionsregler
-# ==============================================
+# ======================================================================================================================
 #
 #   Die PID-Ausgabe (Stufe 1, siehe keller_fbh_pid.yaml) liefert die
 #   gewünschte Ventilöffnung als Wert von 0.0 bis 1.0. Der Positionsregler
@@ -59,44 +59,36 @@
 #   └──────────────────────────────────────────────────────────────┘
 #
 # Verhalten im eingeschwungenen Zustand:
-#   Wenn die Vorlauftemperatur den Sollwert erreicht hat, konvergieren
-#   Soll- und Ist-Öffnung. Die Differenz fällt unter die Totzone (3%).
-#   Beide Relais bleiben AUS — der Antrieb steht still. Korrekturen
-#   erfolgen nur bei Störgrößenänderungen (Außentemperatur, Rücklauf-
-#   temperatur, Sollwertverstellung).
+#   Wenn die Vorlauftemperatur den Sollwert erreicht hat, konvergieren Soll- und Ist-Öffnung. Die Differenz fällt unter
+#   die Totzone (3%). Beide Relais bleiben AUS — der Antrieb steht still. Korrekturen erfolgen nur bei
+#   Störgrößenänderungen (Außentemperatur, Rücklauftemperatur, Sollwertverstellung).
 #
 # Positionsdrift und Rekalibrierung:
-#   Da der Stellantrieb keine Positionsrückmeldung besitzt, ist die
-#   Software-Schätzung der Ventilöffnung unvermeidlich driftbehaftet.
-#   Ursachen: Relais-Schaltzeiten, Motoranlauf/-auslauf, mechanische
-#   Toleranzen, Spannungsunterbrechungen.
+#   Da der Stellantrieb keine Positionsrückmeldung besitzt, ist die Software-Schätzung der Ventilöffnung unvermeidlich
+#   driftbehaftet. Ursachen: Relais-Schaltzeiten, Motoranlauf/-auslauf, mechanische Toleranzen,
+#   Spannungsunterbrechungen.
 #
 #   Gegenmaßnahmen:
-#   - Periodische Rekalibrierung: Das Ventil wird für eine volle
-#     Laufzeit (140s) in Endlage ZU gefahren und die geschätzte
-#     Öffnung auf 0% zurückgesetzt. Empfehlung: 1× täglich
-#     während einer Schwachlastphase (z.B. nachts per HA-Automation).
-#   - Die Rekalibrierung kann manuell über einen Button in Home
-#     Assistant oder per Automation ausgelöst werden.
-#   - Die Regelung über den PID-Regler kompensiert moderate Drift
-#     selbsttätig, da die Regelgröße (Temperatur) unabhängig von
-#     der Öffnungsschätzung gemessen wird.
+#   - Periodische Rekalibrierung: Das Ventil wird für eine volle Laufzeit (140s) in Endlage ZU gefahren und die
+#     geschätzte Öffnung auf 0% zurückgesetzt. Empfehlung: 1x täglich während einer Schwachlastphase (z.B. nachts per
+#     HA-Automation).
+#   - Die Rekalibrierung kann manuell über einen Button in Home Assistant oder per Automation ausgelöst werden.
+#   - Die Regelung über den PID-Regler kompensiert moderate Drift selbsttätig, da die Regelgröße (Temperatur)
+#     unabhängig von der Öffnungsschätzung gemessen wird.
 #
 # Betriebszähler:
-#   - Stellantrieb Motorlaufzeit: Exakte Summe aller Impulsdauern [s],
-#     berechnet aus den tatsächlichen pulse_duration_ms-Werten nach
-#     jedem Fahr-Skript. Persistent über Neustarts (restore_value).
-#   - Stellantrieb Schaltzyklen: Anzahl aller Ventilbewegungen
-#     (AUF, ZU und Rekalibrierung). Persistent über Neustarts.
+#   - Stellantrieb Motorlaufzeit: Exakte Summe aller Impulsdauern [s], berechnet aus den tatsächlichen
+#     pulse_duration_ms-Werten nach jedem Fahr-Skript. Persistent über Neustarts (restore_value).
+#   - Stellantrieb Schaltzyklen: Anzahl aller Ventilbewegungen (AUF, ZU und Rekalibrierung). Persistent über Neustarts.
 #
-# ============================================================================
+# ======================================================================================================================
 
 
-# ============================================================================
+# ======================================================================================================================
 # Relais — Mischventil AUF / ZU (verriegelt)
-# ============================================================================
-# Software-Verriegelung verhindert gleichzeitiges AUF+ZU (mit 500ms Totzeit).
-# Als internal markiert — werden nur von den Fahr-Skripten angesteuert.
+# ======================================================================================================================
+# Software-Verriegelung verhindert gleichzeitiges AUF+ZU (mit 500ms Totzeit). Als internal markiert — werden nur von
+# den Fahr-Skripten angesteuert.
 
 switch:
   - platform: gpio
@@ -122,9 +114,9 @@ switch:
     interlock_wait_time: 500ms
 
 
-# ============================================================================
+# ======================================================================================================================
 # Globale Variablen — Ventilsteuerung
-# ============================================================================
+# ======================================================================================================================
 
 globals:
   # Geschätzte aktuelle Ventilöffnung (0.0–1.0), persistent über Neustarts
@@ -164,11 +156,11 @@ globals:
     initial_value: "-1.0"
 
 
-# ============================================================================
+# ======================================================================================================================
 # Fahr-Skripte und Positionsregler
-# ============================================================================
-# Fahr-Skripte (mode: restart): Neuer Impuls unterbricht laufenden sauber.
-# Positionsregler (mode: single): Verhindert Mehrfachausführung.
+# ======================================================================================================================
+# Fahr-Skripte (mode: restart): Neuer Impuls unterbricht laufenden sauber. Positionsregler (mode: single): Verhindert
+# Mehrfachausführung.
 
 script:
   # Ventil AUF fahren — Öffnung wird alle 1,4s um ±1% nachgeführt
@@ -316,9 +308,9 @@ script:
             diff > 0 ? "AUF" : "ZU");
 
 
-# ============================================================================
+# ======================================================================================================================
 # Positionsregler — Periodischer Aufruf
-# ============================================================================
+# ======================================================================================================================
 
 interval:
   - interval: 10s
@@ -326,9 +318,9 @@ interval:
       - script.execute: position_controller
 
 
-# ============================================================================
+# ======================================================================================================================
 # Öffnungssensoren — Ist und Soll
-# ============================================================================
+# ======================================================================================================================
 
 sensor:
   # Geschätzte aktuelle Ventilöffnung (Open-Loop-Schätzung)
@@ -388,9 +380,9 @@ sensor:
       return id(valve_cycle_count);
 
 
-# ============================================================================
+# ======================================================================================================================
 # Binärsensor — Ventilbewegung aktiv
-# ============================================================================
+# ======================================================================================================================
 
 binary_sensor:
   - platform: template
@@ -405,13 +397,12 @@ binary_sensor:
              || id(recalibrate_valve).is_running();
 
 
-# ============================================================================
+# ======================================================================================================================
 # Manuelle Öffnungsvorgabe (Override)
-# ============================================================================
-# Setzt eine feste Mischventil-Öffnung und umgeht den PID-Regler.
-# Wert -1 = Auto (PID regelt), 0–100 = feste Öffnung in Prozent.
-# Nützlich für: Sommerbetrieb (0%), Spülen (100%), Testen.
-# Der Reglerzustand-Textsensor zeigt „Manuell — Override aktiv" an.
+# ======================================================================================================================
+# Setzt eine feste Mischventil-Öffnung und umgeht den PID-Regler. Wert -1 = Auto (PID regelt), 0–100 = feste Öffnung
+# in Prozent. Nützlich für: Sommerbetrieb (0%), Spülen (100%), Testen. Der Reglerzustand-Textsensor zeigt „Manuell —
+# Override aktiv" an.
 
 number:
   - platform: template
@@ -434,9 +425,9 @@ number:
       - script.execute: position_controller
 
 
-# ============================================================================
+# ======================================================================================================================
 # Tasten — Manuelle Ventilsteuerung
-# ============================================================================
+# ======================================================================================================================
 
 button:
   - platform: template

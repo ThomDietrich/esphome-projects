@@ -1,18 +1,15 @@
-# ============================================================================
+# ======================================================================================================================
 # Betrieb und Zustandsanzeige — Fussbodenheizung
-# ============================================================================
+# ======================================================================================================================
 # Zentrale Betriebssteuerung und Statusanzeige der FBH-Anlage:
 #
-#   - Mischkreis Automatik: Aktiviert/deaktiviert die automatische
-#     Mischventil-Regelung (PID + Positionsregler).
-#     Beim Einschalten wird der Positionsregler sofort aufgerufen, damit
-#     die aktuelle PID-Stellgröße ohne 10s-Wartezeit wirksam wird.
-#     Beim Ausschalten werden beide Ventilrelais abgeschaltet und der
-#     Positionsregler gestoppt. Die Pumpe bleibt unberührt.
-#     Manuelle Ventilsteuerung (Tasten, Override) funktioniert unabhängig.
+#   - Mischkreis Automatik: Aktiviert/deaktiviert die automatische Mischventil-Regelung (PID + Positionsregler). Beim
+#     Einschalten wird der Positionsregler sofort aufgerufen, damit die aktuelle PID-Stellgröße ohne 10s-Wartezeit
+#     wirksam wird. Beim Ausschalten werden beide Ventilrelais abgeschaltet und der Positionsregler gestoppt. Die Pumpe
+#     bleibt unberührt. Manuelle Ventilsteuerung (Tasten, Override) funktioniert unabhängig.
 #
-#   - FBH Umwaelzpumpe: Separater Schalter in keller_fbh_pumpe.yaml.
-#     Pumpe und Automatik sind unabhängig voneinander steuerbar.
+#   - FBH Umwaelzpumpe: Separater Schalter in keller_fbh_pumpe.yaml. Pumpe und Automatik sind unabhängig voneinander
+#     steuerbar.
 #
 #   - Relais 3 (Reserve): GPIO33, standardmäßig deaktiviert.
 #
@@ -24,12 +21,12 @@
 #       „Manuell — Override aktiv"— Override-Wert ≥ 0 gesetzt
 #       „Aktiv — PID regelt"      — Normalbetrieb
 #
-# ============================================================================
+# ======================================================================================================================
 
 
-# ============================================================================
+# ======================================================================================================================
 # Globale Variablen — Betriebszustand
-# ============================================================================
+# ======================================================================================================================
 
 globals:
   # Mischkreis-Automatik aktiv (true) oder deaktiviert (false)
@@ -39,9 +36,9 @@ globals:
     initial_value: "true"
 
 
-# ============================================================================
+# ======================================================================================================================
 # Mischkreis Automatik — PID-Regelung und Positionsregler steuern
-# ============================================================================
+# ======================================================================================================================
 
 switch:
   # Aktiviert/deaktiviert die automatische Mischventil-Regelung.
@@ -85,9 +82,9 @@ switch:
     disabled_by_default: true
 
 
-# ============================================================================
+# ======================================================================================================================
 # Textsensor — FBH Reglerzustand
-# ============================================================================
+# ======================================================================================================================
 
 text_sensor:
   - platform: template

@@ -27,13 +27,13 @@ substitutions:
 # ASTRA BR4G8AL
 # https://www.rocketcontroller.com/shop/astra-controller-4-relays-16a-8-gpio-ac-dc-power-led-br4g8-36#attribute_values=20,21
 
-# ============================================================================
+# ======================================================================================================================
 # ESPHome Default Configuration: Rocket Controller ASTRA BR4G8AL
 # 4 Relays 16A, 8 GPIO (3.3V), AC Power, LED
-# ============================================================================
+# ======================================================================================================================
 #
 # GPIO MAP (from Blakadder template / Rocket Controller documentation)
-# ====================================================================
+# ======================================================================================================================
 #
 #  GPIO  │ Function           │ Direction │ Notes
 # ───────┼────────────────────┼───────────┼──────────────────────────────
@@ -73,22 +73,22 @@ substitutions:
 #  EN    │ RESET              │ Input     │ Active LOW reset
 #
 # IMPORTANT: BR4G8AL NOTES
-# ========================
+# ======================================================================================================================
 # - Power supply: AC 90–240V (50/60 Hz)
-# - The 8 GPIOs are 3.3V direct connections to the ESP32 — NOT isolated.
-#   Do NOT connect mains voltage to these GPIO pins.
+# - The 8 GPIOs are 3.3V direct connections to the ESP32 — NOT isolated. Do NOT connect mains voltage to these GPIO
+#   pins.
 # - GPIO34–39 are input-only on the ESP32 (no output, no internal pull).
 # - GPIO14, 15, 27, 13 are fully bidirectional.
 # - GPIO27 shared with optional RF433 receiver module.
 # - GPIO13 shared with Serial2 CS (active in RS mode).
 #
 # RJ CONNECTOR DIP SWITCH MODES
-# ==============================
+# ======================================================================================================================
 # DIP switches ALL ON  → SPI mode (RJ pins = SPI bus)
 # DIP switches ALL OFF → RS mode  (RJ pins = Serial2/UART2)
 # I2C socket is on a separate RJ connector, always available.
 #
-# ============================================================================
+# ======================================================================================================================
 
 
 esphome:

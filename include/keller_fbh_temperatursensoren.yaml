@@ -1,8 +1,8 @@
-# ============================================================================
+# ======================================================================================================================
 # Temperatursensoren — Fussbodenheizung Mischkreis
-# ============================================================================
-# Vier DS18B20-Sensoren am 1-Wire-Bus (GPIO13) erfassen die Temperaturen
-# im Primär- und Sekundärkreis der Fussbodenheizung:
+# ======================================================================================================================
+# Vier DS18B20-Sensoren am 1-Wire-Bus (GPIO13) erfassen die Temperaturen im Primär- und Sekundärkreis der
+# Fussbodenheizung:
 #
 #   - T_Prim_VL:  Primärkreis-Vorlauf (vom Wärmeerzeuger kommend)
 #   - T_Prim_RL:  Primärkreis-Rücklauf (aus dem Mischventil zurück zum Erzeuger)
@@ -11,22 +11,20 @@
 #
 # Abgeleitete Werte:
 #   - Primärkreis Spreizung (ΔT):  T_Prim_VL − T_Prim_RL [K]
-#     Maß für die vom Wärmeerzeuger entnommene Energie.
-#     Wird vom Wärmezähler für die Energieberechnung verwendet.
+#     Maß für die vom Wärmeerzeuger entnommene Energie. Wird vom Wärmezähler für die Energieberechnung verwendet.
 #   - Sekundärkreis Spreizung (ΔT):  T_FBH_VL − T_FBH_RL [K]
 #     Maß für die Wärmeabgabe an den Estrich. Typisch 3–7 K.
 #   - Primärkreis Übertemperatur:  T_Prim_VL − Sollwert [K]
-#     Zeigt, ob der Primärkreis genug Temperaturreserve bietet.
-#     Unterhalb von min_uebertemperatur ist weiteres Ventilöffnen wirkungslos.
+#     Zeigt, ob der Primärkreis genug Temperaturreserve bietet. Unterhalb von min_uebertemperatur ist weiteres
+#     Ventilöffnen wirkungslos.
 #   - Rücklauf Abweichung:  T_Prim_RL − T_FBH_RL [K]
-#     Bei korrekter Hydraulik nahe 0 K. Deutlich positiver Wert
-#     deutet auf hydraulischen Kurzschluss im Mischventil.
+#     Bei korrekter Hydraulik nahe 0 K. Deutlich positiver Wert deutet auf hydraulischen Kurzschluss im Mischventil.
 #
 #
 # DS18B20 VERDRAHTUNG — 1-Wire Bus auf GPIO13
-# ============================================
-# Alle vier Sensoren hängen parallel am selben 1-Wire-Bus.
-# Ein 4,7 kΩ Pull-Up-Widerstand zwischen GPIO13 und 3,3V ist erforderlich.
+# ======================================================================================================================
+# Alle vier Sensoren hängen parallel am selben 1-Wire-Bus. Ein 4,7 kΩ Pull-Up-Widerstand zwischen GPIO13 und 3,3V ist
+# erforderlich.
 #
 #   3,3V ──┬──[4k7]──┬──────────┬──────────┬── GPIO13 (Daten)
 #           │         │          │          │
@@ -55,13 +53,13 @@
 #   - Geschirmtes Kabel empfohlen, Schirm einseitig an GND
 #   - GPIO13 wird mit Serial2 CS geteilt — DIP-Schalter NICHT auf RS-Modus
 #
-# ============================================================================
+# ======================================================================================================================
 
 
-# ============================================================================
+# ======================================================================================================================
 # 1-Wire Bus — GPIO13
 # https://esphome.io/components/one_wire.html
-# ============================================================================
+# ======================================================================================================================
 
 one_wire:
   - platform: gpio
@@ -69,9 +67,9 @@ one_wire:
     pin: GPIO13
 
 
-# ============================================================================
+# ======================================================================================================================
 # DS18B20 Temperatursensoren
-# ============================================================================
+# ======================================================================================================================
 
 sensor:
   # Primärkreis-Vorlauf (vom Wärmeerzeuger kommend, vor dem Mischventil)
@@ -191,30 +189,26 @@ sensor:
       return id(t_prim_rl).state - id(t_fbh_rl).state;
 
 
-# ============================================================================
+# ======================================================================================================================
 # Binärsensoren — Fehlerdiagnose
-# ============================================================================
+# ======================================================================================================================
 #
 # Sensorfehler:
-#   Einer oder mehrere der vier DS18B20-Sensoren liefern ungültige Werte
-#   (kein Messwert, NaN, < 5°C oder > 80°C). Hinweis auf Kabelbruch,
-#   Kurzschluss, lose Verbindung oder defekten Sensor.
+#   Einer oder mehrere der vier DS18B20-Sensoren liefern ungültige Werte (kein Messwert, NaN, < 5°C oder > 80°C).
+#   Hinweis auf Kabelbruch, Kurzschluss, lose Verbindung oder defekten Sensor.
 #
 # Hydraulischer Kurzschluss (Pumpe EIN):
-#   Heißes Primärwasser fließt durch ein undichtes Mischventil direkt
-#   in den Primär-Rücklauf, ohne den FBH-Kreis vollständig zu durchlaufen.
-#   Ursachen: Verschlissener Ventilsitz, Stellantrieb schließt nicht.
+#   Heißes Primärwasser fließt durch ein undichtes Mischventil direkt in den Primär-Rücklauf, ohne den FBH-Kreis
+#   vollständig zu durchlaufen. Ursachen: Verschlissener Ventilsitz, Stellantrieb schließt nicht.
 #
 # Schwerkraftzirkulation (Pumpe AUS):
-#   Heißes Primärwasser zirkuliert durch natürliche Konvektion (Thermosiphon)
-#   durch das Mischventil in den Sekundärkreis — unkontrollierte Wärmeabgabe.
-#   Ursachen: Fehlende/defekte Rückschlagklappe, Ventil schließt nicht.
+#   Heißes Primärwasser zirkuliert durch natürliche Konvektion (Thermosiphon) durch das Mischventil in den
+#   Sekundärkreis — unkontrollierte Wärmeabgabe. Ursachen: Fehlende/defekte Rückschlagklappe, Ventil schließt nicht.
 #
 # Durchflussmangel (Pumpe EIN, kein Durchfluss):
-#   Pumpe läuft, Ventil offen (>20%), Primärkreis hat Temperaturreserve
-#   (>10 K über FBH-Vorlauf), aber FBH-Kreis ΔT < 1 K — kein Durchfluss.
-#   Verzögerung 30 min um Anlaufphasen auszuschließen.
-#   Ursachen: Luftblase, Pumpe defekt, Heizkreisverteiler geschlossen.
+#   Pumpe läuft, Ventil offen (>20%), Primärkreis hat Temperaturreserve (>10 K über FBH-Vorlauf), aber FBH-Kreis
+#   ΔT < 1 K — kein Durchfluss. Verzögerung 30 min um Anlaufphasen auszuschließen. Ursachen: Luftblase, Pumpe defekt,
+#   Heizkreisverteiler geschlossen.
 
 binary_sensor:
   - platform: template
