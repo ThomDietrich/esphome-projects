@@ -1,8 +1,8 @@
-# ============================================================================
+# ======================================================================================================================
 # Waermemengenzaehler — Heizkreis und Warmwasser
-# ============================================================================
-# Zwei Zenner Warmwasserzaehler Q3 2,5 (0,25 L/Impuls) erfassen den
-# Volumenstrom in Heizkreis und Warmwasserkreis. Daraus werden berechnet:
+# ======================================================================================================================
+# Zwei Zenner Warmwasserzaehler Q3 2,5 (0,25 L/Impuls) erfassen den Volumenstrom in Heizkreis und Warmwasserkreis.
+# Daraus werden berechnet:
 #
 #   - Volumen [L]:  Zaehlt Impulse × 0,25 L (state_class: total_increasing)
 #   - Energie [kWh]:  Volumen × Dichte × cp × Temperaturdifferenz
@@ -11,29 +11,28 @@
 #
 # Beide Zaehler verwenden das water_meter_heat_counter_template.yaml.
 #
-# Beim Umschalten der WWB-Anforderung werden alle vier Sensoren sofort
-# aktualisiert (extend auf wwb_anforderung), da sich der Volumenstrom
-# zwischen den Kreisen aendert.
-# ============================================================================
+# Beim Umschalten der WWB-Anforderung werden alle vier Sensoren sofort aktualisiert (extend auf wwb_anforderung), da
+# sich der Volumenstrom zwischen den Kreisen aendert.
+# ======================================================================================================================
 
 packages:
   - !include
     file: water_meter_heat_counter_template.yaml
     vars:
-      heat_counter_name: "Heizkreis"
+      heat_counter_name: "Waermezaehler"
       heat_counter_id: "heizkreis"
       heat_counter_gpio: "GPIO34"
       heat_counter_temp_diff: "heizkreis_diff"
-      heat_counter_device_id: ""
+      heat_counter_device_id: "heizkreis"
 
   - !include
     file: water_meter_heat_counter_template.yaml
     vars:
-      heat_counter_name: "Warmwasser"
+      heat_counter_name: "Waermezaehler"
       heat_counter_id: "wwb"
       heat_counter_gpio: "GPIO35"
       heat_counter_temp_diff: "warmwasser_diff"
-      heat_counter_device_id: ""
+      heat_counter_device_id: "warmwasserspeicher"
 
 switch:
   - id: !extend wwb_anforderung

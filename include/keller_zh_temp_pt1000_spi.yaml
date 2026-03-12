@@ -1,20 +1,33 @@
-# ============================================================================
+# ======================================================================================================================
 # PT1000 Temperatursensoren — MAX31865 via SPI
-# ============================================================================
-# Zwei PT1000-Sensoren fuer Hochtemperatur-Messstellen, angebunden ueber
-# MAX31865 RTD-Wandler am SPI-Bus:
+# ======================================================================================================================
+# Zwei PT1000-Sensoren fuer Hochtemperatur-Messstellen, angebunden ueber MAX31865 RTD-Wandler am SPI-Bus:
 #
-#   - Kessel Abgas (CS: GPIO5):  Abgastemperatur der Gastherme.
-#     Schnelles Update (3s) mit Delta-Filter — aendert sich bei
-#     Brennerstarts/-stopps schnell.
+#   - Kessel Abgas (CS: GPIO5, Klemme 24/25):  Abgastemperatur des MPM DS WOOD 18 kW Holzvergaserkessels. Schnelles
+#     Update (3s) mit Delta-Filter — aendert sich bei Brennerstarts/-stopps schnell.
+#     Abgas Gradient: Aenderungsrate in °C/min — steigend = Feuer baut auf, fallend = Feuer geht aus. Wichtiger
+#     Betriebsindikator fuer den Feststoffvergaserkessel.
 #
-#   - Sonnenkollektor (CS: GPIO17):  Temperatur im Solarkollektor auf
-#     dem Dach. Offset +2°C als Korrektur fuer die Leitungslaenge.
-#     Triggert die Solarkreis-Differenzberechnung (oben–unten).
+#   - Sonnenkollektor (CS: GPIO17, Klemme 26/27):  Temperatur im Solarkollektor auf dem Dach. Triggert die
+#     Solarkreis-Differenzberechnung (oben–unten).
+#     Offset +2°C: Die ~20m Zuleitung zum Dach erhoeht den Leitungswiderstand des 2-Leiter PT1000. Der resultierende
+#     Messfehler wurde manuell zu ca. 2°C bestimmt und wird per Offset-Filter kompensiert.
+#     Ueberschlagsrechnung: PT1000 alpha ≈ 3,85 Ohm/°C. 2°C Fehler → R_Leitung ≈ 7,7 Ohm. Bei 0,14 mm² Kupfer
+#     (122,9 mOhm/m) ergibt das 62,7m Gesamtleitung bzw. ~31m Kabellaenge — konsistent mit den ~20m Zuleitung plus
+#     Kontakt-/Klemmwiderstaende an Klemmen und Steckern.
 #
-# Beide Sensoren: 2-Leiter PT1000, Referenzwiderstand 4002 Ohm,
-# 50 Hz Netzfilter, Heartbeat alle 30min.
-# ============================================================================
+# Beide Sensoren: 2-Leiter PT1000, Referenzwiderstand 4002 Ohm, 50 Hz Netzfilter, Heartbeat alle 30min.
+# ======================================================================================================================
+
+globals:
+  - id: global_abgas_prev_temp
+    type: float
+    restore_value: no
+    initial_value: 'NAN'
+  - id: global_abgas_prev_time_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
 
 # SPI fuer PT1000 ueber MAX31865
 spi:
@@ -28,8 +41,9 @@ spi:
 # https://esphome.io/components/sensor/max31865.html
 sensor:
   - platform: max31865
-    name: Kessel Abgas
+    name: Abgastemperatur
     id: kessel_abgas
+    device_id: kessel
     cs_pin:
       number: GPIO5
       ignore_strapping_warning: true
@@ -45,10 +59,34 @@ sensor:
       - or:
         - delta: 0.3
         - heartbeat: 30min
+    on_value:
+      - lambda: |-
+          uint32_t now = millis();
+          float temp = id(kessel_abgas).state;
+          if (!isnan(id(global_abgas_prev_temp)) && id(global_abgas_prev_time_ms) > 0) {
+            uint32_t dt_ms = now - id(global_abgas_prev_time_ms);
+            if (dt_ms > 0) {
+              float gradient = (temp - id(global_abgas_prev_temp)) / (dt_ms / 60000.0f);
+              id(kessel_abgas_gradient).publish_state(gradient);
+            }
+          }
+          id(global_abgas_prev_temp) = temp;
+          id(global_abgas_prev_time_ms) = now;
+
+  - platform: template
+    name: Abgas Gradient
+    id: kessel_abgas_gradient
+    device_id: kessel
+    state_class: measurement
+    unit_of_measurement: "°C/min"
+    accuracy_decimals: 1
+    icon: mdi:trending-up
+    update_interval: never
 
   - platform: max31865
-    name: Sonnenkollektor
+    name: Kollektortemperatur
     id: sonnenkollektor
+    device_id: solarthermie
     cs_pin: GPIO17
     reference_resistance: 4002 Ω
     rtd_nominal_resistance: 1000 Ω

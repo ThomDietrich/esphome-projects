@@ -1,22 +1,43 @@
-# ============================================================================
+# ======================================================================================================================
 # Gastherme Sollwertsteuerung — 0-10V via EM10 PWM-Modul
-# ============================================================================
-# Steuert die Vorlauf-Solltemperatur der Gastherme ueber ein EM10-Modul,
-# das ein PWM-Signal (GPIO27) in eine 0–10V Analogspannung umsetzt.
+# ======================================================================================================================
+# Steuert die Vorlauf-Solltemperatur der Buderus GB 162-25 Gastherme ueber ein EM10-Modul, das ein PWM-Signal
+# (GPIO27, Klemme 28/29) in eine 0–10V Analogspannung umsetzt.
+#
+# Kennlinie (EM10, Y1-Eingang der Gastherme):
+#   0,0 V →  0°C (aus)     0,6 V → 15°C (ein)
+#   5,0 V → 50°C          10,0 V → 90°C
 #
 # Signalkette:  Temperatur [°C] → Spannung [V] → PWM [%]
-#   Die Umrechnung basiert auf einer linearen Regression (Messwerte aus
-#   Kalibriertabelle). Die Koeffizienten sind im Lambda hinterlegt.
+#   Die Umrechnung basiert auf einer linearen Regression (Messwerte aus Kalibriertabelle). Die Koeffizienten sind im
+#   Lambda hinterlegt.
 #
-# Failsafe beim Booten:
-#   PWM wird auf 20% gesetzt (~30°C Sollwert) — sicher genug, um bei
-#   einem Neustart im Winter nicht einzufrieren, ohne zu ueberheizen.
+# Sollwert-Persistenz und Betriebsmodus-Kopplung:
+#   Der Heiz-Sollwert wird persistent gespeichert (Vorgabe 30°C). Beim Booten und bei Moduswechsel wendet das Script
+#   apply_gastherme_sollwert den korrekten PWM-Wert an:
+#     - Aus:        0°C (Gastherme inaktiv)
+#     - Heizen:     gespeicherter Sollwert
+#     - Warmwasser: gespeicherter Sollwert (von Gastherme in WWB ignoriert)
+#
+#   Hinweis zum WWB-Modus: Die Gastherme ignoriert das 0-10V Signal (Y1) im Warmwasserbereitungsmodus. Sie nutzt
+#   stattdessen ihren internen Temperatursensor am Waermetauscher und regelt auf einen eigenen Sollwert (einstellbar am
+#   Geraet, typisch 60°C). Das 0-10V Signal steuert nur die Heizkreis-Vorlaufmodulation.
+#
+#   Bidirektionale Kopplung mit Betriebsmodus (keller_zh_relais.yaml):
+#     Sollwert → 0°C:         Betriebsmodus wechselt zu "Aus"
+#     Sollwert > 0°C bei Aus: Betriebsmodus wechselt zu "Heizen"
+#     Moduswechsel:           Sollwert wird entsprechend angewendet
 #
 # Steuerung ueber Home Assistant:
-#   Die API-Action "gastherme_solltemperatur_set" nimmt eine Temperatur
-#   in °C entgegen und setzt PWM-Ausgang sowie drei Diagnosesensoren
-#   (Temperatur, Spannung, PWM-Prozent).
-# ============================================================================
+#   Die API-Action "gastherme_solltemperatur_set" nimmt eine Temperatur in °C entgegen und setzt PWM-Ausgang sowie vier
+#   Diagnosesensoren (Temperatur, Spannung, PWM-Prozent, Regelabweichung).
+# ======================================================================================================================
+
+globals:
+  - id: global_gastherme_sollwert_degc
+    type: float
+    restore_value: yes
+    initial_value: '30.0'
 
 output:
   - platform: ledc
@@ -27,61 +48,107 @@ output:
     min_power: 0.00
     max_power: 1.00
 
+# Wendet den gespeicherten Sollwert an, abhaengig vom Betriebsmodus.
+# Wird aufgerufen bei: Boot, Moduswechsel, Sollwert-Aenderung via API.
+script:
+  - id: apply_gastherme_sollwert
+    then:
+      - lambda: |-
+          float degc = 0.0f;
+          if (id(gastherme_betriebsmodus).state != "Aus") {
+            degc = id(global_gastherme_sollwert_degc);
+          }
+          degc = std::min(90.0f, std::max(0.0f, degc));
+          float volt = std::max(0.0f, degc * 0.1253f - 1.2751f);
+          float pwm_pct = std::max(0.0f, (volt - 0.4535f) * 10.05f);
+          id(gastherme_sollwert_degc_sensor).publish_state(degc);
+          id(gastherme_sollwert_volt_sensor).publish_state(volt);
+          id(gastherme_sollwert_pwm_sensor).publish_state(pwm_pct);
+          id(heiz_sollwert_pwm_output).set_level(
+            std::min(1.0f, std::max(0.0f, pwm_pct / 100.0f))
+          );
+
 esphome:
   on_boot:
     - priority: 500
-      # When hardware initialized
-      # Failsafe: ~30°C (20% PWM) — safe default to prevent freezing without overheating
       then:
-        - lambda: |-
-            id(heiz_sollwert_pwm_output).set_level(0.2);
+        - script.execute: apply_gastherme_sollwert
 
 sensor:
   - platform: template
-    name: "Gastherme Sollwert ESP (Temperatur)"
+    name: "Sollwert Temperatur"
     id: gastherme_sollwert_degc_sensor
+    device_id: gastherme
     icon: mdi:thermometer-chevron-up
     unit_of_measurement: "°C"
     accuracy_decimals: 1
     update_interval: never
 
   - platform: template
-    name: "Gastherme Sollwert ESP (Spannung)"
+    name: "Sollwert Spannung"
     id: gastherme_sollwert_volt_sensor
+    device_id: gastherme
     icon: mdi:power-plug-outline
     unit_of_measurement: "V"
     accuracy_decimals: 1
     update_interval: never
 
   - platform: template
-    name: "Gastherme Sollwert ESP (PWM)"
+    name: "Sollwert PWM"
     id: gastherme_sollwert_pwm_sensor
+    device_id: gastherme
     icon: mdi:timelapse
     unit_of_measurement: "%"
     accuracy_decimals: 0
     update_interval: never
 
+  - platform: template
+    name: "Regelabweichung"
+    id: gastherme_regelabweichung
+    device_id: gastherme
+    state_class: measurement
+    device_class: temperature
+    unit_of_measurement: "K"
+    accuracy_decimals: 1
+    icon: mdi:thermometer-alert
+    update_interval: never
+    lambda: |-
+      if (!id(gastherme_sollwert_degc_sensor).has_state()) return NAN;
+      if (isnan(id(gastherme_vl).state)) return NAN;
+      return id(gastherme_sollwert_degc_sensor).state - id(gastherme_vl).state;
+
+  - id: !extend gastherme_vl
+    on_value:
+      - component.update: gastherme_regelabweichung
+
 api:
   actions:
-    - action: gastherme_solltemperatur_set  # Wird erweitert um "esphome.heizungsregelung_"
+    - action: gastherme_solltemperatur_set
       variables:
         temperature: float
       then:
-        - lambda: |-
-            double degc = temperature;
-            // Coefficients from linear fit (spreadsheet) of measured °C-to-V and V-to-PWM% curves
-            double volt = degc * 0.1253 - 1.2751;
-            double pwm_pct = (volt - 0.4535) * 10.05;
-
-            id(gastherme_sollwert_degc_sensor).publish_state(
-              min(90.0, max(0.0, degc))
-            );
-            id(gastherme_sollwert_volt_sensor).publish_state(
-              min(10.0, max(0.0, volt))
-            );
-            id(gastherme_sollwert_pwm_sensor).publish_state(
-              min(100.0, max(0.0, pwm_pct))
-            );
-            id(heiz_sollwert_pwm_output).set_level(
-              min(1.0, max(0.0, pwm_pct / 100.0))
-            );
+        - globals.set:
+            id: global_gastherme_sollwert_degc
+            value: !lambda 'return temperature;'
+        - if:
+            condition:
+              lambda: |-
+                return temperature <= 0.0f
+                  && id(gastherme_betriebsmodus).state != "Aus";
+            then:
+              - select.set:
+                  id: gastherme_betriebsmodus
+                  option: "Aus"
+            else:
+              - if:
+                  condition:
+                    lambda: |-
+                      return temperature > 0.0f
+                        && id(gastherme_betriebsmodus).state == "Aus";
+                  then:
+                    - select.set:
+                        id: gastherme_betriebsmodus
+                        option: "Heizen"
+                  else:
+                    # Mode unchanged — apply new setpoint directly
+                    - script.execute: apply_gastherme_sollwert

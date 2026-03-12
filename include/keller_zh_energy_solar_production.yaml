@@ -1,14 +1,13 @@
-# ============================================================================
+# ======================================================================================================================
 # Solarthermie Energieberechnung — Solarkreis
-# ============================================================================
-# Berechnet die thermische Energieproduktion der zwei Solarkollektoren
-# auf dem Dach. Waermetraegermedium: TYFOCOR L (Propylenglykol 44 Vol.-%,
-# Kaelteschutz bis -28°C).
+# ======================================================================================================================
+# Berechnet die thermische Energieproduktion der Solarkollektoren auf dem Dach. Waermetraegermedium: TYFOCOR L
+# (Propylenglykol 44 Vol.-%, Kaelteschutz bis -28°C). TODO: Kollektortyp/-modell, Anzahl und Gesamtflaeche
 #
 # TacoSetter Inline 100 (223.1238.000) DN15 3/4" x 3/4"
 # https://www.taconova.com/de/hydraulischer-abgleich/c/abgleichventile/v/tacosetter-inline
-# Der Volumenstrom wird manuell am TacoSetter abgelesen und als
-# Konstante hinterlegt (TODO: temperaturabhaengige Korrektur).
+# Der Volumenstrom wird manuell am TacoSetter abgelesen und als Konstante hinterlegt
+# (TODO: temperaturabhaengige Korrektur).
 #
 # Solarfluid TYFOCOR L / WTF 10
 # https://tyfo.de/downloads/TYFOCOR-L_de_TI.pdf
@@ -22,9 +21,9 @@
 #   3. Energie [kWh] = m_g/1000 × Spreizung [K] × cp [kWh/(kg·K)]
 #   4. Kumuliert in global_solarkreis_energie_kwh (total_increasing)
 #
-# Die Berechnung laeuft nur bei eingeschalteter Solarkreispumpe.
-# Bei ausgeschalteter Pumpe werden delta_t und m_g auf 0 zurueckgesetzt.
-# ============================================================================
+# Die Berechnung laeuft nur bei eingeschalteter Solarkreispumpe. Bei ausgeschalteter Pumpe werden delta_t und m_g auf 0
+# zurueckgesetzt.
+# ======================================================================================================================
 
 globals:
   - id: global_dt_last_increment
@@ -41,8 +40,9 @@ sensor:
   #############################################################################
 
   - platform: template
-    name: Solarkreis Volumenstrom
+    name: Volumenstrom
     id: sensor_solarkreis_flow_rate
+    device_id: solarthermie
     # https://www.taconova.com/fileadmin/downloads/DB/HA/TacoSetter_Korrekturkurven_d.pdf
     # Achtung: Volumenstrom muss aufgrund von Viskosität korrigiert werden.
     # Viskosität des SolarFluids ist temperaturabhängig.
@@ -51,7 +51,9 @@ sensor:
     # Kalibrierung anhand eines stabilen Messpunktes: Nachmittags, gleichbleibender Sonnenschein und Rücklauftemperatur.
     #   - Viskosität abhängig von Temperatur: https://tyfo.de/downloads/TYFOCOR-L_de_TI.pdf
     #   - Tatsächlicher Volumenstrom abhängig von Viskosität und angezeigtem Volumenstrom: https://www.taconova.com/fileadmin/downloads/DB/HA/TacoSetter_Korrekturkurven_d.pdf
-    # TODO
+    # TODO: Volumenstrom ist aktuell auf 2,0 L/min festcodiert.
+    #   Temperaturabhaengige Korrektur ueber TacoSetter-Korrekturkurven
+    #   und Viskositaet des Solarfluids implementieren.
     icon: mdi:water-pump
     lambda: |-
       return 2.0;
@@ -62,8 +64,9 @@ sensor:
   #############################################################################
 
   - platform: template
-    name: Solarkreis SolarFluid Dichte
+    name: Waermetraeger Dichte
     id: sensor_solarkreis_solarfluid_density_kg_m3
+    device_id: solarthermie
     icon: mdi:beaker-outline
     lambda: |-
       return id(solarkreis_rl).state;
@@ -85,8 +88,9 @@ sensor:
     entity_category: diagnostic
 
   - platform: template
-    name: Solarkreis SolarFluid Spezifische Waermekapazitaet
+    name: Waermetraeger Waermekapazitaet
     id: sensor_solarkreis_solarfluid_capacity_kj_kgk
+    device_id: solarthermie
     icon: mdi:beaker-outline
     lambda: |-
       return id(solarkreis_rl).state;
@@ -103,8 +107,9 @@ sensor:
     entity_category: diagnostic
 
   - platform: template
-    name: Solarkreis SolarFluid Kinematische Viskositaet
+    name: Waermetraeger Viskositaet
     id: sensor_solarkreis_solarfluid_viscosity_mm2_s
+    device_id: solarthermie
     icon: mdi:beaker-outline
     lambda: |-
       return id(solarkreis_vl).state;
@@ -135,8 +140,9 @@ sensor:
   #############################################################################
 
   - platform: template
-    name: Solarkreis delta_t
+    name: Messintervall
     id: sensor_solarkreis_delta_t_seconds
+    device_id: solarthermie
     icon: mdi:timer-cog-outline
     device_class: duration
     unit_of_measurement: s
@@ -145,8 +151,9 @@ sensor:
     internal: false
 
   - platform: template
-    name: Solarkreis m_g
+    name: Masseninkrement
     id: sensor_solarkreis_m_g
+    device_id: solarthermie
     icon: mdi:scale
     device_class: weight
     unit_of_measurement: g
@@ -157,8 +164,9 @@ sensor:
   #############################################################################
 
   - platform: template
-    name: Solarkreis Energie
+    name: Waermeertrag
     id: sensor_solarkreis_energie_kwh
+    device_id: solarthermie
     state_class: total_increasing
     device_class: energy
     unit_of_measurement: kWh
@@ -170,6 +178,28 @@ sensor:
     #  - or:
     #    - delta: 0.01
     #    - heartbeat: 5min
+
+  #############################################################################
+
+  - platform: template
+    name: Thermische Leistung
+    id: sensor_solarkreis_leistung
+    device_id: solarthermie
+    device_class: power
+    state_class: measurement
+    unit_of_measurement: kW
+    icon: mdi:solar-power
+    accuracy_decimals: 2
+    update_interval: 30s
+    lambda: |-
+      if (!id(switch_solarkreis_pumpe).state) return 0.0f;
+      if (isnan(id(solarkreis_diff_rlvl).state)) return NAN;
+      float flow_l_min = id(sensor_solarkreis_flow_rate).state;
+      float density_g_l = id(sensor_solarkreis_solarfluid_density_kg_m3).state;  // kg/m³ == g/L
+      float cp_kj_kgk = id(sensor_solarkreis_solarfluid_capacity_kj_kgk).state;
+      float dt_k = id(solarkreis_diff_rlvl).state;
+      // P = V[L/s] × ρ[g/L] / 1000 × cp[kJ/(kg·K)] × ΔT[K] = kW
+      return (flow_l_min / 60.0f) * (density_g_l / 1000.0f) * cp_kj_kgk * dt_k;
 
   #############################################################################
 
@@ -246,3 +276,13 @@ sensor:
           id: sensor_solarkreis_energie_kwh
           state: !lambda |-
             return id(global_solarkreis_energie_kwh);
+
+binary_sensor:
+  - platform: template
+    name: Kollektorstillstand
+    id: solar_kollektorstillstand
+    device_id: solarthermie
+    device_class: problem
+    icon: mdi:solar-panel-large
+    lambda: |-
+      return id(sonnenkollektor).state > 120.0f && !id(switch_solarkreis_pumpe).state;

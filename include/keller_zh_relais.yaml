@@ -1,34 +1,42 @@
-# ============================================================================
+# ======================================================================================================================
 # Relais und Pumpensteuerung — 4x 230V Schaltausgaenge
-# ============================================================================
-# Vier Relais schalten 230V-Verbraucher:
+# ======================================================================================================================
+# Vier Relais schalten 230V-Verbraucher (Klemmbezeichnungen in Klammern):
 #
-#   Relais 1 (GPIO4):  Kesselpufferkreis Umwaelzpumpe
-#   Relais 2 (GPIO0):  Solarkreis Umwaelzpumpe (Strapping-Pin, s.u.)
-#   Relais 3 (GPIO2):  Warmwasser Zirkulationspumpe (Strapping-Pin)
-#   Relais 4 (GPIO15): Warmwasserbereitung Anforderung (potentialfreier
-#                       Kontakt zur Gastherme, Strapping-Pin)
+#   Relais 1 (GPIO4,  Klemme 4):  Kesselpufferkreis Umwaelzpumpe (LP)
+#   Relais 2 (GPIO0,  Klemme 5):  Solarkreis Umwaelzpumpe (BA9, Strapping-Pin)
+#   Relais 3 (GPIO2,  Klemme 6):  Warmwasser Zirkulationspumpe (Strapping-Pin)
+#   Relais 4 (GPIO15, Klemme 30): Warmwasserbereitung Anforderung (SLP, potentialfrei zur Gastherme, Strapping-Pin)
 #
-# Alle Relais sind active-low (inverted: true) und starten im AUS-Zustand.
-# GPIO0 ist ein Strapping-Pin: HIGH beim Boot = normaler Bootmodus.
-# inverted: true + ALWAYS_OFF stellt sicher, dass der physische Pegel
-# beim Boot HIGH ist (Relais AUS).
+# Alle Relais sind active-low (inverted: true) und starten im AUS-Zustand. GPIO0 ist ein Strapping-Pin: HIGH beim
+# Boot = normaler Bootmodus. inverted: true + ALWAYS_OFF stellt sicher, dass der physische Pegel beim Boot HIGH ist
+# (Relais AUS).
 #
-# Relais 4 (WWB Anforderung) steuert, ob die Gastherme im Heizmodus
-# oder Warmwasserbereitungsmodus arbeitet. Beim Umschalten werden die
-# Temperaturdifferenz-Sensoren und Waermezaehler sofort aktualisiert.
+# WWB-Anforderung (Relais 4, Klemme 30/31):
+#   Widerstandsbeschaltung imitiert Extremwerte des Gastherme-Eingangs: 10 kOhm parallel zu Relais 4, 1,8 kOhm in
+#   Reihe. Damit erkennt die Buderus GB 162-25 die Anforderung als gueltiges SLP-Signal.
+#
+# Betriebsmodus (Select):
+#   Steuert die Gastherme ueber Relais 4 und EM10-Sollwert:
+#     - Aus:        Relais AUS + Sollwert 0°C — Gastherme inaktiv
+#     - Heizen:     Relais AUS + gespeicherter Sollwert — Heizbetrieb
+#     - Warmwasser: Relais EIN — Warmwasserbereitung (Gastherme ignoriert den 0-10V Sollwert im WWB-Modus und regelt
+#                   intern)
+#   Der Betriebsmodus wird bidirektional mit der Solltemperatur synchronisiert (siehe keller_zh_em10_pwm.yaml).
+#   Beim Umschalten werden Temperaturdifferenz-Sensoren und Waermezaehler sofort aktualisiert. Der Modus wird ueber
+#   Neustarts wiederhergestellt.
 #
 # Betriebsstundenzaehler:
-#   Jede Pumpe hat einen duty_time-Sensor (state_class: total_increasing),
-#   der die Einschaltdauer in Stunden zaehlt. Werte gehen beim Neustart
-#   verloren — Home Assistant akkumuliert den Gesamtwert.
-# ============================================================================
+#   Jede Pumpe hat einen duty_time-Sensor (state_class: total_increasing), der die Einschaltdauer in Stunden zaehlt.
+#   Werte gehen beim Neustart verloren — Home Assistant akkumuliert den Gesamtwert.
+# ======================================================================================================================
 
 switch:
   # Relais 1
   - platform: gpio
-    name: "Kesselpufferkreis Umwaelzpumpe"
+    name: "Pufferkreis Umwaelzpumpe"
     id: switch_kesselpufferkreis_pumpe
+    device_id: kessel
     pin:
       number: GPIO4
       inverted: true
@@ -38,8 +46,9 @@ switch:
   # GPIO0 is a strapping pin (must be HIGH during boot for normal boot mode).
   # inverted: true + ALWAYS_OFF ensures physical HIGH at boot = relay OFF.
   - platform: gpio
-    name: "Solarkreis Umwaelzpumpe"
+    name: "Umwaelzpumpe"
     id: switch_solarkreis_pumpe
+    device_id: solarthermie
     pin:
       number: GPIO0
       inverted: true
@@ -48,18 +57,20 @@ switch:
 
   # Relais 3
   - platform: gpio
-    name: "Warmwasser Zirkulationspumpe"
+    name: "Zirkulationspumpe"
     id: switch_warmwasser_zirkulation
+    device_id: warmwasserspeicher
     pin:
       number: GPIO2
       inverted: true
       ignore_strapping_warning: true
     restore_mode: ALWAYS_OFF
 
-  # Relais 4
+  # Relais 4 — internal, controlled by Betriebsmodus select
   - platform: gpio
     name: "Warmwasserbereitung Anforderung"
     id: wwb_anforderung
+    internal: true
     pin:
       number: GPIO15
       inverted: true
@@ -76,11 +87,47 @@ switch:
       - component.update: heizkreis_diff
       - component.update: warmwasser_diff
 
+# Gastherme Betriebsmodus — 3-Wege-Auswahl
+# https://esphome.io/components/select/template.html
+select:
+  - platform: template
+    name: "Betriebsmodus"
+    id: gastherme_betriebsmodus
+    device_id: gastherme
+    icon: mdi:thermostat
+    options:
+      - "Aus"
+      - "Heizen"
+      - "Warmwasser"
+    initial_option: "Aus"
+    restore_value: true
+    optimistic: true
+    set_action:
+      - if:
+          condition:
+            lambda: 'return x == "Warmwasser";'
+          then:
+            - switch.turn_on: wwb_anforderung
+          else:
+            - switch.turn_off: wwb_anforderung
+      - script.execute: apply_gastherme_sollwert
+
+# Sync relay with restored select state on boot
+esphome:
+  on_boot:
+    - priority: 600
+      then:
+        - lambda: |-
+            if (id(gastherme_betriebsmodus).state == "Warmwasser") {
+              id(wwb_anforderung).turn_on();
+            }
+
 # Pump runtime counters (reset on reboot, HA tracks total via total_increasing)
 # https://esphome.io/components/sensor/duty_time.html
 sensor:
   - platform: duty_time
-    name: "Kesselpufferkreis Umwaelzpumpe Betriebsstunden"
+    name: "Pufferkreis Umwaelzpumpe Betriebsstunden"
+    device_id: kessel
     lambda: return id(switch_kesselpufferkreis_pumpe).state;
     unit_of_measurement: h
     device_class: duration
@@ -89,7 +136,8 @@ sensor:
     update_interval: 60s
 
   - platform: duty_time
-    name: "Solarkreis Umwaelzpumpe Betriebsstunden"
+    name: "Umwaelzpumpe Betriebsstunden"
+    device_id: solarthermie
     lambda: return id(switch_solarkreis_pumpe).state;
     unit_of_measurement: h
     device_class: duration
@@ -98,7 +146,8 @@ sensor:
     update_interval: 60s
 
   - platform: duty_time
-    name: "Warmwasser Zirkulationspumpe Betriebsstunden"
+    name: "Zirkulationspumpe Betriebsstunden"
+    device_id: warmwasserspeicher
     lambda: return id(switch_warmwasser_zirkulation).state;
     unit_of_measurement: h
     device_class: duration

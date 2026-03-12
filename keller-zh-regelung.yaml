@@ -1,36 +1,51 @@
-# ============================================================================
-# Heizungsregelung — Zentraler Heizungscontroller
-# ============================================================================
+# ======================================================================================================================
+# Keller ZH Regelung — Zentraler Heizungscontroller
+# ======================================================================================================================
 # Hardware: AZ-Delivery ESP-32 Dev Kit C V4 auf kundenspezifischer Platine
 # https://www.az-delivery.de/en/products/esp-32-dev-kit-c-v4
 #
+# Anlagenkomponenten:
+#   - Gastherme: Buderus GB 162-25 (Gas-Brennwertkessel)
+#   - Feststoffkessel: MPM DS WOOD 18 kW (Holzvergaserkessel)
+#   - Pufferspeicher grau: EPS 600 (PAEPS2), 600L (Hauptkeller)
+#   - Pufferspeicher blau: Buderus Logalux SF551 (5501), 550L (Hauptkeller)
+#     TODO: Hydraulische Verschaltung der Pufferspeicher untereinander und mit der restlichen Anlage dokumentieren
+#   - Warmwasserspeicher: separater Speicher (Heizungskeller). TODO: Modell und Volumen des Warmwasserspeichers
+#   - Solarthermie: TYFOCOR L Waermetraeger, ESBE LTC300
+#     TODO: Rolle des ESBE LTC300 — ersetzt durch ESP oder noch aktiv?
+#     TODO: Kollektortyp/-modell und Anzahl
+#   - Warmwasserzaehler: 2x Zenner Q3 2,5 (S0, 0,25 L/Impuls)
+#   - Stromzaehler: S0 Hutschienen-Leistungsmessmodul (2000 imp/kWh)
+#
 # Steuert und ueberwacht die gesamte Heizungsanlage im Keller:
-#   - Gastherme Sollwertsteuerung (0–10V via EM10 PWM-Modul)
-#   - 4x 230V Relais: Kesselpufferkreis-, Solarkreis-, Zirkulationspumpe,
-#     Warmwasserbereitung-Anforderung (potentialfreier Kontakt zur Gastherme)
+#   - Gastherme Sollwertsteuerung (0-10V via EM10 PWM-Modul)
+#   - 4x 230V Relais: Kesselpufferkreis-, Solarkreis-, Zirkulationspumpe, Warmwasserbereitung-Anforderung
+#     (potentialfreier Kontakt zur Gastherme)
 #   - Temperatursensoren: 2x PT1000/MAX31865 (SPI), 26x DS18B20 (1-Wire)
 #   - Waermemengenzaehler: Heizkreis + Warmwasser (Zenner Impulszaehler)
 #   - Solarthermie Energieberechnung (TYFOCOR L Solarfluid)
 #   - Stromzaehler via S0-Impulsausgang
 #   - Gehaeuseueberwachung: Temperatur + Luftfeuchte (SHT3x via I2C)
 #
-# GPIO-BELEGUNG
-# =============
+# GPIO-BELEGUNG (ESP32-WROOM-32, 38 Pins)
+# ======================================================================================================================
+#
+# Belegte Pins:
 #
 #  GPIO  | Funktion                       | Richtung | Peripherie
-# -------+--------------------------------+----------+---------------------------
+# -------+--------------------------------+----------+------------------------------------------------------
 #  GPIO0 | Relais 2 (Solarkreis Pumpe)    | Output   | 230V, Strapping-Pin
 #  GPIO2 | Relais 3 (WW Zirkulation)      | Output   | 230V, Strapping-Pin
 #  GPIO4 | Relais 1 (Kesselpuffer Pumpe)  | Output   | 230V
-#  GPIO5 | SPI CS0 (MAX31865 Kessel)      | Output   | PT1000 Kessel Abgas
+#  GPIO5 | SPI CS0 (MAX31865 Kessel)      | Output   | PT1000, Strapping-Pin
 #  GPIO12| SPI MISO                       | Input    | MAX31865, Strapping-Pin
 #  GPIO13| SPI MOSI                       | Output   | MAX31865
-#  GPIO14| SPI CLK                        | Output   | MAX31865, Strapping-Pin
-#  GPIO15| Relais 4 (WWB Anforderung)     | Output   | Potentialfrei, Strapping
+#  GPIO14| SPI CLK                        | Output   | MAX31865
+#  GPIO15| Relais 4 (WWB Anforderung)     | Output   | Potentialfrei, Strapping-Pin
 #  GPIO17| SPI CS1 (MAX31865 Solar)       | Output   | PT1000 Sonnenkollektor
 #  GPIO19| Status-LED rot                 | Output   | Frontblende
-#  GPIO21| I2C SDA                        | Bidir    | SHT3x Gehaeuseensor
-#  GPIO22| I2C SCL                        | Bidir    | SHT3x Gehaeuseensor
+#  GPIO21| I2C SCL                        | Bidir    | SHT3x Gehaeusesensor
+#  GPIO22| I2C SDA                        | Bidir    | SHT3x Gehaeusesensor
 #  GPIO23| Status-LED gruen               | Output   | Frontblende
 #  GPIO27| PWM Ausgang (EM10 0-10V)       | Output   | Gastherme Sollwert
 #  GPIO32| 1-Wire Bus 1                   | Bidir    | 15x DS18B20
@@ -38,18 +53,75 @@
 #  GPIO34| Impulszaehler Heizkreis        | Input    | Zenner Wasserzaehler S0
 #  GPIO35| Impulszaehler Warmwasser       | Input    | Zenner Wasserzaehler S0
 #  GPIO39| Impulszaehler Strom            | Input    | Stromzaehler S0
+#  Hinweis: I2C-Pinbelegung vertauscht gegenueber ESP32-Default (GPIO21=SDA, GPIO22=SCL). Verdrahtung ist so korrekt.
 #
-# ============================================================================
+# Freie Pins:
+#
+#  GPIO  | Faehigkeiten                   | Richtung | Einsatzmoeglichkeiten
+# -------+--------------------------------+----------+------------------------------------------------------
+#  GPIO16| I/O, UART2 RX                  | I/O      | Digitaler Sensor, UART
+#  GPIO18| I/O, VSPI CLK, PWM             | I/O      | SPI-Erweiterung, PWM
+#  GPIO25| I/O, DAC1, ADC2, Touch, RTC    | I/O      | Analogausgang (0-3.3V), Stoermeldung Gastherme
+#  GPIO26| I/O, DAC2, ADC2, Touch, RTC    | I/O      | Analogausgang (0-3.3V), Wassereinbruch-Alarm
+#  GPIO36| ADC1, RTC                      | Input    | Analogeingang (z.B. Spannungsmessung), S0
+#
+# Nicht verfuegbar:
+#
+#  GPIO  | Grund
+# -------+------------------------------------------------------
+#  GPIO1 | UART0 TX (Programmierung/Debug)
+#  GPIO3 | UART0 RX (Programmierung/Debug)
+#  GPIO6 | Interner SPI-Flash (CLK)
+#  GPIO7 | Interner SPI-Flash (D0)
+#  GPIO8 | Interner SPI-Flash (D1)
+#  GPIO9 | Interner SPI-Flash (D2)
+#  GPIO10| Interner SPI-Flash (D3)
+#  GPIO11| Interner SPI-Flash (CMD)
+#
+# Hinweise:
+#   - ADC2-Pins (GPIO25, GPIO26) koennen nicht gleichzeitig mit WiFi fuer Analogmessung verwendet werden. Digital I/O
+#     funktioniert.
+#   - GPIO34-39 sind reine Eingaenge ohne internen Pull-up/Pull-down. Externe Pull-up-Widerstaende (10k) sind fuer
+#     S0-Eingaenge noetig.
+#   - GPIO25/26 waren im Originalentwurf fuer Gastherme Stoermeldung und Wassereinbruch-Alarm vorgesehen (siehe
+#     auskommentierter Code).
+#
+# ======================================================================================================================
 
 substitutions:
-  device_name: heizungsregelung
-  device_friendly_name: Heizungsregelung
+  device_name: keller-zh-regelung
+  device_friendly_name: Keller ZH Regelung
   device_area: Keller
 esphome:
   name: ${device_name}
   comment: ${device_friendly_name}
   friendly_name: ${device_friendly_name}
   area: ${device_area}
+  areas:
+    - id: area_main
+      name: ${device_area}
+  devices:
+    - id: gastherme
+      name: "Keller ZH Gastherme"
+      area_id: area_main
+    - id: kessel
+      name: "Keller ZH Kessel"
+      area_id: area_main
+    - id: solarthermie
+      name: "Keller ZH Solarthermie"
+      area_id: area_main
+    - id: pufferspeicher
+      name: "Keller ZH Pufferspeicher"
+      area_id: area_main
+    - id: warmwasserspeicher
+      name: "Keller ZH Warmwasserspeicher"
+      area_id: area_main
+    - id: heizkreis
+      name: "Keller ZH Heizkreis"
+      area_id: area_main
+    - id: stromzaehler
+      name: "Keller ZH Stromverbrauch"
+      area_id: area_main
 
 esp32:
   board: az-delivery-devkit-v4
@@ -64,25 +136,24 @@ time:
 packages:
   - !include common/wifi.yaml
   - !include common/boilerplate.yaml
-  - !include include/heizungsregelung_i2c_enclosure.yaml
-  - !include include/heizungsregelung_relais.yaml
-  - !include include/heizungsregelung_em10_pwm.yaml
-  - !include include/heizungsregelung_temp_pt1000_spi.yaml
-  - !include include/heizungsregelung_temp_ds18b20_gpio32.yaml
-  - !include include/heizungsregelung_temp_ds18b20_gpio33.yaml
-  - !include include/heizungsregelung_temp_diff.yaml
-  - !include include/heizungsregelung_energy_heat_counter.yaml
-  - !include include/heizungsregelung_energy_heat_flow.yaml
-  - !include include/heizungsregelung_energy_solar_production.yaml
-  # Stromzaehler via S0-Impulsausgang
-  # TODO: Pulskonstante (imp/kWh) des Zaehlers eintragen
+  - !include include/keller_zh_i2c_enclosure.yaml
+  - !include include/keller_zh_relais.yaml
+  - !include include/keller_zh_em10_pwm.yaml
+  - !include include/keller_zh_temp_pt1000_spi.yaml
+  - !include include/keller_zh_temp_ds18b20_gpio32.yaml
+  - !include include/keller_zh_temp_ds18b20_gpio33.yaml
+  - !include include/keller_zh_temp_diff.yaml
+  - !include include/keller_zh_energy_heat_counter.yaml
+  - !include include/keller_zh_flusserkennung.yaml
+  - !include include/keller_zh_energy_solar_production.yaml
+  # Stromzaehler via S0-Impulsausgang (Hutschienen-Leistungsmessmodul, 0,5 Wh/imp)
   - !include
     file: include/s0_energy_meter_template.yaml
     vars:
       energy_meter_id: "heizung"
       energy_meter_gpio: "GPIO39"
-      energy_meter_imp_kwh: "2000"  # TODO: tatsaechlichen Wert des Zaehlers eintragen
-      energy_meter_device_id: ""
+      energy_meter_imp_kwh: "2000"
+      energy_meter_device_id: "stromzaehler"
 
 # https://esphome.io/components/status_led.html
 status_led:

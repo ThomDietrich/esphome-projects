@@ -1,33 +1,30 @@
-# ============================================================================
+# ======================================================================================================================
 # Temperaturdifferenzen — Spreizungen aller Kreislaeufe
-# ============================================================================
-# Berechnete Temperaturdifferenzen (Spreizungen) in Kelvin fuer jeden
-# hydraulischen Kreislauf. Alle Sensoren haben update_interval: never
-# und werden on_value der zugehoerigen Temperatursensoren getriggert.
+# ======================================================================================================================
+# Berechnete Temperaturdifferenzen (Spreizungen) in Kelvin fuer jeden hydraulischen Kreislauf. Alle Sensoren haben
+# update_interval: never und werden on_value der zugehoerigen Temperatursensoren getriggert.
 #
-#   - Solarkreis Differenz Eintrag (RL−VL):
-#     Waermegewinn im Solarthermiefeld. Positiv = Kollektor heizt.
-#   - Solarkreis Differenz oben-unten (Kollektor−Speicher unten):
-#     Steuergrösse fuer Solarkreispumpe — positiv = Kollektor waermer.
-#   - Heizkreis Differenz (VL−RL):
-#     Waermeabgabe an Heizkoerper.
-#   - Warmwasser Differenz (VL−RL):
-#     Waermeabgabe an Warmwasserspeicher (nur bei WWB aktiv).
-#   - Kessel Differenz (VL−RL):
-#     Waermeabgabe des Brenners.
-#   - Kesselpufferkreis Differenz (VL−RL):
-#     Waermetransport zwischen Kessel und Pufferspeicher.
+#   - Solarthermie Spreizung (RL−VL): Waermegewinn im Solarthermiefeld. Positiv = Kollektor heizt.
+#   - Solarthermie Einschaltdifferenz (Kollektor−Speicher unten): Steuergrösse fuer Solarkreispumpe —
+#     positiv = Kollektor waermer.
+#   - Heizkreis Spreizung (VL−RL): Waermeabgabe an Heizkoerper.
+#   - Warmwasserspeicher Spreizung (VL−RL): Waermeabgabe an Warmwasserspeicher (nur bei WWB aktiv).
+#   - Kessel Spreizung (VL−RL): Waermeabgabe des Brenners.
+#   - Kessel Pufferkreis Spreizung (VL−RL): Waermetransport zwischen Kessel und Pufferspeicher.
+#   - Warmwasserspeicher Schichtung (oben−unten): Temperaturdifferenz zwischen oberem und unterem Speichersensor.
+#     Hohe Schichtung = gut geladen, niedrig = entladen oder durchmischt.
+#   - Warmwasserspeicher Legionellenschutz: Warnung wenn Speicher oben < 60°C fuer mehr als 7 Tage am Stueck.
 #
-# Heizkreis- und Warmwasser-Differenz werden von den Waermezaehlern
-# (heizungsregelung_energy_heat_counter.yaml) fuer die Energieberechnung
-# verwendet.
-# ============================================================================
+# Heizkreis- und Warmwasser-Spreizung werden von den Waermezaehlern (keller_zh_energy_heat_counter.yaml) fuer die
+# Energieberechnung verwendet.
+# ======================================================================================================================
 
 sensor:
 
   - platform: template
-    name: Solarkreis Differenz Eintrag
+    name: Spreizung
     id: solarkreis_diff_rlvl
+    device_id: solarthermie
     state_class: measurement
     device_class: temperature
     unit_of_measurement: K
@@ -38,8 +35,9 @@ sensor:
       return (id(solarkreis_rl).state - id(solarkreis_vl).state);
 
   - platform: template
-    name: Solarkreis Differenz oben-unten
+    name: Einschaltdifferenz
     id: solarkreis_diff_ou
+    device_id: solarthermie
     state_class: measurement
     device_class: temperature
     unit_of_measurement: K
@@ -50,8 +48,9 @@ sensor:
       return (id(sonnenkollektor).state - id(warmwasserspeicher_unten).state);
 
   - platform: template
-    name: Heizkreis Differenz
+    name: Spreizung
     id: heizkreis_diff
+    device_id: heizkreis
     state_class: measurement
     device_class: temperature
     unit_of_measurement: K
@@ -62,8 +61,9 @@ sensor:
       return (id(heizkreis_vl).state - id(heizkreis_rl).state);
 
   - platform: template
-    name: Warmwasser Differenz
+    name: Spreizung
     id: warmwasser_diff
+    device_id: gastherme
     state_class: measurement
     device_class: temperature
     unit_of_measurement: K
@@ -74,8 +74,9 @@ sensor:
       return (id(gastherme_vl).state - id(gastherme_rl_wwb).state);
 
   - platform: template
-    name: Kessel Differenz
+    name: Spreizung
     id: kessel_diff
+    device_id: kessel
     state_class: measurement
     device_class: temperature
     unit_of_measurement: K
@@ -86,8 +87,9 @@ sensor:
       return (id(kessel_vl).state - id(kessel_rl).state);
 
   - platform: template
-    name: Kesselpufferkreis Differenz
+    name: Pufferkreis Spreizung
     id: kesselpufferkreis_diff
+    device_id: kessel
     state_class: measurement
     device_class: temperature
     unit_of_measurement: K
@@ -96,3 +98,39 @@ sensor:
     update_interval: never
     lambda: |-
       return (id(kesselpufferkreis_vl).state - id(kesselpufferkreis_rl).state);
+
+  - platform: template
+    name: Schichtung
+    id: warmwasser_schichtung
+    device_id: warmwasserspeicher
+    state_class: measurement
+    device_class: temperature
+    unit_of_measurement: K
+    accuracy_decimals: 1
+    icon: mdi:thermometer-lines
+    update_interval: never
+    lambda: |-
+      return (id(warmwasserspeicher_oben).state - id(warmwasserspeicher_unten).state);
+
+  - id: !extend warmwasserspeicher_unten
+    on_value:
+      - component.update: warmwasser_schichtung
+
+  - id: !extend warmwasserspeicher_oben
+    on_value:
+      - component.update: warmwasser_schichtung
+
+binary_sensor:
+  - platform: template
+    name: Legionellenschutz
+    id: warmwasser_legionellenschutz
+    device_id: warmwasserspeicher
+    device_class: problem
+    icon: mdi:bacteria-outline
+    # ON = Warnung: Speicher hat seit >7 Tagen keine 60°C erreicht.
+    # Timer setzt bei ESP-Neustart zurueck (akzeptable Einschraenkung).
+    lambda: |-
+      if (isnan(id(warmwasserspeicher_oben).state)) return false;
+      return id(warmwasserspeicher_oben).state < 60.0f;
+    filters:
+      - delayed_on: 7d

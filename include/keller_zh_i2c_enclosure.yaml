@@ -1,10 +1,9 @@
-# ============================================================================
+# ======================================================================================================================
 # Gehaeuseueberwachung — Temperatur und Luftfeuchte
-# ============================================================================
-# SHT3x-D Sensor (I2C, Adresse 0x44) im Schaltschrankgehaeuse.
-# Ueberwacht Temperatur und Luftfeuchte zur Erkennung von Ueberhitzung
-# oder Kondensation im geschlossenen Gehaeuse.
-# ============================================================================
+# ======================================================================================================================
+# SHT3x-D Sensor (I2C, Adresse 0x44) im Schaltschrankgehaeuse. (Urspruenglich BME280, ersetzt durch SHT3x-D.)
+# Ueberwacht Temperatur und Luftfeuchte zur Erkennung von Ueberhitzung oder Kondensation im geschlossenen Gehaeuse.
+# ======================================================================================================================
 
 # https://esphome.io/components/i2c.html
 i2c:
@@ -14,15 +13,19 @@ i2c:
 
 # SHT3X-D Temperature+Humidity Sensor
 # https://esphome.io/components/sensor/sht3xd.html
+# device_id: "" — bleibt bewusst auf dem Haupt-ESP-Device (Gehaeusesensor).
 sensor:
   - platform: sht3xd
+    device_id: ""
     temperature:
       name: "Gehaeuse Temperatur"
       unit_of_measurement: "°C"
       accuracy_decimals: 1
+      entity_category: diagnostic
     humidity:
       name: "Gehaeuse Luftfeuchte"
       unit_of_measurement: "%"
       accuracy_decimals: 1
+      entity_category: diagnostic
     address: 0x44
     update_interval: 60s

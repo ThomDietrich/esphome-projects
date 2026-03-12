@@ -49,7 +49,7 @@ sensor:
     id: muell_entsorgung_tage
 
   - platform: homeassistant
-    entity_id: sensor.heizungsregelung_warmwasserspeicher_oben
+    entity_id: sensor.keller_zh_regelung_warmwasserspeicher_oben
     id: heizung_warmwasser
 
 text_sensor:

@@ -1,29 +1,32 @@
-# ============================================================================
+# ======================================================================================================================
 # DS18B20 Temperatursensoren — 1-Wire Bus 1 (GPIO32)
-# ============================================================================
-# 15 DS18B20-Sensoren auf einem gemeinsamen 1-Wire-Bus erfassen die
-# Temperaturen an allen relevanten Punkten der Heizungsanlage:
+# ======================================================================================================================
+# 15 DS18B20-Sensoren auf einem gemeinsamen 1-Wire-Bus erfassen die Temperaturen an allen relevanten Punkten der
+# Heizungsanlage:
 #
-# Solarkreis:
-#   - Solarkreis Vorlauf:  zum Solarthermiefeld (kalt hoch)
-#   - Solarkreis Ruecklauf:  vom Solarthermiefeld (warm zurueck)
+# Solarthermie:
+#   - Vorlauftemperatur:  zum Solarthermiefeld (kalt hoch)
+#   - Ruecklauftemperatur:  vom Solarthermiefeld (warm zurueck)
 #
 # Warmwasserspeicher:
-#   - Warmwasserspeicher unten / oben:  Schichtladung
-#   - Warmwasserspeicher Abfluss:  Entnahmetemperatur
+#   - Temperatur unten / oben:  Schichtladung
+#   - Entnahmetemperatur:  Zapftemperatur am Warmwasserausgang
 #
-# Heizkreis (Gastherme → Heizkoerper):
-#   - Heizkreis Vorlauf / Ruecklauf
-#   - Gastherme Vorlauf / Ruecklauf Warmwasserbereitung
+# Heizkreis:
+#   - Vorlauftemperatur / Ruecklauftemperatur
+#
+# Warmwasserspeicher (Gastherme-seitig):
+#   - Gastherme Vorlauftemperatur / Ruecklauftemperatur
 #
 # Kessel und Puffer:
-#   - Kessel Vorlauf / Ruecklauf
-#   - Kesselpufferkreis Vorlauf / Ruecklauf
-#   - Pufferspeicher blau 550L / grau 600L:  je ein Einzelsensor
+#   - Vorlauftemperatur / Ruecklauftemperatur (am Kessel)
+#   - Pufferkreis Vorlauftemperatur / Ruecklauftemperatur
+#   - Pufferspeicher blau (Buderus Logalux SF551, 550L) / grau (EPS 600, 600L):  je ein Einzelsensor
+#     TODO: Position der Einzelsensoren (oben/mitte/unten)?
 #
-# Alle Sensoren: 15s Update, filter_out 85°C (Reset-Wert), Delta 0.3°C,
-# Heartbeat 30min. Relevante Sensoren triggern Differenzberechnungen.
-# ============================================================================
+# Alle Sensoren: 15s Update, filter_out 85°C (Reset-Wert), Delta 0.3°C, Heartbeat 30min. Relevante Sensoren triggern
+# Differenzberechnungen.
+# ======================================================================================================================
 
 one_wire:
   - platform: gpio
@@ -35,8 +38,9 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xaa041684630cff28
-    name: Solarkreis Vorlauf # zum Solarthermiefeld
+    name: Vorlauftemperatur # zum Solarthermiefeld
     id: solarkreis_vl
+    device_id: solarthermie
     icon: mdi:thermometer-chevron-down
     on_value:
       - component.update: solarkreis_diff_rlvl
@@ -44,8 +48,9 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xd33c97f6491fd728
-    name: Solarkreis Ruecklauf # vom Solarthermiefeld
+    name: Ruecklauftemperatur # vom Solarthermiefeld
     id: solarkreis_rl
+    device_id: solarthermie
     icon: mdi:thermometer-chevron-up
     on_value:
       - component.update: solarkreis_diff_rlvl
@@ -53,22 +58,25 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x540316839e33ff28
-    name: Warmwasserspeicher unten
+    name: Temperatur unten
     id: warmwasserspeicher_unten
+    device_id: warmwasserspeicher
     on_value:
       - component.update: solarkreis_diff_ou
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xa25469481f64ff28
-    name: Warmwasserspeicher oben
+    name: Temperatur oben
     id: warmwasserspeicher_oben
+    device_id: warmwasserspeicher
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x2500000cf8822e28
-    name: Heizkreis Vorlauf
+    name: Vorlauftemperatur
     id: heizkreis_vl
+    device_id: heizkreis
     icon: mdi:thermometer-chevron-up
     on_value:
       - component.update: heizkreis_diff
@@ -76,70 +84,80 @@ sensor:
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x94626a481f64ff28
-    name: Heizkreis Ruecklauf
+    name: Ruecklauftemperatur
     id: heizkreis_rl
+    device_id: heizkreis
     on_value:
       - component.update: heizkreis_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x4400000cf8ea0528
-    name: Gastherme Vorlauf
+    name: Vorlauftemperatur
     id: gastherme_vl
+    device_id: gastherme
     on_value:
       - component.update: warmwasser_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x9500000cf8984828
-    name: Gastherme Ruecklauf Warmwasserbereitung
+    name: Ruecklauftemperatur
     id: gastherme_rl_wwb
+    device_id: gastherme
     on_value:
       - component.update: warmwasser_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x45000005fa787a28
-    name: Pufferspeicher blau 550 Liter
+    name: Blau Temperatur
+    device_id: pufferspeicher
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xd6000005faf54928
-    name: Pufferspeicher grau 600 Liter
+    name: Grau Temperatur
+    device_id: pufferspeicher
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xc400000cf8624528
-    name: Kessel Vorlauf
+    name: Vorlauftemperatur
     id: kessel_vl
+    device_id: kessel
     on_value:
       - component.update: kessel_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xd900000cf8d4ca28
-    name: Kessel Ruecklauf
+    name: Ruecklauftemperatur
     id: kessel_rl
+    device_id: kessel
     on_value:
       - component.update: kessel_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x0ebe6d481f64ff28
-    name: Kesselpufferkreis Vorlauf
+    name: Pufferkreis Vorlauftemperatur
     id: kesselpufferkreis_vl
+    device_id: kessel
     on_value:
       - component.update: kesselpufferkreis_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0xe73f69481f64ff28
-    name: Kesselpufferkreis Ruecklauf
+    name: Pufferkreis Ruecklauftemperatur
     id: kesselpufferkreis_rl
+    device_id: kessel
     on_value:
       - component.update: kesselpufferkreis_diff
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio32
     address: 0x7c186d481f64ff28
-    name: Warmwasserspeicher Abfluss
+    name: Entnahmetemperatur
+    device_id: warmwasserspeicher

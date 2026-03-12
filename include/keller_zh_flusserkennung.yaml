@@ -1,21 +1,19 @@
-# ============================================================================
+# ======================================================================================================================
 # Flusserkennung — Heizkreis und Warmwasser
-# ============================================================================
-# Erkennt anhand der Impulszaehler-Ticks, ob in Heizkreis bzw.
-# Warmwasserkreis aktuell Wasser fliesst. Dreistufige Logik:
+# ======================================================================================================================
+# Erkennt anhand der Impulszaehler-Ticks, ob in Heizkreis bzw. Warmwasserkreis aktuell Wasser fliesst.
+# Dreistufige Logik:
 #
 #   1. intern_*_gpio_tick:  Roh-Impulse vom Zenner-Zaehler (aus Template)
-#   2. intern_*_aktiv:  Totmannschalter (delayed_off: 60s).
-#      Wird bei jedem Tick auf ON gesetzt und faellt 60s nach dem
+#   2. intern_*_aktiv:  Totmannschalter (delayed_off: 60s). Wird bei jedem Tick auf ON gesetzt und faellt 60s nach dem
 #      letzten Tick auf OFF zurueck.
-#   3. sensor_*_aktiv:  Veroeffentlichter Sensor fuer Home Assistant.
-#      Folgt dem Totmannschalter, wird aber zusaetzlich sofort auf OFF
-#      gesetzt, wenn wwb_anforderung umschaltet — denn ein Moduswechsel
-#      bedeutet sofortigen Durchflussstopp im jeweils anderen Kreis.
+#   3. sensor_*_aktiv:  Veroeffentlichter Sensor fuer Home Assistant. Folgt dem Totmannschalter, wird aber zusaetzlich
+#      sofort auf OFF gesetzt, wenn wwb_anforderung umschaltet — denn ein Moduswechsel bedeutet sofortigen
+#      Durchflussstopp im jeweils anderen Kreis.
 #
-# Hinweis: Umschalten der WWB-Anforderung bedeutet nicht automatisch,
-# dass im neuen Kreis auch Wasser fliesst (insbesondere im Heizkreis).
-# ============================================================================
+# Hinweis: Umschalten der WWB-Anforderung bedeutet nicht automatisch, dass im neuen Kreis auch Wasser fliesst
+# (insbesondere im Heizkreis).
+# ======================================================================================================================
 
 binary_sensor:
   - id: !extend intern_heizkreis_gpio_tick
@@ -40,7 +38,7 @@ binary_sensor:
 
   # https://esphome.io/components/binary_sensor/template.html
   - platform: template
-    name: Heizkreis Volumenstrom Flusserkennung (Zwischenschritt)
+    name: Flusserkennung (Zwischenschritt)
     id: intern_heizkreis_aktiv
     internal: true
     icon: mdi:heart-pulse
@@ -49,7 +47,7 @@ binary_sensor:
       - delayed_off: 60s
 
   - platform: template
-    name: Warmwasser Volumenstrom Flusserkennung (Zwischenschritt)
+    name: Flusserkennung (Zwischenschritt)
     id: intern_wwb_aktiv
     internal: true
     icon: mdi:heart-pulse
@@ -58,14 +56,16 @@ binary_sensor:
       - delayed_off: 60s
 
   - platform: template
-    name: Heizkreis Volumenstrom Flusserkennung
+    name: Flusserkennung
     id: sensor_heizkreis_aktiv
+    device_id: heizkreis
     icon: mdi:heart-pulse
     lambda: 'return id(intern_heizkreis_aktiv).state;'
 
   - platform: template
-    name: Warmwasser Volumenstrom Flusserkennung
+    name: Flusserkennung
     id: sensor_wwb_aktiv
+    device_id: warmwasserspeicher
     icon: mdi:heart-pulse
     lambda: 'return id(intern_wwb_aktiv).state;'
 
