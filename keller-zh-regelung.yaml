@@ -138,10 +138,10 @@ packages:
   - !include common/boilerplate.yaml
   - !include include/keller_zh_i2c_enclosure.yaml
   - !include include/keller_zh_relais.yaml
-  - !include include/keller_zh_em10_pwm.yaml
   - !include include/keller_zh_temp_pt1000_spi.yaml
   - !include include/keller_zh_temp_ds18b20_gpio32.yaml
   - !include include/keller_zh_temp_ds18b20_gpio33.yaml
+  - !include include/keller_zh_em10_pwm.yaml
   - !include include/keller_zh_temp_diff.yaml
   - !include include/keller_zh_energy_heat_counter.yaml
   - !include include/keller_zh_flusserkennung.yaml
