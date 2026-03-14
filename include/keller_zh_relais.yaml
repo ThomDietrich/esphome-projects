@@ -4,8 +4,8 @@
 # Vier Relais schalten 230V-Verbraucher (Klemmbezeichnungen in Klammern):
 #
 #   Relais 1 (GPIO4,  Klemme 4):  Kesselpufferkreis Umwaelzpumpe (LP)
-#   Relais 2 (GPIO0,  Klemme 5):  Solarkreis Umwaelzpumpe (BA9, Strapping-Pin)
-#   Relais 3 (GPIO2,  Klemme 6):  Warmwasser Zirkulationspumpe (Strapping-Pin)
+#   Relais 2 (GPIO0,  Klemme 5):  Solarkreis Umwaelzpumpe (BA9, Strapping-Pin) — Grundfos Alpha Pro 25-40 180
+#   Relais 3 (GPIO2,  Klemme 6):  Warmwasser Zirkulationspumpe (Strapping-Pin) — Wilo Star-Z Nova A
 #   Relais 4 (GPIO15, Klemme 30): Warmwasserbereitung Anforderung (SLP, potentialfrei zur Gastherme, Strapping-Pin)
 #
 # Alle Relais sind active-low (inverted: true) und starten im AUS-Zustand. GPIO0 ist ein Strapping-Pin: HIGH beim

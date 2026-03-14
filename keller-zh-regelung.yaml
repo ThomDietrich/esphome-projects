@@ -10,8 +10,9 @@
 #   - Pufferspeicher grau: EPS 600 (PAEPS2), 600L (Hauptkeller)
 #   - Pufferspeicher blau: Buderus Logalux SF551 (5501), 550L (Hauptkeller)
 #     TODO: Hydraulische Verschaltung der Pufferspeicher untereinander und mit der restlichen Anlage dokumentieren
-#   - Warmwasserspeicher: separater Speicher (Heizungskeller). TODO: Modell und Volumen des Warmwasserspeichers
-#   - Solarthermie: TYFOCOR L Waermetraeger, ESBE LTC300
+#   - Warmwasserspeicher: separater Speicher (Heizungskeller), Wilo Star-Z Nova A (Zirkulationspumpe)
+#     TODO: Modell und Volumen des Warmwasserspeichers
+#   - Solarthermie: TYFOCOR L Waermetraeger, ESBE LTC300, Grundfos Alpha Pro 25-40 180 (Solarkreis Pumpe)
 #     TODO: Rolle des ESBE LTC300 — ersetzt durch ESP oder noch aktiv?
 #     TODO: Kollektortyp/-modell und Anzahl
 #   - Warmwasserzaehler: 2x Zenner Q3 2,5 (S0, 0,25 L/Impuls)
