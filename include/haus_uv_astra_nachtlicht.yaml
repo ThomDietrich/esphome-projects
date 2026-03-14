@@ -9,7 +9,9 @@
 output:
   - platform: ledc
     id: nacht_led
-    pin: 15
+    pin:
+      number: 15
+      ignore_strapping_warning: true
 
 light:
   - platform: monochromatic

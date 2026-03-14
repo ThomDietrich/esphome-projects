@@ -122,11 +122,13 @@ packages:
   - !include common/boilerplate.yaml
   - !include include/buzzer_rtttl.yaml
   - !include include/keller_fbh_temperatursensoren.yaml
+
   - !include include/keller_fbh_pid.yaml
   - !include include/keller_fbh_mischventil.yaml
   - !include include/keller_fbh_pumpe.yaml
   - !include include/keller_fbh_betrieb.yaml
   - !include include/keller_fbh_sicherheit.yaml
+
   - !include
     file: include/s0_energy_meter_template.yaml
     vars:
@@ -142,6 +144,11 @@ packages:
       heat_counter_gpio: "GPIO39"
       heat_counter_temp_diff: "t_prim_diff"
       heat_counter_device_id: "waermezaehler"
+
+output:
+  - id: !extend rtttl_out_buzzer
+    pin:
+      ignore_strapping_warning: true
 
 logger:
   logs:

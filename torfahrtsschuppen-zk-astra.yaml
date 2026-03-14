@@ -31,6 +31,11 @@ packages:
   - !include include/torfahrtsschuppen_zk_astra_relays.yaml
   - !include include/buzzer_rtttl.yaml
 
+output:
+  - id: !extend rtttl_out_buzzer
+    pin:
+      ignore_strapping_warning: true
+
 ################################################################################
 
 logger:

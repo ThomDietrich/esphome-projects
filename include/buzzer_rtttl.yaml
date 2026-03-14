@@ -3,7 +3,7 @@ output:
   - platform: ledc
     pin:
       number: ${buzzer_pin}
-      ignore_strapping_warning: true
+      ignore_strapping_warning: false
     id: rtttl_out_buzzer
 
 rtttl:

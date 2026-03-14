@@ -6,6 +6,7 @@ light:
     pin:
       number: ${status_led_pin}
       inverted: true
+      ignore_strapping_warning: false
     restore_mode: ALWAYS_OFF
 
 esphome:

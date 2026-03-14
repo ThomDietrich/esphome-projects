@@ -67,6 +67,9 @@ preferences:
   flash_write_interval: "48h"
 
 output:
+  - id: !extend rtttl_out_buzzer
+    pin:
+      ignore_strapping_warning: true
   - platform: gpio
     pin: GPIO27
     id: buzzer_gnd

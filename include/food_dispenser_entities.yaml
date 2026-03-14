@@ -91,6 +91,7 @@ binary_sensor:
     pin:
       number: GPIO9
       inverted: true
+      ignore_strapping_warning: true
     filters:
       - delayed_on: 50ms
     on_press:

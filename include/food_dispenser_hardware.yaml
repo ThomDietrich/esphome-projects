@@ -22,7 +22,9 @@ sensor:
     name: Storage
     id: sensor_storage_remaining_g
     dout_pin: GPIO7
-    clk_pin: GPIO8
+    clk_pin:
+      number: GPIO8
+      ignore_strapping_warning: true
     update_interval: 250ms
     filters:
       - median:

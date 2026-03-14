@@ -21,10 +21,16 @@ packages:
   - !include include/on_board_status_led_single.yaml
   - !include include/buzzer_rtttl.yaml
 
+light:
+  - id: !extend on_board_led
+    pin:
+      ignore_strapping_warning: true
 
 i2c:
   id: i2c_component
-  sda: GPIO2
+  sda:
+    number: GPIO2
+    ignore_strapping_warning: true
   scl: GPIO3
   scan: true
   frequency: 50kHz
@@ -127,6 +133,7 @@ binary_sensor:
         input: true
         pullup: true
       inverted: true
+      ignore_strapping_warning: true
     internal: true
     filters:
       - delayed_on: 50ms

@@ -4,7 +4,9 @@ light:
     id: on_board_led
     name: On-Board Status LED
     icon: "mdi:alarm-light"
-    pin: ${status_led_pin}
+    pin:
+      number: ${status_led_pin}
+      ignore_strapping_warning: true
     rgb_order: GRB
     num_leds: 1
     chipset: SK6812
