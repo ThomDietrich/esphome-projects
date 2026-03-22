@@ -36,7 +36,7 @@ sensor:
   - platform: pulse_meter
     pin: ${energy_meter_gpio}
     name: "Elektrische Leistung"
-    id: sensor_${energy_meter_id}_el_leistung
+    id: sensor_${energy_meter_id}_strom_leistung
     device_id: ${energy_meter_device_id}
     unit_of_measurement: "W"
     device_class: power
@@ -50,8 +50,8 @@ sensor:
       # X imp/min × (60 min/h ÷ imp_kwh) × 1000 W/kW = X × 60000 / imp_kwh
       - lambda: "return x * 60000.0f / ${energy_meter_imp_kwh};"
     total:
-      name: "Elektrischer Verbrauch"
-      id: sensor_${energy_meter_id}_el_verbrauch
+      name: "Elektrische Energie"
+      id: sensor_${energy_meter_id}_strom_energie
       device_id: ${energy_meter_device_id}
       unit_of_measurement: "kWh"
       device_class: energy

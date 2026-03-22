@@ -37,12 +37,12 @@ packages:
 switch:
   - id: !extend wwb_anforderung
     on_turn_on:
-      - component.update: sensor_heizkreis_wasser
-      - component.update: sensor_heizkreis_energie
-      - component.update: sensor_wwb_wasser
-      - component.update: sensor_wwb_energie
+      - component.update: sensor_heizkreis_waerme_volumen
+      - component.update: sensor_heizkreis_waerme_energie
+      - component.update: sensor_wwb_waerme_volumen
+      - component.update: sensor_wwb_waerme_energie
     on_turn_off:
-      - component.update: sensor_heizkreis_wasser
-      - component.update: sensor_heizkreis_energie
-      - component.update: sensor_wwb_wasser
-      - component.update: sensor_wwb_energie
+      - component.update: sensor_heizkreis_waerme_volumen
+      - component.update: sensor_heizkreis_waerme_energie
+      - component.update: sensor_wwb_waerme_volumen
+      - component.update: sensor_wwb_waerme_energie

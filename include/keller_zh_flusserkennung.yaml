@@ -4,7 +4,7 @@
 # Erkennt anhand der Impulszaehler-Ticks, ob in Heizkreis bzw. Warmwasserkreis aktuell Wasser fliesst.
 # Dreistufige Logik:
 #
-#   1. intern_*_gpio_tick:  Roh-Impulse vom Zenner-Zaehler (aus Template)
+#   1. intern_*_waerme_tick:  Roh-Impulse vom Zenner-Zaehler (aus Template)
 #   2. intern_*_aktiv:  Totmannschalter (delayed_off: 60s). Wird bei jedem Tick auf ON gesetzt und faellt 60s nach dem
 #      letzten Tick auf OFF zurueck.
 #   3. sensor_*_aktiv:  Veroeffentlichter Sensor fuer Home Assistant. Folgt dem Totmannschalter, wird aber zusaetzlich
@@ -16,7 +16,7 @@
 # ======================================================================================================================
 
 binary_sensor:
-  - id: !extend intern_heizkreis_gpio_tick
+  - id: !extend intern_heizkreis_waerme_tick
     on_press:
       - binary_sensor.template.publish:
           id: intern_heizkreis_aktiv
@@ -26,7 +26,7 @@ binary_sensor:
           id: intern_heizkreis_aktiv
           state: OFF
 
-  - id: !extend intern_wwb_gpio_tick
+  - id: !extend intern_wwb_waerme_tick
     on_press:
       - binary_sensor.template.publish:
           id: intern_wwb_aktiv
