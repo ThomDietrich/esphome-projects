@@ -37,3 +37,7 @@ Examples (sub-device → entity → HA result):
 ## Working with Device Files
 
 When reviewing or editing a device YAML file, always read its referenced packages and includes first (`packages:`, `!include`). These define shared IDs, entities, and conventions that the device file depends on.
+
+## Cross-Project Impact
+
+Each root-level YAML is a separate ESPHome device project. Files in `include/` and `common/` may be shared across projects. Before modifying a shared file, check which root-level YAMLs import it. If multiple projects are affected, list them and confirm with the user before applying.
