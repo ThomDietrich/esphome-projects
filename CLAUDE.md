@@ -34,6 +34,24 @@ Examples (sub-device → entity → HA result):
 - `Keller FBH Umwaelzpumpe` → `Schalter` → "Keller FBH Umwaelzpumpe Schalter"
 - `Keller FBH Umwaelzpumpe` → `Betriebsstunden` → "Keller FBH Umwaelzpumpe Betriebsstunden"
 
+## Internal ID Naming Convention
+
+Internal IDs (globals, sensors, scripts, binary_sensors) must be globally unique and self-explanatory without context.
+
+Rules:
+- **German only** — no English IDs. Use German terms matching entity names (ae/oe/ue, compound nouns)
+- Prefix with the component/subsystem they belong to (e.g. `mischventil_`, `pumpe_`, `pid_`)
+- The full ID must answer "what of what" — `mischventil_laufzeit_oeffnen_s` not `laufzeit_oeffnen_s`
+- Suffix with unit where applicable: `_s` (seconds), `_ms` (milliseconds), `_kwh`, `_w`, `_l`
+- Use snake_case
+- IDs shared across include files must be unique across the entire device project
+
+Examples:
+- `estimated_valve_position` — clear: it's the valve's position estimate
+- `pumpe_betriebsstunden_s` — clear: pump runtime in seconds
+- `stellantrieb_laufzeit_oeffnen_s` — clear: actuator travel time opening, in seconds
+- Bad: `laufzeit_s`, `position`, `runtime` — ambiguous without context
+
 ## Working with Device Files
 
 When reviewing or editing a device YAML file, always read its referenced packages and includes first (`packages:`, `!include`). These define shared IDs, entities, and conventions that the device file depends on.
