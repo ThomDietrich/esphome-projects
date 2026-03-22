@@ -155,6 +155,12 @@ globals:
     restore_value: true
     initial_value: "-1.0"
 
+  # Uptime-Zeitstempel der letzten Rekalibrierung [Sekunden seit Boot]
+  - id: last_recal_uptime_s
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
 
 # ======================================================================================================================
 # Fahr-Skripte und Positionsregler
@@ -264,6 +270,9 @@ script:
       - component.update: ventilstellung_ist_sensor
       - component.update: valve_motor_runtime_sensor
       - component.update: valve_cycle_count_sensor
+      - lambda: |-
+          id(last_recal_uptime_s) = millis() / 1000;
+      - component.update: recal_timestamp_sensor
       - logger.log: "Rekalibrierung abgeschlossen — Position = 0%"
 
   # Positionsregler: Vergleicht Soll- und Ist-Öffnung, startet Fahr-Skript.
@@ -378,6 +387,25 @@ sensor:
     update_interval: 60s
     lambda: |-
       return id(valve_cycle_count);
+
+  # ---- Rekalibrierungs-Diagnose ----
+
+  # Zeitpunkt der letzten Rekalibrierung als Uptime-Offset.
+  # Zeigt "Xh Ym" seit Boot. Wert 0 = noch keine Rekalibrierung seit Boot.
+  - platform: template
+    name: "Mischventil Rekalibrierung Alter"
+    id: recal_timestamp_sensor
+    device_id: mischer
+    unit_of_measurement: "h"
+    device_class: duration
+    accuracy_decimals: 1
+    icon: "mdi:clock-check-outline"
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      if (id(last_recal_uptime_s) == 0) return {};
+      uint32_t elapsed_s = (millis() / 1000) - id(last_recal_uptime_s);
+      return elapsed_s / 3600.0f;
 
 
 # ======================================================================================================================

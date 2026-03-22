@@ -61,6 +61,9 @@ switch:
     device_id: umwaelzpumpe
     icon: "mdi:pump"
     restore_mode: RESTORE_DEFAULT_ON
+    on_turn_on:
+      - lambda: "id(pumpe_schaltzyklen) += 1;"
+      - component.update: pumpe_schaltzyklen_sensor
 
 
 # ======================================================================================================================
@@ -70,6 +73,12 @@ switch:
 globals:
   # Gesamte Betriebszeit der Umwälzpumpe [Sekunden]
   - id: pumpe_betriebsstunden_s
+    type: int
+    restore_value: true
+    initial_value: "0"
+
+  # Anzahl der Einschaltvorgaenge der Umwaelzpumpe
+  - id: pumpe_schaltzyklen
     type: int
     restore_value: true
     initial_value: "0"
@@ -106,3 +115,15 @@ sensor:
     update_interval: 60s
     lambda: |-
       return id(pumpe_betriebsstunden_s) / 3600.0;
+
+  - platform: template
+    name: "Schaltzyklen"
+    id: pumpe_schaltzyklen_sensor
+    device_id: umwaelzpumpe
+    accuracy_decimals: 0
+    icon: "mdi:counter"
+    state_class: total_increasing
+    entity_category: diagnostic
+    update_interval: 60s
+    lambda: |-
+      return id(pumpe_schaltzyklen);
