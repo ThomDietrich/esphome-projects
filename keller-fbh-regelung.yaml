@@ -129,13 +129,16 @@ packages:
   - !include include/keller_fbh_betrieb.yaml
   - !include include/keller_fbh_sicherheit.yaml
 
+  # Stromzaehler — TOMZN Single-Phase DIN Rail Energy Meter (2000 imp/kWh)
+  # Misst den Gesamtverbrauch der FBH-Anlage (Pumpe, Stellantrieb, ESP, etc.).
+  # Sitzt auf dem Hauptgeraet (kein device_id), da kein einzelnes Sub-Device gemessen wird.
   - !include
     file: include/s0_energy_meter_template.yaml
     vars:
       energy_meter_id: "fbh"
-      energy_meter_gpio: "GPIO34"
+      energy_meter_gpio: "GPIO34"          # S0- (10 kOhm Pull-Up auf 3,3V erforderlich)
       energy_meter_imp_kwh: "2000"
-      energy_meter_device_id: ""
+      energy_meter_device_id: ""           # Gesamtverbrauch — kein Sub-Device
   - !include
     file: include/water_meter_heat_counter_template.yaml
     vars:
