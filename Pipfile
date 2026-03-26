@@ -9,7 +9,7 @@ python_version = "3.13"
 [dev-packages]
 
 [packages]
-esphome = ">=2025.11.0"
+esphome = "*"
 #esphome = "==2025.6.3" # wasserzaehler fix
 pillow = "==11.3.0" # bisher 10.4.0
 esptool = "*"
