@@ -43,15 +43,9 @@ sensor:
       name: Technikraum Temperatur
       id: technikraum_temp
       oversampling: 16x
-      on_value:
-        then:
-          - component.update: technikraum_dewpoint
     humidity:
       name: Technikraum Luftfeuchte
       id: technikraum_hum
-      on_value:
-        then:
-          - component.update: technikraum_dewpoint
     pressure:
       name: Technikraum Luftdruck
       accuracy_decimals: 0
@@ -64,36 +58,20 @@ sensor:
     temperature: technikraum_temp
     humidity: technikraum_hum
 
-  - platform: template
+  - platform: dew_point
     name: Technikraum Taupunkt
     id: technikraum_dewpoint
-    unit_of_measurement: °C
-    icon: 'mdi:thermometer-alert'
-    accuracy_decimals: 1
-    lambda: |-
-        const float alpha = 6.112;  // hPa
-        const float beta = 17.62;
-        const float lambda = 243.12;  // °C
-        float T = id(technikraum_temp).get_raw_state;  // Temperature in °C
-        float RH = id(technikraum_hum).get_raw_state;  // Relative Humidity
-        float H = log(RH / 100) + beta * T / (lambda + T);
-        return lambda * H / (beta - H);
-    update_interval: never
+    temperature: technikraum_temp
+    humidity: technikraum_hum
 
   - platform: bme280_i2c
     temperature:
       name: Dachboden Temperatur
       id: dachboden_temp
       oversampling: 16x
-      on_value:
-        then:
-          - component.update: dachboden_dewpoint
     humidity:
       name: Dachboden Luftfeuchte
       id: dachboden_hum
-      on_value:
-        then:
-          - component.update: dachboden_dewpoint
     pressure:
       name: Dachboden Luftdruck
       accuracy_decimals: 0
@@ -106,21 +84,11 @@ sensor:
     temperature: dachboden_temp
     humidity: dachboden_hum
 
-  - platform: template
+  - platform: dew_point
     name: Dachboden Taupunkt
     id: dachboden_dewpoint
-    unit_of_measurement: °C
-    icon: 'mdi:thermometer-alert'
-    accuracy_decimals: 1
-    lambda: |-
-        const float alpha = 6.112;  // hPa
-        const float beta = 17.62;
-        const float lambda = 243.12;  // °C
-        float T = id(dachboden_temp).get_raw_state;  // Temperature in °C
-        float RH = id(dachboden_hum).get_raw_state;  // Relative Humidity
-        float H = log(RH / 100) + beta * T / (lambda + T);
-        return lambda * H / (beta - H);
-    update_interval: never
+    temperature: dachboden_temp
+    humidity: dachboden_hum
 
 
 binary_sensor:
