@@ -76,12 +76,45 @@
 # PID-PARAMETER
 # ======================================================================================================================
 #
-#   Kp = ${pid_kp}:  Proportionalverstärkung. Bei 1K Fehler → 60% Stellgrößenänderung.
+#   Kp = ${pid_kp}:  Proportionalverstärkung. Bei 1K Fehler → Kp × 100% Stellgrößenänderung.
 #   Ki = ${pid_ki}:  Integralverstärkung. Langsame Korrektur bleibender Abweichungen.
 #   Kd = ${pid_kd}:  Differentialverstärkung. Aktuell 0 (DS18B20-Rauschen).
 #
 #   output_averaging_samples: 5   — Glättet die PID-Ausgabe über 5 Berechnungszyklen (25s).
 #   derivative_averaging_samples: 8 — Glättet den D-Anteil über 8 Zyklen (40s).
+#
+#
+# TUNING-HISTORIE
+# ======================================================================================================================
+#
+#   Randbedingungen: Primär-Vorlauf ~43°C, Sollwert 23–25°C, Stellantrieb 140s Laufzeit,
+#   DS18B20 Abtastrate 5s, Positionsregler 10s-Zyklus, MAX_IMPULS_MS=15s (~10% Hub/Zyklus).
+#   Signifikante Totzeit durch Wasserweg Ventil→Sensor.
+#
+#   Schritt 1 (2026-03-26): Kp=0.6, Ki=0.0015, Kd=0 (Startwerte)
+#     Beobachtung: Dauerschwingung ±3 K um Sollwert, Periode ~10 min.
+#     PID-Stellgröße permanent in Sättigung (±300–400%), Ventilöffnung 0–80% (Bang-Bang).
+#     Diagnose: Kp zu hoch — P-Anteil allein saturiert ab ~1.7K Fehler.
+#     → Identifikation als Grenzzyklus: Ku ≈ 0.6, Tu ≈ 10 min.
+#     → Ziegler-Nichols PI: Kp = 0.45 × Ku = 0.27, Ti = Tu/1.2 ≈ 500s → Ki = 0.27/500 ≈ 0.0005.
+#     → Gewählt: Kp=0.2, Ki=0.0005 (konservativer als Z-N wegen Totzeit).
+#
+#   Schritt 2 (2026-03-26): Kp=0.2, Ki=0.0005, Kd=0
+#     Beobachtung: Schwingung reduziert auf ±1.5–2 K, Periode ~40 min (länger durch MAX_IMPULS_MS).
+#     Ventilöffnung jetzt 0–40% (proportional, kein Bang-Bang mehr). Aber: Überschwingen +4.5 K
+#     nach Sollwert-Sprung 23→25°C. Schwingung klingt über 2h nicht ab.
+#     Diagnose: Stationärer Arbeitspunkt bei ~10–15% Ventilöffnung. 40% liefert bereits zu viel
+#     Wärme. Totzeit (Wasserweg) verstärkt Überschwingen.
+#     → Kp nochmals halbiert, Ki proportional reduziert.
+#     → Gewählt: Kp=0.1, Ki=0.0003.
+#
+#   Nächste Schritte bei weiterem Tuning-Bedarf:
+#     - Schwingung analysieren: Amplitude, Periode, Dämpfung über 1–2h beobachten.
+#     - Kp schrittweise halbieren bis Schwingung gedämpft abklingt.
+#     - Ki nachziehen: Ki ≈ Kp / (Periode_s × 0.5) als Richtwert.
+#     - Autotuning erst sinnvoll wenn System nahe Sollwert stabil ist.
+#     - Bei Änderung der Randbedingungen (andere Primärtemperatur, anderer Sollwert) kann
+#       Nachtuning nötig sein.
 #
 #
 # DEADBAND (TOTZONE)
