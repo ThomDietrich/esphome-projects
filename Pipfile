@@ -10,7 +10,6 @@ python_version = "3.13"
 
 [packages]
 esphome = "*"
-#esphome = "==2025.6.3" # wasserzaehler fix
-pillow = "==11.3.0" # bisher 10.4.0
+pillow = "*"
 esptool = "*"
 yamllint = "*"
