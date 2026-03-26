@@ -11,9 +11,9 @@ substitutions:
   stellantrieb_laufzeit_s: "140"
   # Vorlauf-Solltemperatur Fussbodenheizung [°C]
   sollwert_vorlauf: "35"
-  # PID-Parameter (Startwerte — Autotuning über Button empfohlen)
-  pid_kp: "0.6"
-  pid_ki: "0.0015"
+  # PID-Parameter (Ziegler-Nichols aus Grenzzyklus Ku=0.6, Tu≈10min)
+  pid_kp: "0.2"
+  pid_ki: "0.0005"
   pid_kd: "0.0"
   # Sicherheitsgrenze: maximale FBH-Vorlauftemperatur [°C] (Estrichschutz)
   max_vorlauf: "50"

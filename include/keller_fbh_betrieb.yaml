@@ -3,10 +3,15 @@
 # ======================================================================================================================
 # Zentrale Betriebssteuerung und Statusanzeige der FBH-Anlage:
 #
-#   - Mischkreis Automatik: Aktiviert/deaktiviert die automatische Mischventil-Regelung (PID + Positionsregler). Beim
-#     Einschalten wird der Positionsregler sofort aufgerufen, damit die aktuelle PID-Stellgröße ohne 10s-Wartezeit
-#     wirksam wird. Beim Ausschalten werden beide Ventilrelais abgeschaltet und der Positionsregler gestoppt. Die Pumpe
-#     bleibt unberührt. Manuelle Ventilsteuerung (Tasten, Override) funktioniert unabhängig.
+#   - Mischkreis Automatik: Aktiviert/deaktiviert die automatische Mischventil-Regelung (PID + Positionsregler).
+#     Beim Einschalten:
+#       1. PID-Integral wird auf 0 zurückgesetzt (Anti-Windup, verhindert aufgelaufenen I-Anteil aus AUS-Phase)
+#       2. Positionsregler wird sofort aufgerufen (keine 10s-Wartezeit)
+#     Beim Ausschalten:
+#       1. Override wird auf -1 (Auto) zurückgesetzt
+#       2. Beide Ventilrelais werden abgeschaltet
+#     Die Pumpe bleibt unberührt — sie hat einen eigenen Schalter (keller_fbh_pumpe.yaml).
+#     Manuelle Ventilsteuerung (Tasten, Override) funktioniert unabhängig.
 #
 #   - FBH Umwaelzpumpe: Separater Schalter in keller_fbh_pumpe.yaml. Pumpe und Automatik sind unabhängig voneinander
 #     steuerbar.
@@ -56,9 +61,10 @@ switch:
       - globals.set:
           id: controller_enabled
           value: "true"
+      - climate.pid.reset_integral_term: pid_mischkreis
       - script.execute: position_controller
       - component.update: reglerzustand
-      - logger.log: "Mischkreis Automatik EIN — PID-Regelung aktiviert"
+      - logger.log: "Mischkreis Automatik EIN — PID-Regelung aktiviert (Integral reset)"
     turn_off_action:
       - globals.set:
           id: controller_enabled
