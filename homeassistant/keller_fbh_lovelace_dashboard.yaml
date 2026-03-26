@@ -1,0 +1,255 @@
+title: Fussbodenheizung
+path: fbh
+icon: mdi:heating-coil
+type: sections
+max_columns: 3
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Zusammenfassung
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: sensor.keller_fbh_mischer_reglerzustand
+            state: Sicherheitsabschaltung
+        card:
+          type: tile
+          entity: button.keller_fbh_mischer_sicherheits_reset
+          name: Sicherheitsabschaltung aktiv!
+          color: red
+          icon: mdi:shield-alert
+          tap_action:
+            action: toggle
+      - type: tile
+        entity: climate.keller_fbh_mischer_vorlaufregelung
+        name: Vorlaufregelung
+        vertical: false
+        features:
+          - type: target-temperature
+        features_position: inline
+      - type: tile
+        entity: sensor.keller_fbh_mischer_reglerzustand
+        name: Reglerzustand
+        icon: mdi:information-outline
+        grid_options:
+          columns: 6
+          rows: 1
+      - type: tile
+        entity: sensor.keller_fbh_mischer_pid_regelfehler
+        name: Regelfehler
+        vertical: false
+        features_position: bottom
+      - type: tile
+        entity: switch.keller_fbh_mischer_automatik
+        name: Mischer Automatik
+      - type: tile
+        entity: switch.keller_fbh_umwaelzpumpe_schalter
+        name: Umwälzpumpe
+      - type: tile
+        entity: sensor.keller_fbh_mischer_mischventil_oeffnung
+        name: Ventilöffnung
+        icon: mdi:valve
+      - type: tile
+        entity: sensor.keller_fbh_waermezaehler_primaerkreis_leistung
+        name: Thermische Leistung
+        icon: mdi:heat-wave
+      - type: entities
+        entities:
+          - type: custom:fold-entity-row
+            head:
+              entity: binary_sensor.keller_fbh_mischer_diagnose_fehlerstatus
+              name: Diagnose Fehlerstatus
+            entities:
+              - entity: binary_sensor.keller_fbh_mischer_sensorfehler
+                name: Sensorfehler
+              - entity: binary_sensor.keller_fbh_mischer_hydraulischer_kurzschluss
+                name: Hydraulischer Kurzschluss
+              - entity: binary_sensor.keller_fbh_mischer_schwerkraftzirkulation
+                name: Schwerkraftzirkulation
+              - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
+                name: Durchflussmangel
+  - type: grid
+    cards:
+      - type: heading
+        heading: Temperaturen
+      - type: history-graph
+        hours_to_show: 24
+        entities:
+          - entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
+            name: Sekundär Vorlauf
+          - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
+            name: Sekundär Rücklauf
+          - entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
+            name: Primär Vorlauf
+          - entity: sensor.keller_fbh_mischer_primaer_ruecklauftemperatur
+            name: Primär Rücklauf
+      - type: sensor
+        entity: sensor.keller_fbh_mischer_sekundaer_spreizung
+        name: ΔT Sekundärkreis
+        graph: line
+        hours_to_show: 24
+        detail: 2
+      - type: sensor
+        entity: sensor.keller_fbh_waermezaehler_primaer_spreizung
+        name: ΔT Primärkreis
+        graph: line
+        hours_to_show: 24
+        detail: 2
+      - type: sensor
+        entity: sensor.keller_fbh_mischer_primaer_uebertemperatur
+        name: Primär Übertemperatur
+        graph: line
+        hours_to_show: 24
+        detail: 2
+  - type: grid
+    cards:
+      - type: heading
+        heading: Vorlaufregelung
+      - type: custom:better-thermostat-ui-card
+        entity: climate.keller_fbh_mischer_vorlaufregelung
+        name: Vorlaufregelung
+        disable_buttons: true
+        card_mod:
+          style:
+            bt-ha-control-circular-slider$: |
+              g#interaction {
+                display: none;
+              }
+      - type: history-graph
+        hours_to_show: 12
+        entities:
+          - entity: sensor.keller_fbh_mischer_pid_stellgroesse
+            name: Stellgröße
+          - entity: sensor.keller_fbh_mischer_pid_regelfehler
+            name: Regelfehler
+      - type: entities
+        title: PID-Anteile
+        entities:
+          - entity: sensor.keller_fbh_mischer_pid_p_anteil
+            name: P-Anteil
+          - entity: sensor.keller_fbh_mischer_pid_i_anteil
+            name: I-Anteil
+          - entity: sensor.keller_fbh_mischer_pid_d_anteil
+            name: D-Anteil
+  - type: grid
+    cards:
+      - type: heading
+        heading: Mischventil
+      - type: history-graph
+        hours_to_show: 12
+        entities:
+          - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
+            name: Ist
+          - entity: sensor.keller_fbh_mischer_mischventil_oeffnung_soll
+            name: Soll
+      - type: entities
+        entities:
+          - entity: sensor.keller_fbh_mischer_reglerzustand
+            name: Reglerzustand
+          - entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
+            name: Ventil fährt
+          - entity: number.keller_fbh_mischer_mischventil_oeffnung_override
+            name: Override
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
+            state: "on"
+        card:
+          type: tile
+          entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
+          name: Ventil fährt gerade
+          color: amber
+          icon: mdi:valve
+  - type: grid
+    cards:
+      - type: heading
+        heading: Diagnose & Fehler
+      - type: entities
+        title: Fehlerzustand
+        entities:
+          - entity: binary_sensor.keller_fbh_mischer_sensorfehler
+            name: Sensorfehler
+          - entity: binary_sensor.keller_fbh_mischer_hydraulischer_kurzschluss
+            name: Hydraulischer Kurzschluss
+          - entity: binary_sensor.keller_fbh_mischer_schwerkraftzirkulation
+            name: Schwerkraftzirkulation
+          - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
+            name: Durchflussmangel
+      - type: sensor
+        entity: sensor.keller_fbh_mischer_ruecklauf_abweichung
+        name: Rücklauf-Abweichung (Primär − Sekundär)
+        graph: line
+        hours_to_show: 24
+        detail: 2
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: sensor.keller_fbh_mischer_reglerzustand
+            state: Sicherheitsabschaltung
+        card:
+          type: tile
+          entity: button.keller_fbh_mischer_sicherheits_reset
+          name: Sicherheits-Reset
+          color: red
+          icon: mdi:shield-refresh
+          tap_action:
+            action: toggle
+      - type: entities
+        title: Manuelle Ventilsteuerung
+        entities:
+          - entity: button.keller_fbh_mischer_mischventil_manuell_auf_10s
+            name: Ventil manuell AUF (10s)
+          - entity: button.keller_fbh_mischer_mischventil_manuell_zu_10s
+            name: Ventil manuell ZU (10s)
+          - entity: >-
+              button.keller_fbh_mischer_mischventil_rekalibrierung_grundstellung_geschlossen
+            name: Ventil rekalibrieren
+  - type: grid
+    cards:
+      - type: heading
+        heading: Betrieb
+      - type: entities
+        title: Wärmezähler
+        entities:
+          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_volumen
+            name: Volumen
+          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_energie
+            name: Energie
+          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_durchfluss
+            name: Durchfluss
+          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_leistung
+            name: Thermische Leistung
+      - type: sensor
+        entity: sensor.keller_fbh_waermezaehler_primaerkreis_leistung
+        name: Thermische Leistung
+        graph: line
+        hours_to_show: 24
+        detail: 2
+      - type: entities
+        title: Stromverbrauch
+        entities:
+          - entity: sensor.keller_fbh_regelung_elektrische_leistung
+            name: Elektrische Leistung
+          - entity: sensor.keller_fbh_regelung_elektrische_energie
+            name: Elektrische Energie
+      - type: entities
+        title: Betriebszähler
+        entities:
+          - entity: sensor.keller_fbh_umwaelzpumpe_betriebsstunden
+            name: Pumpe Betriebsstunden
+          - entity: sensor.keller_fbh_umwaelzpumpe_schaltzyklen
+            name: Pumpe Schaltzyklen
+          - entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
+            name: Stellantrieb Motorlaufzeit
+          - entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
+            name: Stellantrieb Schaltzyklen
+          - entity: sensor.keller_fbh_mischer_mischventil_rekalibrierung_alter
+            name: Letzte Rekalibrierung
+      - type: entities
+        title: Wartung
+        entities:
+          - entity: button.keller_fbh_mischer_pid_autotuning
+            name: PID Autotuning
+cards: []

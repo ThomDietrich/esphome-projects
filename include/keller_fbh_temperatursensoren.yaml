@@ -267,3 +267,17 @@ binary_sensor:
       if (potential < 10.0f) return false;
       float delta_t = id(t_fbh_vl).state - id(t_fbh_rl).state;
       return delta_t < 1.0f;
+
+  # Kombinierter Fehlerstatus: true wenn mindestens ein Fehler aktiv ist.
+  # Dient als Gesamtindikator für das Dashboard (Zusammenfassung).
+  - platform: template
+    name: "Diagnose Fehlerstatus"
+    id: fehlerstatus_gesamt
+    device_id: mischer
+    icon: "mdi:alert-circle-outline"
+    device_class: problem
+    lambda: |-
+      return id(sensor_fehler).state
+             || id(hydraulischer_kurzschluss).state
+             || id(schwerkraftzirkulation).state
+             || id(durchflussmangel).state;
