@@ -2,9 +2,15 @@
 # Dreiweg-Mischventil — Positionsregelung und Ansteuerung
 # ======================================================================================================================
 # Stellantrieb: Oventrop NR230-507 (3-Punkt, 230V AC, 140s Laufzeit, 5 Nm)
+# Montiert auf dem Oventrop Regumat Dreiwegemischer im Vorlaufstrang (rechts im Auslieferungszustand).
+#
+# Ventilöffnung (HVAC-Konvention, Oventrop-konform):
+#   0% (Grundstellung ZU) = Primär-Heisswasser GESPERRT → nur Bypass/Rücklauf → kälteste Vorlauftemperatur
+#   100% (voll AUF)       = Primär voll offen → volle Kesseltemperatur → heisseste Vorlauftemperatur
+#   Der Durchfluss am Ausgang (AB → FBH) bleibt immer erhalten — nur das Mischungsverhältnis ändert sich.
 #
 # Dieses File enthält die vollständige Mischventil-Steuerung:
-#   - Relais: Mischventil AUF (GPIO25) / ZU (GPIO26), verriegelt
+#   - Relais: Mischventil AUF (GPIO26/Relay 2) / ZU (GPIO25/Relay 1), verriegelt
 #   - Positionsregler: Vergleicht Soll- und Ist-Öffnung (10s-Zyklus)
 #   - Fahr-Skripte: Zeitgesteuerte Relaisimpulse mit sekundlicher Nachführung
 #   - Rekalibrierung: Grundstellung durch volle Fahrt in Endlage ZU
@@ -34,6 +40,7 @@
 #   │  Bei Abweichung > Totzone:                                   │
 #   │    Impulsdauer = |Soll − Ist| × Gesamtlaufzeit (140s)       │
 #   │    Mindestimpuls: 2s (Anlaufzeit des Motors)                 │
+#   │    Maximalimpuls: 15s (≈ 10% Hub, erzwingt Neubewertung)    │
 #   │    Richtung: AUF wenn Soll > Ist, ZU wenn Soll < Ist        │
 #   └──────────────────────┬───────────────────────────────────────┘
 #                          │ Relaisimpuls (Dauer + Richtung)
@@ -52,7 +59,7 @@
 #   ┌──────────────────────────────────────────────────────────────┐
 #   │  Stellantrieb: Oventrop NR230-507                            │
 #   │                                                              │
-#   │  3-Punkt-Steuerung: AUF (Relay 1) / ZU (Relay 2) / HALT    │
+#   │  3-Punkt-Steuerung: AUF (GPIO26/Relay 2) / ZU (GPIO25/Relay 1) / HALT │
 #   │  Laufzeit 0→90°: 140s | Drehmoment: 5 Nm | 230V AC         │
 #   │  Kein Positionsfeedback — Öffnung wird in Software           │
 #   │  geschätzt (Open-Loop auf Basis der Relais-Einschaltdauer).  │
@@ -92,7 +99,7 @@
 
 switch:
   - platform: gpio
-    pin: GPIO25
+    pin: GPIO26
     name: "Relais Mischventil AUF"
     id: relais_ventil_auf
     icon: "mdi:valve-open"
@@ -104,7 +111,7 @@ switch:
     interlock_wait_time: 500ms
 
   - platform: gpio
-    pin: GPIO26
+    pin: GPIO25
     name: "Relais Mischventil ZU"
     id: relais_ventil_zu
     icon: "mdi:valve-closed"
@@ -296,13 +303,14 @@ script:
 
           const float TOTZONE = 0.03f;
           const int MIN_IMPULS_MS = 2000;
+          const int MAX_IMPULS_MS = 15000;  // ~10% Ventilhub pro Zyklus
           const int LAUFZEIT_MS = ${stellantrieb_laufzeit_s} * 1000;
 
           if (abs(diff) < TOTZONE) return;
 
           int dauer_ms = (int)(abs(diff) * LAUFZEIT_MS);
           if (dauer_ms < MIN_IMPULS_MS) dauer_ms = MIN_IMPULS_MS;
-          if (dauer_ms > LAUFZEIT_MS) dauer_ms = LAUFZEIT_MS;
+          if (dauer_ms > MAX_IMPULS_MS) dauer_ms = MAX_IMPULS_MS;
 
           id(pulse_duration_ms) = dauer_ms;
 
