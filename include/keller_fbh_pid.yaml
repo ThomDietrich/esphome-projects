@@ -108,6 +108,17 @@
 #     → Kp nochmals halbiert, Ki proportional reduziert.
 #     → Gewählt: Kp=0.1, Ki=0.0003.
 #
+#   Schritt 3 (2026-03-27): Kp=0.1, Ki=0.0003, Kd=0
+#     Beobachtung: Einschwingvorgang nach Aktivierung mit +5 K Überschwingen (→30°C bei Soll 25°C),
+#     danach Einpendeln auf 25–26°C innerhalb ~20 min. Im eingeschwungenen Zustand stabil: Vorlauf
+#     hält ±1 K um Sollwert trotz stark schwankender Primärtemperatur (32–48°C, Brennerzyklen).
+#     Ventilöffnung stabil bei 5–10% — korrekter Arbeitspunkt. PID arbeitet im Deadband, keine
+#     Sättigung, kein Bang-Bang. Regelfehler gelegentlich ±200% bei Primärschwankungen, aber
+#     Stellgröße bleibt im proportionalen Bereich.
+#     Diagnose: Parameter passen für aktuellen Betriebspunkt (Primär ~40°C, Soll 25°C).
+#     Initiales Überschwingen akzeptabel — wird durch Totzeit und thermische Trägheit verursacht.
+#     → Parameter beibehalten.
+#
 #   Nächste Schritte bei weiterem Tuning-Bedarf:
 #     - Schwingung analysieren: Amplitude, Periode, Dämpfung über 1–2h beobachten.
 #     - Kp schrittweise halbieren bis Schwingung gedämpft abklingt.
