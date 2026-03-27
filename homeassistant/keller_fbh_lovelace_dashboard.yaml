@@ -120,7 +120,9 @@ sections:
         hours_to_show: 12
         entities:
           - entity: sensor.keller_fbh_mischer_pid_stellgroesse
-            name: Stellgröße
+            name: PID Stellgröße
+          - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
+            name: Feedforward
           - entity: sensor.keller_fbh_mischer_pid_regelfehler
             name: Regelfehler
       - type: entities
@@ -252,4 +254,6 @@ sections:
         entities:
           - entity: button.keller_fbh_mischer_pid_autotuning
             name: PID Autotuning
+          - entity: number.keller_fbh_mischer_feedforward_anteil
+            name: Feedforward Anteil
 cards: []
