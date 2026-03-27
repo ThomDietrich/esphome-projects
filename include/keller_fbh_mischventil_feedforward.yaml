@@ -71,12 +71,8 @@ globals:
 
 sensor:
   - platform: homeassistant
-    name: "Gastherme Vorlauftemperatur"
     id: t_gastherme_vl
     entity_id: sensor.heizungsregelung_gastherme_vorlauf
-    device_id: mischer
-    entity_category: diagnostic
-    icon: "mdi:thermometer-high"
 
   # Feedforward-Ventilöffnung aus der Mischungsgleichung (ohne PID-Anteil)
   - platform: template

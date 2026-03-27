@@ -80,7 +80,7 @@ sections:
             name: Sekundär Vorlauf
           - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
             name: Sekundär Rücklauf
-          - entity: sensor.keller_fbh_mischer_gastherme_vorlauftemperatur
+          - entity: sensor.heizungsregelung_gastherme_vorlauf
             name: Gastherme Vorlauf (extern, vorgelagert)
           - entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
             name: Primär Vorlauf
