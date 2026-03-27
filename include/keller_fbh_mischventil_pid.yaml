@@ -111,14 +111,27 @@
 #   → Beibehalten. Feedforward-Erweiterung für bessere Störkompensation.
 #
 # Schritt 4 (2026-03-27): Kp=0.1, Ki=0.0005, Kd=0 + Feedforward (FF=60–70%)
-#   Änderung: FF mit Gastherme-Sensor als Primärquelle. Ki von 0.0003→0.0005 angehoben,
-#   da PID bei FF>60% nur noch ~30–40% der Stellgröße beeinflusst — schnellere Offset-Korrektur
-#   ohne Schwingungsgefahr.
+#   Änderung: FF mit Gastherme-Sensor als Primärquelle (sensor.heizungsregelung_gastherme_vorlauf),
+#   Fallback auf lokalen t_prim_vl. Ki von 0.0003→0.0005 angehoben, da PID bei FF>60% nur noch
+#   ~30–40% der Stellgröße beeinflusst — schnellere Offset-Korrektur ohne Schwingungsgefahr.
+#   Beobachtung FF=60%: Sollwert-Sprung 25→27.5°C: +2.5 K Überschwingen (vorher +4.5 K ohne FF).
+#   Einschwingzeit ~20 min. Bei Pufferspeicher-Betrieb (konstante Primärtemp.) stabil ±0.5 K.
+#   → FF-Anteil auf 80% erhöht.
+#
+# Schritt 5 (2026-03-27): Kp=0.1, Ki=0.0005, Kd=0 + Feedforward (FF=80%)
+#   Beobachtung: Stabil ±0.5 K über 2h bei Sollwert 27.5°C. Kompensiert Brennerpause
+#   (Gastherme 48→35°C) mit kurzem Dip auf 25°C, Rückkehr innerhalb 10 min.
+#   Ventilöffnung ~30%, FF ~10%, PID im proportionalen Bereich ohne Sättigung.
+#   Diagnose: FF=80% ist der beste Kompromiss — FF dominiert die Grobeinstellung,
+#   PID (20%) korrigiert Restfehler schnell genug (Ki=0.0005).
+#   → Parameter und FF-Anteil beibehalten. Weiterer Test bei wechselhafteren Bedingungen
+#     (direkter Feuerofen-/Gastherme-Betrieb statt Pufferspeicher) steht aus.
 #
 # Nächste Schritte bei Tuning-Bedarf:
 #   - Kp schrittweise halbieren bei Schwingung
 #   - Ki nachziehen: Ki ≈ Kp / (Periode_s × 0.5)
-#   - FF-Anteil optimieren (70–90% je nach Modellgenauigkeit)
+#   - FF-Anteil 80–90% je nach Modellgenauigkeit
+#   - Bei direktem Brennerbetrieb (ohne Puffer) erneut prüfen — stärkere Störungen erwartet
 #
 # ======================================================================================================================
 
