@@ -1,0 +1,273 @@
+# ======================================================================================================================
+# PID-Regler — Vorlauftemperatur-Regelung Fussbodenheizung
+# ======================================================================================================================
+#
+# Regelt die FBH-Vorlauftemperatur über das Dreiwege-Mischventil (Oventrop Regumat).
+# Kombination aus Störgrößenaufschaltung (Feedforward, keller_fbh_mischventil_feedforward.yaml) und PID-Feinkorrektur.
+#
+#   Regelgröße:    FBH-Vorlauftemperatur T_FBH_VL (DS18B20, 5s Abtastrate)
+#   Führungsgröße: Vorlauf-Solltemperatur (einstellbar über HA Climate-Entity)
+#   Stellgröße:    Ventilöffnung 0.0–1.0 (0% = Bypass/kalt, 100% = Primär/heiss)
+#   Störgrößen:    Primär-Vorlauftemperatur (dominant, schwankt durch Brennerzyklen 32–48°C)
+#                  FBH-Rücklauftemperatur (untergeordnet, ändert sich langsam durch Raumlast/Estrichträgheit)
+#
+#
+# 1. ARCHITEKTUR — REGELUNGSKASKADE
+# ======================================================================================================================
+#
+#   ┌─────────────────────────────────────────────────────────────────────────────────┐
+#   │  Feedforward (*_feedforward.yaml)                                   → V_ff    │
+#   │    V_ff = (T_Soll - T_RL) / (T_Prim - T_RL)                                  │
+#   │    Primärtemp. von Gastherme-Sensor (Fallback: lokaler DS18B20)               │
+#   ├─────────────────────────────────────────────────────────────────────────────────┤
+#   │  PID-Regler (dieses File)                                           → V_pid   │
+#   │    Korrigiert Modellungenauigkeiten und Restfehler                             │
+#   ├─────────────────────────────────────────────────────────────────────────────────┤
+#   │  Mischung (pid_output_position, dieses File)                                   │
+#   │    V_soll = α × V_ff + (1 − α) × V_pid                                       │
+#   │    α = FF_Anteil (Standard 70%, über HA einstellbar)                           │
+#   ├─────────────────────────────────────────────────────────────────────────────────┤
+#   │  Positionsregler (*_steuerung.yaml)                                  Stufe 2   │
+#   │    Vergleicht V_soll mit geschätzter Ist-Öffnung                               │
+#   │    Erzeugt diskrete Relaisimpulse für 3-Punkt-Stellantrieb                     │
+#   │    Takt: 10s, max. 15s Impuls (~10% Hub pro Zyklus)                           │
+#   └─────────────────────────────────────────────────────────────────────────────────┘
+#
+#   Manueller Override (keller_fbh_mischventil_steuerung.yaml) umgeht die gesamte Kaskade.
+#
+#
+# 2. PID-REGLER
+# ======================================================================================================================
+#
+# Berechnet Stellgröße u(t) aus Regelfehler e(t) = Sollwert − Istwert:
+#
+#   u(t) = Kp · e(t) + Ki · ∫e(t)dt + Kd · de(t)/dt
+#
+#   P (proportional):   Sofortige Reaktion auf Fehler. Kp × Fehler = Stellgrößenänderung.
+#   I (integral):       Summiert Fehler über Zeit → eliminiert bleibende Abweichung.
+#   D (differentiell):  Reagiert auf Fehler-Änderungsrate → dämpft Überschwinger.
+#                       Aktuell deaktiviert (Kd=0) wegen DS18B20-Rauschen (±0.5°C).
+#
+# Aktuelle Parameter (Tuning-Historie siehe Abschnitt 6):
+#   Kp = ${pid_kp}   Proportionalverstärkung
+#   Ki = ${pid_ki}   Integralverstärkung
+#   Kd = ${pid_kd}   Differentialverstärkung
+#   output_averaging_samples: 5       Glättung über 5 Zyklen (25s)
+#   derivative_averaging_samples: 8   Glättung D-Anteil über 8 Zyklen (40s)
+#
+#
+# 3. TOTZONE (DEADBAND)
+# ======================================================================================================================
+#
+# ±0,5 K um den Sollwert. Reduziert Ventilbewegungen im eingeschwungenen Zustand:
+#   kp_multiplier: 0.0   P deaktiviert — keine Reaktion auf Kleinstfehler
+#   ki_multiplier: 0.05  I auf 5% — nur langsame Drift-Kompensation
+#   kd_multiplier: 0.0   D deaktiviert
+#   deadband_output_averaging_samples: 15   zusätzliche Glättung
+# Zweck: Verschleißminimierung am Stellantrieb.
+#
+#
+# 4. ANTI-WINDUP UND KALTSTARTSCHUTZ
+# ======================================================================================================================
+#
+# Integral Windup: I-Anteil akkumuliert bei saturierter Stellgröße → Überschwingen.
+#
+# Gegenmaßnahmen:
+#   1. Integral Clamping (max_integral: 0.8)
+#      I-Anteil maximal 80% der Stellgröße.
+#   2. Integral Reset beim Einschalten (keller_fbh_betrieb.yaml)
+#      climate.pid.reset_integral_term bei Automatik-Aktivierung.
+#   3. Maximale Schrittweite (MAX_IMPULS_MS=15s in keller_fbh_mischventil_steuerung.yaml)
+#      Ventil bewegt max. 10% Hub pro 10s-Zyklus.
+#   4. Deadband mit reduziertem Ki (siehe Abschnitt 3)
+#
+#
+# 5. AUTOTUNING
+# ======================================================================================================================
+#
+# Button „PID Autotuning" startet ESPHome PID-Autotuning (Relay-Methode → Ziegler-Nichols).
+# Voraussetzung: System nahe Sollwert, stabile Primärtemperatur. Dauer: 1–3 Stunden.
+# ACHTUNG: Neue Parameter nur im RAM — nach Ermittlung in YAML eintragen und flashen.
+#
+#
+# 6. TUNING-HISTORIE
+# ======================================================================================================================
+#
+# Randbedingungen: Primär-Vorlauf ~32–48°C (Brennerzyklen), Sollwert 23–25°C,
+# Stellantrieb 140s Laufzeit, DS18B20 5s, Positionsregler 10s, MAX_IMPULS_MS=15s.
+#
+# Schritt 1 (2026-03-26): Kp=0.6, Ki=0.0015, Kd=0 (Startwerte)
+#   Beobachtung: Dauerschwingung ±3 K, Periode ~10 min, Bang-Bang 0–80%.
+#   Diagnose: Grenzzyklus bei Ku≈0.6, Tu≈10 min.
+#   → Ziegler-Nichols: Kp=0.27, Ki=0.0005. Gewählt: Kp=0.2 (konservativer wegen Totzeit).
+#
+# Schritt 2 (2026-03-26): Kp=0.2, Ki=0.0005, Kd=0
+#   Beobachtung: ±1.5–2 K, Periode ~40 min, Ventil 0–40%. +4.5 K Überschwingen.
+#   Diagnose: Arbeitspunkt 10–15%, Totzeit verstärkt Überschwingen.
+#   → Kp=0.1, Ki=0.0003.
+#
+# Schritt 3 (2026-03-27): Kp=0.1, Ki=0.0003, Kd=0
+#   Beobachtung: Stabil ±1 K im Deadband. Ventil 5–10%. Kompensiert Brennerzyklen.
+#   → Beibehalten. Feedforward-Erweiterung für bessere Störkompensation.
+#
+# Schritt 4 (2026-03-27): Kp=0.1, Ki=0.0005, Kd=0 + Feedforward (FF=60–70%)
+#   Änderung: FF mit Gastherme-Sensor als Primärquelle. Ki von 0.0003→0.0005 angehoben,
+#   da PID bei FF>60% nur noch ~30–40% der Stellgröße beeinflusst — schnellere Offset-Korrektur
+#   ohne Schwingungsgefahr.
+#
+# Nächste Schritte bei Tuning-Bedarf:
+#   - Kp schrittweise halbieren bei Schwingung
+#   - Ki nachziehen: Ki ≈ Kp / (Periode_s × 0.5)
+#   - FF-Anteil optimieren (70–90% je nach Modellgenauigkeit)
+#
+# ======================================================================================================================
+
+
+# ======================================================================================================================
+# Globale Variablen — Soll-Öffnung
+# ======================================================================================================================
+
+globals:
+  # Gewünschte Ventilöffnung — Ergebnis aus FF+PID-Mischung (0.0–1.0)
+  - id: desired_valve_position
+    type: float
+    restore_value: false
+    initial_value: "0.5"
+
+
+# ======================================================================================================================
+# Template-Output — Schnittstelle zwischen Feedforward/PID und Positionsregler
+# ======================================================================================================================
+# Die PID climate-Komponente schreibt ihre Stellgröße auf diesen Output. Hier wird sie mit dem
+# Feedforward-Wert gemischt. Der Positionsregler (keller_fbh_mischventil_steuerung.yaml) liest dann
+# desired_valve_position als Soll-Öffnung.
+
+output:
+  - platform: template
+    id: pid_output_position
+    type: float
+    write_action:
+      - lambda: |-
+          float pid_out = state;
+
+          // Feedforward aus Mischungsgleichung: V = (T_Soll - T_RL) / (T_Prim - T_RL)
+          // Primärtemperatur: Gastherme-Sensor (akkurat auch bei geschlossenem Ventil),
+          // Fallback auf lokalen t_prim_vl wenn HA-Sensor nicht verfügbar.
+          float ff = pid_out;  // Fallback: reiner PID wenn FF nicht berechenbar
+          float t_prim = 0.0f;
+          bool has_prim = false;
+          if (id(t_gastherme_vl).has_state() && !isnan(id(t_gastherme_vl).state)) {
+            t_prim = id(t_gastherme_vl).state;
+            has_prim = true;
+          } else if (id(t_prim_vl).has_state()) {
+            t_prim = id(t_prim_vl).state;
+            has_prim = true;
+          }
+          if (has_prim && id(t_fbh_rl).has_state()) {
+            float t_soll = id(pid_mischkreis).target_temperature;
+            float t_rl = id(t_fbh_rl).state;
+            float denom = t_prim - t_rl;
+            if (denom > 2.0f) {
+              ff = (t_soll - t_rl) / denom;
+              ff = std::max(0.0f, std::min(1.0f, ff));
+            }
+          }
+          id(feedforward_position) = ff;
+
+          // Gewichtete Mischung: FF liefert Basis, PID korrigiert Restfehler
+          float alpha = id(ff_anteil_wert);
+          id(desired_valve_position) = std::max(0.0f, std::min(1.0f,
+            alpha * ff + (1.0f - alpha) * pid_out));
+      - component.update: ventilstellung_soll_sensor
+      - component.update: feedforward_sensor
+
+
+# ======================================================================================================================
+# PID Climate — Vorlauftemperatur-Regelung
+# ======================================================================================================================
+
+climate:
+  - platform: pid
+    id: pid_mischkreis
+    name: "Vorlaufregelung"
+    device_id: mischer
+    sensor: t_fbh_vl
+    default_target_temperature: ${sollwert_vorlauf}
+    heat_output: pid_output_position
+    visual:
+      min_temperature: 20
+      max_temperature: 50
+      temperature_step: 0.5
+    control_parameters:
+      kp: ${pid_kp}
+      ki: ${pid_ki}
+      kd: ${pid_kd}
+      max_integral: 0.8
+      output_averaging_samples: 5
+      derivative_averaging_samples: 8
+    on_control:
+      then:
+        - component.update: t_prim_headroom
+        - component.update: reglerzustand
+    deadband_parameters:
+      threshold_high: 0.5
+      threshold_low: -0.5
+      kp_multiplier: 0.0
+      ki_multiplier: 0.05
+      kd_multiplier: 0.0
+      deadband_output_averaging_samples: 15
+
+
+# ======================================================================================================================
+# PID-Diagnosesensoren
+# ======================================================================================================================
+
+sensor:
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID P-Anteil"
+    device_id: mischer
+    type: PROPORTIONAL
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID I-Anteil"
+    device_id: mischer
+    type: INTEGRAL
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID D-Anteil"
+    device_id: mischer
+    type: DERIVATIVE
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID Regelfehler"
+    device_id: mischer
+    type: ERROR
+
+  - platform: pid
+    climate_id: pid_mischkreis
+    name: "PID Stellgroesse"
+    device_id: mischer
+    type: HEAT
+    unit_of_measurement: "%"
+
+
+# ======================================================================================================================
+# Taste — PID-Autotuning
+# ======================================================================================================================
+
+button:
+  - platform: template
+    name: "PID Autotuning"
+    device_id: mischer
+    icon: "mdi:tune"
+    entity_category: config
+    on_press:
+      - climate.pid.autotune:
+          id: pid_mischkreis
+          noiseband: 0.5
+          positive_output: 1.0
+          negative_output: 0.0

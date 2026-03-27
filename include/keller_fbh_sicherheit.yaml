@@ -33,7 +33,7 @@
 #     der Primärkreis nicht genug Wärme liefert.
 #
 # Alle Funktionen arbeiten unabhängig vom Reglerzustand und vom FBH Hauptschalter. Sie greifen direkt auf die Relais
-# zu. Der Lockout wird zusätzlich vom Positionsregler geprüft (keller_fbh_mischventil.yaml) und blockiert jede
+# zu. Der Lockout wird zusätzlich vom Positionsregler geprüft (keller_fbh_mischventil_steuerung.yaml) und blockiert jede
 # Ventilbewegung.
 #
 # ======================================================================================================================

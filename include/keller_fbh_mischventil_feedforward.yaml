@@ -1,0 +1,115 @@
+# ======================================================================================================================
+# Störgrößenaufschaltung (Feedforward) — Mischventilregelung
+# ======================================================================================================================
+#
+# Berechnet die physikalisch korrekte Ventilöffnung aus der Mischungsgleichung und kombiniert
+# sie gewichtet mit dem PID-Regler (keller_fbh_mischventil_pid.yaml).
+#
+#
+# MISCHUNGSGLEICHUNG
+# ======================================================================================================================
+#
+#   V_ff = (T_Soll − T_Rücklauf) / (T_Primär − T_Rücklauf)
+#
+# Beispiel:  T_Soll=25°C, T_RL=22°C
+#            T_Prim=32°C → V_ff = 3/10  = 30%
+#            T_Prim=48°C → V_ff = 3/26  = 11.5%    (Ventil schließt sofort beim Brennerstart)
+#
+#
+# PRIMÄRTEMPERATUR-QUELLE
+# ======================================================================================================================
+#
+# Der lokale Sensor t_prim_vl (DS18B20 vor dem Mischer) kühlt bei geschlossenem Ventil aus, weil
+# das Wasser im Rohr steht. Für akkurate FF-Berechnung wird daher die Vorlauftemperatur direkt
+# am Brenner verwendet (sensor.heizungsregelung_gastherme_vorlauf aus Home Assistant).
+# Fallback auf t_prim_vl wenn der HA-Sensor nicht verfügbar ist.
+#
+#
+# KOMBINATION MIT PID
+# ======================================================================================================================
+#
+#   V_soll = α × V_ff + (1 − α) × V_pid
+#
+#   α = FF_Anteil (0–100%, Standard 70%, über HA einstellbar):
+#     0%   = reiner PID, kein Feedforward
+#     70%  = Feedforward dominiert, PID korrigiert Restfehler (empfohlen)
+#     100% = reines Feedforward, keine PID-Korrektur
+#
+#
+# EINSCHRÄNKUNGEN
+# ======================================================================================================================
+#
+#   - Setzt ideale Durchmischung voraus — reale Ventilkennlinien sind nichtlinear
+#   - T_Rücklauf ist kurzfristig stabil (thermische Trägheit Estrich), langfristig variabel
+#   - Bei T_Primär ≈ T_Rücklauf (Differenz < 2K): FF nicht berechenbar → automatischer Fallback auf PID
+#   - Sensorausfälle werden unverändert durch keller_fbh_sicherheit.yaml erkannt
+#
+# ======================================================================================================================
+
+
+# ======================================================================================================================
+# Globale Variablen — Feedforward
+# ======================================================================================================================
+
+globals:
+  # Feedforward-Ventilöffnung aus Mischungsgleichung (0.0–1.0)
+  - id: feedforward_position
+    type: float
+    restore_value: false
+    initial_value: "0.5"
+
+  # Feedforward-Anteil an der Soll-Öffnung (0.0–1.0, Standard 0.7 = 70%)
+  - id: ff_anteil_wert
+    type: float
+    restore_value: true
+    initial_value: "0.7"
+
+
+# ======================================================================================================================
+# Externer Sensor — Gastherme Vorlauftemperatur (aus Home Assistant)
+# ======================================================================================================================
+
+sensor:
+  - platform: homeassistant
+    name: "Gastherme Vorlauftemperatur"
+    id: t_gastherme_vl
+    entity_id: sensor.heizungsregelung_gastherme_vorlauf
+    device_id: mischer
+    entity_category: diagnostic
+    icon: "mdi:thermometer-high"
+
+  # Feedforward-Ventilöffnung aus der Mischungsgleichung (ohne PID-Anteil)
+  - platform: template
+    name: "Feedforward Ventilstellung"
+    id: feedforward_sensor
+    device_id: mischer
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    icon: "mdi:calculator-variant"
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return id(feedforward_position) * 100.0;
+
+
+# ======================================================================================================================
+# FF-Anteil — über Home Assistant einstellbar
+# ======================================================================================================================
+
+number:
+  - platform: template
+    name: "Feedforward Anteil"
+    id: ff_anteil_nr
+    device_id: mischer
+    icon: "mdi:tune-vertical"
+    entity_category: config
+    unit_of_measurement: "%"
+    min_value: 0
+    max_value: 100
+    step: 5
+    initial_value: 70
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          id(ff_anteil_wert) = x / 100.0f;

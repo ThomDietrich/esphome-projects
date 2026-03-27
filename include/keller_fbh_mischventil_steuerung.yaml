@@ -23,10 +23,10 @@
 # REGELUNGSSTRATEGIE — Stufe 2: Positionsregler
 # ======================================================================================================================
 #
-#   Die PID-Ausgabe (Stufe 1, siehe keller_fbh_pid.yaml) liefert die
-#   gewünschte Ventilöffnung als Wert von 0.0 bis 1.0. Der Positionsregler
-#   vergleicht diese Soll-Öffnung mit der geschätzten Ist-Öffnung und
-#   berechnet daraus Relaisimpulse:
+#   Die kombinierte Ausgabe aus Feedforward und PID (keller_fbh_mischventil_pid.yaml,
+#   keller_fbh_mischventil_feedforward.yaml) liefert die gewünschte Ventilöffnung als
+#   Wert von 0.0 bis 1.0 in desired_valve_position. Der Positionsregler vergleicht
+#   diese Soll-Öffnung mit der geschätzten Ist-Öffnung und berechnet daraus Relaisimpulse:
 #
 #   ┌──────────────────────────────────────────────────────────────┐
 #   │  Positionsregler (Skript, 10s-Zyklus + Ereignisauslösung)   │

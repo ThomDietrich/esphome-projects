@@ -11,9 +11,9 @@ substitutions:
   stellantrieb_laufzeit_s: "140"
   # Vorlauf-Solltemperatur Fussbodenheizung [°C]
   sollwert_vorlauf: "35"
-  # PID-Parameter — Tuning-Historie siehe keller_fbh_pid.yaml
+  # PID-Parameter — Tuning-Historie siehe keller_fbh_mischventil_pid.yaml
   pid_kp: "0.1"
-  pid_ki: "0.0003"
+  pid_ki: "0.0005"
   pid_kd: "0.0"
   # Sicherheitsgrenze: maximale FBH-Vorlauftemperatur [°C] (Estrichschutz)
   max_vorlauf: "50"
@@ -123,8 +123,9 @@ packages:
   - !include include/buzzer_rtttl.yaml
   - !include include/keller_fbh_temperatursensoren.yaml
 
-  - !include include/keller_fbh_pid.yaml
-  - !include include/keller_fbh_mischventil.yaml
+  - !include include/keller_fbh_mischventil_pid.yaml
+  - !include include/keller_fbh_mischventil_feedforward.yaml
+  - !include include/keller_fbh_mischventil_steuerung.yaml
   - !include include/keller_fbh_pumpe.yaml
   - !include include/keller_fbh_betrieb.yaml
   - !include include/keller_fbh_sicherheit.yaml

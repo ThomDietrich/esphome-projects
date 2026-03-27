@@ -24,7 +24,7 @@
 #       „Uebertemperaturschutz"   — T_FBH_VL > max_vorlauf (Estrichschutz)
 #       „Primaerkreis zu kalt"    — Übertemperatur < min_uebertemperatur
 #       „Manuell — Override aktiv"— Override-Wert ≥ 0 gesetzt
-#       „Aktiv — PID regelt"      — Normalbetrieb
+#       „Aktiv — FF+PID regelt"   — Normalbetrieb (Feedforward + PID-Korrektur)
 #
 # ======================================================================================================================
 
@@ -119,4 +119,4 @@ text_sensor:
           return std::string("Primaerkreis zu kalt");
       }
 
-      return std::string("Aktiv — PID regelt");
+      return std::string("Aktiv — FF+PID regelt");
