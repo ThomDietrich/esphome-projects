@@ -13,7 +13,7 @@ substitutions:
   sollwert_vorlauf: "35"
   # PID-Parameter — Tuning-Historie siehe keller_fbh_mischventil_pid.yaml
   pid_kp: "0.1"
-  pid_ki: "0.0005"
+  pid_ki: "0.001"
   pid_kd: "0.0"
   # Sicherheitsgrenze: maximale FBH-Vorlauftemperatur [°C] (Estrichschutz)
   max_vorlauf: "50"

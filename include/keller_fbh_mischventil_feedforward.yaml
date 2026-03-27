@@ -58,11 +58,11 @@ globals:
     restore_value: false
     initial_value: "0.5"
 
-  # Feedforward-Anteil an der Soll-Öffnung (0.0–1.0, Standard 0.8 = 80%)
+  # Feedforward-Anteil an der Soll-Öffnung (0.0–1.0, Standard 0.7 = 70%)
   - id: ff_anteil_wert
     type: float
     restore_value: true
-    initial_value: "0.8"
+    initial_value: "0.7"
 
 
 # ======================================================================================================================
@@ -103,7 +103,7 @@ number:
     min_value: 0
     max_value: 100
     step: 5
-    initial_value: 80
+    initial_value: 70
     restore_value: true
     optimistic: true
     set_action:
