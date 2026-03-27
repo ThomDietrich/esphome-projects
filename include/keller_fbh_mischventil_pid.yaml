@@ -119,18 +119,24 @@
 #   → FF-Anteil auf 80% erhöht.
 #
 # Schritt 5 (2026-03-27): Kp=0.1, Ki=0.0005, Kd=0 + Feedforward (FF=80%)
-#   Beobachtung: Stabil ±0.5 K über 2h bei Sollwert 27.5°C. Kompensiert Brennerpause
-#   (Gastherme 48→35°C) mit kurzem Dip auf 25°C, Rückkehr innerhalb 10 min.
-#   Ventilöffnung ~30%, FF ~10%, PID im proportionalen Bereich ohne Sättigung.
-#   Diagnose: FF=80% ist der beste Kompromiss — FF dominiert die Grobeinstellung,
-#   PID (20%) korrigiert Restfehler schnell genug (Ki=0.0005).
-#   → Parameter und FF-Anteil beibehalten. Weiterer Test bei wechselhafteren Bedingungen
-#     (direkter Feuerofen-/Gastherme-Betrieb statt Pufferspeicher) steht aus.
+#   Beobachtung: Stabil ±0.5 K über 2h bei Pufferspeicher-Betrieb. Aber: bleibender Offset
+#   von 2.6 K unter Sollwert — PID mit nur 20% Gewichtung kann den FF-Modellfehler nicht
+#   ausregeln. I-Anteil saturiert bei max_integral, reicht aber nicht.
+#   → Ki verdoppelt auf 0.001, FF zurück auf 70%.
+#
+# Schritt 6 (2026-03-27): Kp=0.1, Ki=0.001, Kd=0 + Feedforward (FF=70%) ← AKTUELL
+#   Beobachtung: Stabil ±0.5 K über 5h bei Sollwert 27.5°C. Kein bleibender Offset mehr.
+#   Kompensiert starke Primärschwankungen (Gastherme 35–65°C, Brennerzyklen, Pauerpausen)
+#   mit kurzen Dips ±1 K, Erholung innerhalb Minuten. Ventilöffnung ~30–40%, PID 60–80%,
+#   FF ~5–10%, Regelfehler pendelt um 0.
+#   Diagnose: Ki=0.001 + FF=70% ist der optimale Kompromiss — FF liefert die physikalische
+#   Basis, PID (30%) hat genug Gewicht für schnelle Offset-Korrektur.
+#   → Parameter beibehalten. Weiterer Test bei direktem Brennerbetrieb (ohne Puffer) steht aus.
 #
 # Nächste Schritte bei Tuning-Bedarf:
 #   - Kp schrittweise halbieren bei Schwingung
 #   - Ki nachziehen: Ki ≈ Kp / (Periode_s × 0.5)
-#   - FF-Anteil 80–90% je nach Modellgenauigkeit
+#   - FF-Anteil 60–80% je nach Modellgenauigkeit (70% bewährt)
 #   - Bei direktem Brennerbetrieb (ohne Puffer) erneut prüfen — stärkere Störungen erwartet
 #
 # ======================================================================================================================
