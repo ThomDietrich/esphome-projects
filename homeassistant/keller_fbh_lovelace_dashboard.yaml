@@ -4,9 +4,6 @@ icon: mdi:heating-coil
 type: sections
 max_columns: 3
 sections:
-  # ===========================================================================
-  # ZUSAMMENFASSUNG (unverändert)
-  # ===========================================================================
   - type: grid
     cards:
       - type: heading
@@ -72,11 +69,6 @@ sections:
                 name: Schwerkraftzirkulation
               - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
                 name: Durchflussmangel
-
-  # ===========================================================================
-  # TEMPERATUREN — Rohe Messwerte aller Sensoren
-  # Sortiert nach Signalfluss: Kessel → Primär → Mischer → Sekundär → Rücklauf
-  # ===========================================================================
   - type: grid
     cards:
       - type: heading
@@ -84,7 +76,7 @@ sections:
       - type: history-graph
         hours_to_show: 24
         grid_options:
-          rows: 3
+          rows: 10
         entities:
           - entity: sensor.heizungsregelung_gastherme_vorlauf
             name: Gastherme Vorlauf (extern, vorgelagert)
@@ -126,29 +118,41 @@ sections:
             state_header: VL
             format: precision1
       - type: custom:expander-card
-        title: "ℹ️ Erklärung"
+        title: ℹ️ Erklärung
         expanded: false
         cards:
           - type: markdown
-            content: |
-              **Signalfluss**: Gastherme → Primär VL → *Mischventil* → Sekundär VL → FBH-Kreise → Sekundär RL → *Mischventil* → Primär RL → Kessel
+            content: >
+              **Signalfluss**: Gastherme → Primär VL → *Mischventil* → Sekundär
+              VL → FBH-Kreise → Sekundär RL → *Mischventil* → Primär RL → Kessel
+
 
               **Sensoren** (Graph, sortiert nach Signalfluss):
-              - **Gastherme VL**: Temperatur direkt am Wärmeerzeuger. Zeigt Brennerzyklen (30–65°C). Externer Sensor — nicht auf diesem ESP.
-              - **Primär VL**: Direkt vor dem Mischventil. Kann bei geschlossenem Ventil auskühlen (stehendes Wasser im Rohr).
-              - **Sekundär VL**: Regelgröße — die Temperatur die FF+PID auf den Sollwert hält.
-              - **Sekundär RL**: Rücklauf aus dem Estrich. Differenz zum Sekundär VL = Wärmeabgabe.
-              - **Primär RL**: Bei korrekter Hydraulik nahe dem Sekundär RL. Große Abweichung → hydraulischer Kurzschluss.
+
+              - **Gastherme VL**: Temperatur direkt am Wärmeerzeuger. Zeigt
+              Brennerzyklen (30–65°C). Externer Sensor — nicht auf diesem ESP.
+
+              - **Primär VL**: Direkt vor dem Mischventil. Kann bei
+              geschlossenem Ventil auskühlen (stehendes Wasser im Rohr).
+
+              - **Sekundär VL**: Regelgröße — die Temperatur die FF+PID auf den
+              Sollwert hält.
+
+              - **Sekundär RL**: Rücklauf aus dem Estrich. Differenz zum
+              Sekundär VL = Wärmeabgabe.
+
+              - **Primär RL**: Bei korrekter Hydraulik nahe dem Sekundär RL.
+              Große Abweichung → hydraulischer Kurzschluss.
+
 
               **Aktuelle Werte** (Tabelle unter dem Graph):
-              - **ΔT**: Spreizung (Vorlauf − Rücklauf) des jeweiligen Kreises. Zeigt den Wärmetransfer. Typisch 3–8 K.
-              - **ΔT Soll**: Primär Übertemperatur = T_Primär_VL − Sollwert. Zeigt die verfügbare Temperaturreserve. Unter 3 K pausiert der Stellantrieb.
 
-  # ===========================================================================
-  # REGELUNG — Vorlauftemperatur-Regelkreis (FF + PID + Ventil)
-  # apexcharts-card ermöglicht Temperatur (°C) und Ventilstellung (%) auf
-  # zwei Y-Achsen im selben Chart — das zentrale Analyse-Werkzeug.
-  # ===========================================================================
+              - **ΔT**: Spreizung (Vorlauf − Rücklauf) des jeweiligen Kreises.
+              Zeigt den Wärmetransfer. Typisch 3–8 K.
+
+              - **ΔT Soll**: Primär Übertemperatur = T_Primär_VL − Sollwert.
+              Zeigt die verfügbare Temperaturreserve. Unter 3 K pausiert der
+              Stellantrieb.
   - type: grid
     cards:
       - type: heading
@@ -179,17 +183,17 @@ sections:
           - entity: sensor.keller_fbh_mischer_vorlauf_sollwert
             name: Sollwert
             yaxis_id: temp
-            color: "#95a5a6"  # Grau: Referenzlinie
+            color: "#95a5a6"
             stroke_width: 1
           - entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
             name: Vorlauf Ist
             yaxis_id: temp
-            color: "#e74c3c"  # Warm-Rot: Regelgröße
+            color: "#e74c3c"
             stroke_width: 2
           - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
             name: Rücklauf
             yaxis_id: temp
-            color: "#3498db"  # Blau: kühler Rücklauf
+            color: "#3498db"
             stroke_width: 1
             opacity: 0.5
       - type: custom:apexcharts-card
@@ -204,26 +208,23 @@ sections:
           - id: temp
             apex_config:
               title:
-                text: "°C"
+                text: °C
               decimalsInFloat: 1
           - id: percent
             min: 0
             max: 100
             opposite: true
-            apex_config:
-              title:
-                text: "%"
-              decimalsInFloat: 0
+            show: false
         series:
           - entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
             name: Primär VL
             yaxis_id: temp
-            color: "#e67e22"  # Orange: heiße Quelle
+            color: "#e67e22"
             stroke_width: 2
           - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
             name: Ventil Ist
             yaxis_id: percent
-            color: "#27ae60"  # Grün: Stellglied
+            color: "#27ae60"
             stroke_width: 2
       - type: custom:apexcharts-card
         header:
@@ -245,18 +246,18 @@ sections:
           - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
             name: Feedforward (berechnet)
             yaxis_id: percent
-            color: "#1abc9c"  # Teal: Modell/Berechnung
+            color: "#1abc9c"
             stroke_width: 2
           - entity: sensor.keller_fbh_mischer_pid_stellgroesse
             name: PID (Gesamt)
             yaxis_id: percent
-            color: "#8e44ad"  # Lila: Regler-Output
+            color: "#8e44ad"
             stroke_width: 1
             opacity: 0.6
           - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
             name: Ventil Ist (tatsächlich)
             yaxis_id: percent
-            color: "#27ae60"  # Grün: Stellglied (konsistent mit Chart 2)
+            color: "#27ae60"
             stroke_width: 2
       - type: entities
         entities:
@@ -264,18 +265,6 @@ sections:
             name: Reglerzustand
           - entity: sensor.keller_fbh_mischer_pid_regelfehler
             name: PID Regelfehler
-          - type: custom:multiple-entity-row
-            entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
-            name: FF+PID → Ventil
-            state_header: FF
-            format: precision0
-            entities:
-              - entity: sensor.keller_fbh_mischer_pid_stellgroesse
-                name: PID
-                format: precision0
-              - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
-                name: Ist
-                format: precision0
           - type: custom:multiple-entity-row
             entity: sensor.keller_fbh_mischer_pid_stellgroesse
             name: PID-Anteile
@@ -292,8 +281,20 @@ sections:
                 name: D
                 format: precision1
           - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_mischventil_oeffnung_soll
+            name: FF+PID → Ventil
+            state_header: Soll
+            format: precision0
+            entities:
+              - entity: sensor.keller_fbh_mischer_pid_stellgroesse
+                name: PID
+                format: precision0
+              - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
+                name: FF
+                format: precision0
+          - type: custom:multiple-entity-row
             entity: sensor.keller_fbh_mischer_mischventil_oeffnung
-            name: Ventil Ist/Soll
+            name: Ventilstellung
             state_header: Ist
             format: precision0
             entities:
@@ -303,42 +304,70 @@ sections:
           - entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
             name: Ventil fährt
       - type: custom:expander-card
-        title: "ℹ️ Erklärung"
+        title: ℹ️ Erklärung
         expanded: false
         cards:
           - type: markdown
-            content: |
+            content: >
               **Drei Diagramme**, jeweils eine Kernfrage:
 
+
               **1. Vorlauf — Soll vs. Ist**: Hält die Regelung den Sollwert?
-              Sollwert (grau) = Zieltemperatur. Vorlauf Ist (rot) sollte stabil darauf liegen.
-              Rücklauf (blau) zeigt die Wärmeabgabe. Differenz Ist−RL = Sekundär-Spreizung.
 
-              **2. Störkompensation — Primär vs. Ventil**: Reagiert das System auf Störungen?
-              Wenn Primär VL (orange) steigt, muss Ventil Ist (grün) gegenläufig sinken — und umgekehrt.
+              Sollwert (grau) = Zieltemperatur. Vorlauf Ist (rot) sollte stabil
+              darauf liegen.
 
-              **3. FF-Modell — Berechnung vs. Realität**: Stimmt das Feedforward-Modell?
-              FF (türkis) und Ventil Ist (grün) sollten nahe beieinander liegen. Große Abweichung =
-              PID muss stark korrigieren = FF-Modell ungenau (z.B. bei auskühlendem Primärsensor).
+              Rücklauf (blau) zeigt die Wärmeabgabe. Differenz Ist−RL =
+              Sekundär-Spreizung.
 
-              **Regelungskaskade**: Feedforward (70%) berechnet die Ventilöffnung aus der Mischungsgleichung
-              `V = (T_Soll − T_RL) / (T_Prim − T_RL)`. Der PID (30%) korrigiert Modellungenauigkeiten.
 
-              **Reglerzustand**: Aktueller Betriebsmodus — „Aktiv — FF+PID regelt", „Manuell — Override aktiv",
+              **2. Störkompensation — Primär vs. Ventil**: Reagiert das System
+              auf Störungen?
+
+              Wenn Primär VL (orange) steigt, muss Ventil Ist (grün) gegenläufig
+              sinken — und umgekehrt.
+
+
+              **3. FF-Modell — Berechnung vs. Realität**: Stimmt das
+              Feedforward-Modell?
+
+              FF (türkis) und Ventil Ist (grün) sollten nahe beieinander liegen.
+              Große Abweichung =
+
+              PID muss stark korrigieren = FF-Modell ungenau (z.B. bei
+              auskühlendem Primärsensor).
+
+
+              **Regelungskaskade**: Feedforward (70%) berechnet die
+              Ventilöffnung aus der Mischungsgleichung
+
+              `V = (T_Soll − T_RL) / (T_Prim − T_RL)`. Der PID (30%) korrigiert
+              Modellungenauigkeiten.
+
+
+              **Reglerzustand**: Aktueller Betriebsmodus — „Aktiv — FF+PID
+              regelt", „Manuell — Override aktiv",
+
               „Primaerkreis zu kalt", „Sicherheitsabschaltung", etc.
 
-              **FF+PID → Ventil**: FF = Feedforward-Berechnung, PID = absolute PID-Ausgabe, Ist = tatsächliche Ventilposition.
-              Im Normalbetrieb: FF und Ist nahe beieinander, PID liefert Korrektursignal.
 
-              **PID-Anteile**: P (proportional, sofortige Fehlerreaktion), I (integral, Offset-Korrektur), D (deaktiviert).
+              **FF+PID → Ventil**: FF = Feedforward-Berechnung, PID = absolute
+              PID-Ausgabe, Ist = tatsächliche Ventilposition.
 
-              **Ventil fährt**: Zeigt ob der Stellantrieb gerade einen Impuls ausführt.
+              Im Normalbetrieb: FF und Ist nahe beieinander, PID liefert
+              Korrektursignal.
 
-              **Override**: −1 = Automatik (FF+PID regelt). 0–100 = feste Ventilöffnung in %, umgeht die gesamte Regelung.
 
-  # ===========================================================================
-  # WÄRMEÜBERTRAGUNG — Spreizungen, Leistung, Zähler
-  # ===========================================================================
+              **PID-Anteile**: P (proportional, sofortige Fehlerreaktion), I
+              (integral, Offset-Korrektur), D (deaktiviert).
+
+
+              **Ventil fährt**: Zeigt ob der Stellantrieb gerade einen Impuls
+              ausführt.
+
+
+              **Override**: −1 = Automatik (FF+PID regelt). 0–100 = feste
+              Ventilöffnung in %, umgeht die gesamte Regelung.
   - type: grid
     cards:
       - type: heading
@@ -403,33 +432,49 @@ sections:
                 name: Vol
                 format: precision1
       - type: custom:expander-card
-        title: "ℹ️ Erklärung"
+        title: ℹ️ Erklärung
         expanded: false
         cards:
           - type: markdown
-            content: |
-              **Sekundär Spreizung** (T_VL − T_RL, FBH-Seite) — Farbzonen im Graph:
+            content: >
+              **Sekundär Spreizung** (T_VL − T_RL, FBH-Seite) — Farbzonen im
+              Graph:
+
               - **grau (<2 K)**: Kein/kaum Wärmetransfer — Pumpe könnte aus
+
               - **blau (2–5 K)**: Moderate Wärmeabgabe, Normalbetrieb
+
               - **grün (5–8 K)**: Estrich nimmt aktiv Wärme auf (Aufheizphase)
-              - **rot (>8 K)**: Sehr hohe Wärmeabgabe — Aufheizprogramm oder Störung
+
+              - **rot (>8 K)**: Sehr hohe Wärmeabgabe — Aufheizprogramm oder
+              Störung
+
 
               **Thermische Leistung** (kW) — Farbzonen im Graph:
+
               - **grau (<1 kW)**: Minimale Leistung
+
               - **blau (1–3 kW)**: Normalbetrieb
+
               - **grün (3–5 kW)**: Hohe Leistung (Aufheizprogramm)
+
               - **orange (>5 kW)**: Sehr hohe Leistung
+
               Berechnet aus Durchfluss × Primär-Spreizung × Wärmekapazität.
 
-              **Wärmezähler Primärkreis**:
-              - **Durchfluss**: Aktueller Volumenstrom in L/min. Typisch 3–8 L/min bei FBH.
-              - **ΔT Prim**: Primärkreis-Spreizung — Maß für die dem Wärmeerzeuger entnommene Energie.
-              - **Energie**: Kumulierte thermische Energie in kWh (seit letztem ESP-Neustart).
-              - **Volumen**: Kumuliertes Durchflussvolumen in L.
 
-  # ===========================================================================
-  # DIAGNOSE — Fehlererkennung und Sicherheit
-  # ===========================================================================
+              **Wärmezähler Primärkreis**:
+
+              - **Durchfluss**: Aktueller Volumenstrom in L/min. Typisch 3–8
+              L/min bei FBH.
+
+              - **ΔT Prim**: Primärkreis-Spreizung — Maß für die dem
+              Wärmeerzeuger entnommene Energie.
+
+              - **Energie**: Kumulierte thermische Energie in kWh (seit letztem
+              ESP-Neustart).
+
+              - **Volumen**: Kumuliertes Durchflussvolumen in L.
   - type: grid
     cards:
       - type: heading
@@ -502,42 +547,70 @@ sections:
         desc: true
         max_items: 10
       - type: custom:expander-card
-        title: "ℹ️ Erklärung"
+        title: ℹ️ Erklärung
         expanded: false
         cards:
           - type: markdown
-            content: |
-              **Gesamtstatus**: OR-Verknüpfung aller Einzelfehler. OK wenn alle Einzelfehler OK.
+            content: >
+              **Gesamtstatus**: OR-Verknüpfung aller Einzelfehler. OK wenn alle
+              Einzelfehler OK.
 
-              **Sensorfehler**: Mindestens ein DS18B20 liefert ungültige Werte (NaN, <5°C, >80°C).
+
+              **Sensorfehler**: Mindestens ein DS18B20 liefert ungültige Werte
+              (NaN, <5°C, >80°C).
+
               Ursachen: Kabelbruch, Kurzschluss, loser Kontakt, defekter Sensor.
 
-              **Hydraulischer Kurzschluss** (nur bei Pumpe EIN): Heißes Primärwasser fließt direkt in den
-              Rücklauf ohne den FBH-Kreis zu durchlaufen. Erkennbar an **Rücklauf-Abweichung > 3 K**.
 
-              **Schwerkraftzirkulation** (nur bei Pumpe AUS): Unkontrollierter Thermosiphon-Effekt —
-              heißes Wasser zirkuliert durch natürliche Konvektion. Ursache: Ventil schließt nicht vollständig.
+              **Hydraulischer Kurzschluss** (nur bei Pumpe EIN): Heißes
+              Primärwasser fließt direkt in den
 
-              **Durchflussmangel**: Pumpe läuft, Ventil offen >20%, Primär bietet >10 K Potenzial, aber
-              Sekundär-Spreizung < 1 K über 30 min. Ursachen: Luftblase, Pumpe defekt, Verteiler geschlossen.
+              Rücklauf ohne den FBH-Kreis zu durchlaufen. Erkennbar an
+              **Rücklauf-Abweichung > 3 K**.
 
-              **Rücklauf-Abweichung** (Primär_RL − Sekundär_RL) — Farbzonen im Graph:
-              - **grün (<2 K)**: Normal — beide Rückläufe kommen vom selben T-Stück
+
+              **Schwerkraftzirkulation** (nur bei Pumpe AUS): Unkontrollierter
+              Thermosiphon-Effekt —
+
+              heißes Wasser zirkuliert durch natürliche Konvektion. Ursache:
+              Ventil schließt nicht vollständig.
+
+
+              **Durchflussmangel**: Pumpe läuft, Ventil offen >20%, Primär
+              bietet >10 K Potenzial, aber
+
+              Sekundär-Spreizung < 1 K über 30 min. Ursachen: Luftblase, Pumpe
+              defekt, Verteiler geschlossen.
+
+
+              **Rücklauf-Abweichung** (Primär_RL − Sekundär_RL) — Farbzonen im
+              Graph:
+
+              - **grün (<2 K)**: Normal — beide Rückläufe kommen vom selben
+              T-Stück
+
               - **gelb (2–3 K)**: Auffällig — beobachten
+
               - **rot (>3 K)**: Hydraulischer Kurzschluss wahrscheinlich
 
-              **Primär Übertemperatur** (T_Primär_VL − Sollwert) — Farbzonen im Graph:
+
+              **Primär Übertemperatur** (T_Primär_VL − Sollwert) — Farbzonen im
+              Graph:
+
               - **grün (>8 K)**: Ausreichend Reserve, Regelung arbeitet frei
+
               - **gelb (3–8 K)**: Knapp, Ventil nahe Anschlag
-              - **rot (<3 K)**: Stellantrieb pausiert — weiteres Öffnen wirkungslos
+
+              - **rot (<3 K)**: Stellantrieb pausiert — weiteres Öffnen
+              wirkungslos
+
               - Sicherheitsabschaltung bei Sekundär-VL > 50°C (Estrichschutz)
 
-              **Reglerzustand Verlauf**: Logbuch der letzten 48h — zeigt wann der Zustand gewechselt hat
-              (z.B. Sicherheitsabschaltung, Automatik ein/aus, Sensorfehler).
 
-  # ===========================================================================
-  # WARTUNG & BETRIEB — Zähler, manuelle Steuerung, Konfiguration
-  # ===========================================================================
+              **Reglerzustand Verlauf**: Logbuch der letzten 48h — zeigt wann
+              der Zustand gewechselt hat
+
+              (z.B. Sicherheitsabschaltung, Automatik ein/aus, Sensorfehler).
   - type: grid
     cards:
       - type: heading
@@ -579,7 +652,8 @@ sections:
             state_header: Std
             format: precision1
             entities:
-              - entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
+              - entity: >-
+                  sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
                 name: Zyklen
                 format: precision0
           - entity: sensor.keller_fbh_mischer_mischventil_rekalibrierung_alter
@@ -604,33 +678,64 @@ sections:
           - entity: button.keller_fbh_mischer_pid_autotuning
             name: PID Autotuning starten
       - type: custom:expander-card
-        title: "ℹ️ Erklärung"
+        title: ℹ️ Erklärung
         expanded: false
         cards:
           - type: markdown
-            content: |
+            content: >
               **Anlagensteuerung**:
-              - **Mischkreis Automatik**: Aktiviert/deaktiviert die FF+PID-Regelung. Bei AUS: Ventilrelais abgeschaltet, Override auf Auto zurückgesetzt. Pumpe bleibt unberührt.
-              - **Umwälzpumpe**: Separater Schalter — unabhängig von der Automatik steuerbar.
+
+              - **Mischkreis Automatik**: Aktiviert/deaktiviert die
+              FF+PID-Regelung. Bei AUS: Ventilrelais abgeschaltet, Override auf
+              Auto zurückgesetzt. Pumpe bleibt unberührt.
+
+              - **Umwälzpumpe**: Separater Schalter — unabhängig von der
+              Automatik steuerbar.
+
 
               **Manuelle Ventilsteuerung**:
-              - **AUF/ZU (10s)**: Bewegt das Ventil für 10 Sekunden in die gewählte Richtung. Für Tests und Feineinstellung.
-              - **Rekalibrieren**: Fährt Ventil 140s in Endlage ZU, setzt Positionsschätzung auf 0%.
-              Empfohlen 1× täglich nachts per HA-Automation. Nötig da der Stellantrieb kein Positionsfeedback hat.
+
+              - **AUF/ZU (10s)**: Bewegt das Ventil für 10 Sekunden in die
+              gewählte Richtung. Für Tests und Feineinstellung.
+
+              - **Rekalibrieren**: Fährt Ventil 140s in Endlage ZU, setzt
+              Positionsschätzung auf 0%.
+
+              Empfohlen 1× täglich nachts per HA-Automation. Nötig da der
+              Stellantrieb kein Positionsfeedback hat.
+
 
               **Betriebszähler** (persistent über Neustarts):
-              - **Pumpe Std/Zyklen**: Betriebsstunden (15-min-Intervall) und Einschaltvorgänge der Umwälzpumpe.
-              - **Stellantrieb Std/Zyklen**: Exakte Motorlaufzeit (Summe aller Impulse) und Anzahl aller Ventilbewegungen.
-              Typische Stellantrieb-Lebensdauer: >100.000 Zyklen.
-              - **Letzte Rekalibrierung**: Zeit seit der letzten Grundstellungsfahrt.
 
-              **Stromverbrauch**: Gesamtverbrauch der FBH-Anlage (Pumpe + Stellantrieb + ESP).
+              - **Pumpe Std/Zyklen**: Betriebsstunden (15-min-Intervall) und
+              Einschaltvorgänge der Umwälzpumpe.
+
+              - **Stellantrieb Std/Zyklen**: Exakte Motorlaufzeit (Summe aller
+              Impulse) und Anzahl aller Ventilbewegungen.
+
+              Typische Stellantrieb-Lebensdauer: >100.000 Zyklen.
+
+              - **Letzte Rekalibrierung**: Zeit seit der letzten
+              Grundstellungsfahrt.
+
+
+              **Stromverbrauch**: Gesamtverbrauch der FBH-Anlage (Pumpe +
+              Stellantrieb + ESP).
+
               Gemessen über S0-Impulszähler (2000 imp/kWh).
 
-              **Feedforward Anteil** (0–100%): Gewichtung FF vs. PID. 70% = Standard. 0% = reiner PID (wie vor FF-Erweiterung).
+
+              **Feedforward Anteil** (0–100%): Gewichtung FF vs. PID. 70% =
+              Standard. 0% = reiner PID (wie vor FF-Erweiterung).
+
               Über HA änderbar ohne Firmware-Update. Persistent über Neustarts.
 
-              **PID Autotuning**: Erzwingt kontrollierte Schwingungen (1–3h). Nur bei stabilen Bedingungen starten
-              (Primärtemperatur konstant, kein Sollwert-Sprung). Ermittelte Parameter erscheinen im ESP-Log —
+
+              **PID Autotuning**: Erzwingt kontrollierte Schwingungen (1–3h).
+              Nur bei stabilen Bedingungen starten
+
+              (Primärtemperatur konstant, kein Sollwert-Sprung). Ermittelte
+              Parameter erscheinen im ESP-Log —
+
               manuell in `keller-fbh-regelung.yaml` eintragen und flashen.
 cards: []
