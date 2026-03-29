@@ -19,10 +19,15 @@
 # PRIMÄRTEMPERATUR-QUELLE
 # ======================================================================================================================
 #
-# Der lokale Sensor t_prim_vl (DS18B20 vor dem Mischer) kühlt bei geschlossenem Ventil aus, weil
-# das Wasser im Rohr steht. Für akkurate FF-Berechnung wird daher die Vorlauftemperatur direkt
-# am Brenner verwendet (sensor.heizungsregelung_gastherme_vorlauf aus Home Assistant).
-# Fallback auf t_prim_vl wenn der HA-Sensor nicht verfügbar ist.
+# Lokaler DS18B20-Sensor t_prim_vl direkt vor dem Mischer. Misst die tatsächliche Temperatur
+# am Mischpunkt — entscheidend für die Genauigkeit der Mischungsgleichung.
+#
+# Frühere Variante nutzte sensor.heizungsregelung_gastherme_vorlauf (HA), aber:
+#   - Gastherme VL ist 15–20 K höher als Prim VL (Wärmeverluste in der Leitung)
+#   - FF unterschätzt dadurch systematisch die nötige Ventilöffnung
+#   - Gastherme VL reagiert sofort auf Brennerzyklen, obwohl die Hitze erst verzögert am
+#     Mischer ankommt — verursacht unnötige FF-Schwankungen
+# Prim VL löst beide Probleme: korrekte Temperatur und natürliche Glättung durch Rohrleitung.
 #
 #
 # KOMBINATION MIT PID
@@ -36,10 +41,21 @@
 #     100% = reines Feedforward, keine PID-Korrektur
 #
 #
+# VENTILKENNLINIE
+# ======================================================================================================================
+#
+# Der Oventrop Regumat Dreiwegemischer (DN 25, kvs 5.5 m³/h) hat eine **lineare**
+# Temperaturkennlinie: Mischtemperatur verhält sich proportional zum Drehwinkel (0–90°).
+# Die Mischungsgleichung V_ff = (T_Soll − T_RL) / (T_Prim − T_RL) ist damit physikalisch
+# korrekt und benötigt keine Kennlinien-Korrektur (γ-Exponent o.ä.).
+#
+# Verbleibende Abweichungen zwischen FF-Modell und Realität entstehen durch hydraulische
+# Effekte (Pumpenkennlinie, Rohrwiderstände), nicht durch die Ventilcharakteristik.
+#
+#
 # EINSCHRÄNKUNGEN
 # ======================================================================================================================
 #
-#   - Setzt ideale Durchmischung voraus — reale Ventilkennlinien sind nichtlinear
 #   - T_Rücklauf ist kurzfristig stabil (thermische Trägheit Estrich), langfristig variabel
 #   - Bei T_Primär ≈ T_Rücklauf (Differenz < 2K): FF nicht berechenbar → automatischer Fallback auf PID
 #   - Sensorausfälle werden unverändert durch keller_fbh_sicherheit.yaml erkannt
@@ -65,15 +81,8 @@ globals:
     initial_value: "0.6"
 
 
-# ======================================================================================================================
-# Externer Sensor — Gastherme Vorlauftemperatur (aus Home Assistant)
-# ======================================================================================================================
 
 sensor:
-  - platform: homeassistant
-    id: t_gastherme_vl
-    entity_id: sensor.heizungsregelung_gastherme_vorlauf
-
   # Feedforward-Ventilöffnung aus der Mischungsgleichung (ohne PID-Anteil)
   - platform: template
     name: "Feedforward Ventilstellung"
@@ -103,9 +112,15 @@ number:
     min_value: 0
     max_value: 100
     step: 5
-    initial_value: 60
+    initial_value: 70
     restore_value: true
     optimistic: true
     set_action:
       - lambda: |-
           id(ff_anteil_wert) = x / 100.0f;
+          // V_soll mit neuem α sofort neu berechnen
+          float alpha = id(ff_anteil_wert);
+          float pid_out = id(pid_mischkreis).get_output_value();
+          id(desired_valve_position) = std::max(0.0f, std::min(1.0f,
+            alpha * id(feedforward_position) + (1.0f - alpha) * pid_out));
+      - component.update: ventilstellung_soll_sensor

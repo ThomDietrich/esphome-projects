@@ -129,7 +129,7 @@
 #   Kompensiert Primärschwankungen (Gastherme 35–65°C) mit kurzen Dips ±1 K.
 #   → Parameter bei Pufferbetrieb gut. Erneuter Test bei direktem Brennerbetrieb nötig.
 #
-# Schritt 7 (2026-03-29): Kp=0.1, Ki=0.002, Kd=0 + Feedforward (FF=60%) ← AKTUELL
+# Schritt 7 (2026-03-29): Kp=0.1, Ki=0.002, Kd=0 + Feedforward (FF=60%)
 #   Anlass: Sollwert 30°C bei Gastherme ~45°C. Bleibender Offset von 1–2 K unter Sollwert.
 #   PID Stellgröße bei 70–80% (nahe Sättigung), Ventilöffnung nur 30–40%.
 #   Diagnose: FF-Modell unterschätzt nötige Ventilöffnung (nichtlineare Ventilkennlinie,
@@ -138,12 +138,24 @@
 #   → Ki verdoppelt auf 0.002 (schnellere Offset-Korrektur), FF auf 60% reduziert (PID hat
 #     jetzt 40% Gewichtung → effektiver PID-Beitrag: 0.4 × 80% = 32% statt vorher 0.3 × 80% = 24%).
 #
+# Schritt 8 (2026-03-29): Kp=0.05, Ki=0.002, Kd=0 + Feedforward (FF=70%) ← AKTUELL
+#   Anlass: Sollwert 32°C bei Gastherme ~67°C. Grenzzyklus ±5–8 K, Periode ~10 min,
+#   PID Stellgröße 0–100% bang-bang. Prozessverstärkung ~2× höher als beim Tuning
+#   (ΔT=45 K statt 23 K bei Schritt 3).
+#   Zwischenschritt: FF auf 85% erhöht → Grenzzyklus gebrochen, aber bleibender Offset
+#   ~2–3 K unter Sollwert (PID mit 15% Gewicht kann nicht genug korrigieren).
+#   → Kp halbiert auf 0.05 (Stabilitätsreserve bei hoher Primärtemp), FF zurück auf 70%
+#     (PID hat 30% Gewicht). Effektive Verstärkung: 0.05 × 0.3 = 0.015 (vorher 0.1 × 0.4 = 0.04).
+#   Zusätzlich: FF-Primärtemperatur von Gastherme VL (HA-Sensor) auf lokalen t_prim_vl
+#   (DS18B20 vor Mischer) umgestellt. Gastherme VL war 15–20 K höher als tatsächliche
+#   Temperatur am Mischpunkt → FF unterschätzte systematisch die nötige Ventilöffnung.
+#   Lokaler Sensor liefert korrekte Temperatur und natürliche Glättung durch Rohrleitung.
+#
 # Nächste Schritte bei Tuning-Bedarf:
-#   - Kp schrittweise halbieren bei Schwingung
-#   - Ki nachziehen: Ki ≈ Kp / (Periode_s × 0.5)
-#   - FF-Anteil 50–70% je nach Modellgenauigkeit
+#   - Gain Scheduling: Kp automatisch an (T_Prim − T_RL) anpassen für stabile Regelung
+#     über den gesamten Betriebsbereich (35–70°C Primärtemperatur)
 #   - FF-Modell verbessern: nichtlineare Ventilkennlinie als Korrekturfaktor
-#   - Bei direktem Brennerbetrieb (ohne Puffer) erneut prüfen
+#   - Ki nachziehen falls Offset bleibt: Ki ≈ Kp / (Periode_s × 0.5)
 #
 # ======================================================================================================================
 
@@ -176,19 +188,10 @@ output:
           float pid_out = state;
 
           // Feedforward aus Mischungsgleichung: V = (T_Soll - T_RL) / (T_Prim - T_RL)
-          // Primärtemperatur: Gastherme-Sensor (akkurat auch bei geschlossenem Ventil),
-          // Fallback auf lokalen t_prim_vl wenn HA-Sensor nicht verfügbar.
+          // T_Prim = lokaler DS18B20 vor dem Mischer (tatsächliche Temperatur am Mischpunkt).
           float ff = pid_out;  // Fallback: reiner PID wenn FF nicht berechenbar
-          float t_prim = 0.0f;
-          bool has_prim = false;
-          if (id(t_gastherme_vl).has_state() && !isnan(id(t_gastherme_vl).state)) {
-            t_prim = id(t_gastherme_vl).state;
-            has_prim = true;
-          } else if (id(t_prim_vl).has_state()) {
-            t_prim = id(t_prim_vl).state;
-            has_prim = true;
-          }
-          if (has_prim && id(t_fbh_rl).has_state()) {
+          if (id(t_prim_vl).has_state() && id(t_fbh_rl).has_state()) {
+            float t_prim = id(t_prim_vl).state;
             float t_soll = id(pid_mischkreis).target_temperature;
             float t_rl = id(t_fbh_rl).state;
             float denom = t_prim - t_rl;

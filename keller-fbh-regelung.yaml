@@ -12,7 +12,7 @@ substitutions:
   # Vorlauf-Solltemperatur Fussbodenheizung [°C]
   sollwert_vorlauf: "35"
   # PID-Parameter — Tuning-Historie siehe keller_fbh_mischventil_pid.yaml
-  pid_kp: "0.1"
+  pid_kp: "0.05"
   pid_ki: "0.002"
   pid_kd: "0.0"
   # Sicherheitsgrenze: maximale FBH-Vorlauftemperatur [°C] (Estrichschutz)
