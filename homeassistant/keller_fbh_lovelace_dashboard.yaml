@@ -243,7 +243,7 @@ sections:
                 text: "%"
               decimalsInFloat: 0
         series:
-          - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
+          - entity: sensor.keller_fbh_mischer_feedforward_stellgroesse
             name: Feedforward (berechnet)
             yaxis_id: percent
             color: "#1abc9c"
@@ -289,7 +289,7 @@ sections:
               - entity: sensor.keller_fbh_mischer_pid_stellgroesse
                 name: PID
                 format: precision0
-              - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
+              - entity: sensor.keller_fbh_mischer_feedforward_stellgroesse
                 name: FF
                 format: precision0
           - type: custom:multiple-entity-row

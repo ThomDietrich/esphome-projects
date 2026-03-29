@@ -83,9 +83,9 @@ globals:
 
 
 sensor:
-  # Feedforward-Ventilöffnung aus der Mischungsgleichung (ohne PID-Anteil)
+  # Feedforward-Stellgröße aus der Mischungsgleichung (ohne PID-Anteil)
   - platform: template
-    name: "Feedforward Ventilstellung"
+    name: "Feedforward Stellgroesse"
     id: feedforward_sensor
     device_id: mischer
     unit_of_measurement: "%"
