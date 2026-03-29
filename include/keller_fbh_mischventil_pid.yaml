@@ -124,20 +124,26 @@
 #   ausregeln. I-Anteil saturiert bei max_integral, reicht aber nicht.
 #   → Ki verdoppelt auf 0.001, FF zurück auf 70%.
 #
-# Schritt 6 (2026-03-27): Kp=0.1, Ki=0.001, Kd=0 + Feedforward (FF=70%) ← AKTUELL
-#   Beobachtung: Stabil ±0.5 K über 5h bei Sollwert 27.5°C. Kein bleibender Offset mehr.
-#   Kompensiert starke Primärschwankungen (Gastherme 35–65°C, Brennerzyklen, Pauerpausen)
-#   mit kurzen Dips ±1 K, Erholung innerhalb Minuten. Ventilöffnung ~30–40%, PID 60–80%,
-#   FF ~5–10%, Regelfehler pendelt um 0.
-#   Diagnose: Ki=0.001 + FF=70% ist der optimale Kompromiss — FF liefert die physikalische
-#   Basis, PID (30%) hat genug Gewicht für schnelle Offset-Korrektur.
-#   → Parameter beibehalten. Weiterer Test bei direktem Brennerbetrieb (ohne Puffer) steht aus.
+# Schritt 6 (2026-03-27): Kp=0.1, Ki=0.001, Kd=0 + Feedforward (FF=70%)
+#   Beobachtung: Stabil ±0.5 K über 5h bei Sollwert 27.5°C mit Pufferspeicher-Betrieb.
+#   Kompensiert Primärschwankungen (Gastherme 35–65°C) mit kurzen Dips ±1 K.
+#   → Parameter bei Pufferbetrieb gut. Erneuter Test bei direktem Brennerbetrieb nötig.
+#
+# Schritt 7 (2026-03-29): Kp=0.1, Ki=0.002, Kd=0 + Feedforward (FF=60%) ← AKTUELL
+#   Anlass: Sollwert 30°C bei Gastherme ~45°C. Bleibender Offset von 1–2 K unter Sollwert.
+#   PID Stellgröße bei 70–80% (nahe Sättigung), Ventilöffnung nur 30–40%.
+#   Diagnose: FF-Modell unterschätzt nötige Ventilöffnung (nichtlineare Ventilkennlinie,
+#   Mischungsgleichung nimmt ideale Durchmischung an). PID mit 30% Gewichtung (bei FF=70%)
+#   kann Defizit nicht ausgleichen.
+#   → Ki verdoppelt auf 0.002 (schnellere Offset-Korrektur), FF auf 60% reduziert (PID hat
+#     jetzt 40% Gewichtung → effektiver PID-Beitrag: 0.4 × 80% = 32% statt vorher 0.3 × 80% = 24%).
 #
 # Nächste Schritte bei Tuning-Bedarf:
 #   - Kp schrittweise halbieren bei Schwingung
 #   - Ki nachziehen: Ki ≈ Kp / (Periode_s × 0.5)
-#   - FF-Anteil 60–80% je nach Modellgenauigkeit (70% bewährt)
-#   - Bei direktem Brennerbetrieb (ohne Puffer) erneut prüfen — stärkere Störungen erwartet
+#   - FF-Anteil 50–70% je nach Modellgenauigkeit
+#   - FF-Modell verbessern: nichtlineare Ventilkennlinie als Korrekturfaktor
+#   - Bei direktem Brennerbetrieb (ohne Puffer) erneut prüfen
 #
 # ======================================================================================================================
 
@@ -242,6 +248,18 @@ climate:
 # ======================================================================================================================
 
 sensor:
+  - platform: template
+    name: "Vorlauf Sollwert"
+    id: vorlauf_sollwert_sensor
+    device_id: mischer
+    unit_of_measurement: "°C"
+    device_class: temperature
+    accuracy_decimals: 1
+    icon: "mdi:thermometer-check"
+    update_interval: 30s
+    lambda: |-
+      return id(pid_mischkreis).target_temperature;
+
   - platform: pid
     climate_id: pid_mischkreis
     name: "PID P-Anteil"

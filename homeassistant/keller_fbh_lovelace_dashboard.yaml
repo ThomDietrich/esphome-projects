@@ -4,6 +4,9 @@ icon: mdi:heating-coil
 type: sections
 max_columns: 3
 sections:
+  # ===========================================================================
+  # ZUSAMMENFASSUNG (unverändert)
+  # ===========================================================================
   - type: grid
     cards:
       - type: heading
@@ -69,45 +72,87 @@ sections:
                 name: Schwerkraftzirkulation
               - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
                 name: Durchflussmangel
+
+  # ===========================================================================
+  # TEMPERATUREN — Rohe Messwerte aller Sensoren
+  # Sortiert nach Signalfluss: Kessel → Primär → Mischer → Sekundär → Rücklauf
+  # ===========================================================================
   - type: grid
     cards:
       - type: heading
         heading: Temperaturen
       - type: history-graph
         hours_to_show: 24
+        grid_options:
+          rows: 3
         entities:
-          - entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
-            name: Sekundär Vorlauf
-          - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
-            name: Sekundär Rücklauf
           - entity: sensor.heizungsregelung_gastherme_vorlauf
             name: Gastherme Vorlauf (extern, vorgelagert)
           - entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
-            name: Primär Vorlauf
-          - entity: sensor.keller_fbh_mischer_primaer_ruecklauftemperatur
-            name: Primär Rücklauf
-      - type: sensor
-        entity: sensor.keller_fbh_mischer_sekundaer_spreizung
-        name: ΔT Sekundärkreis
-        graph: line
-        hours_to_show: 24
-        detail: 2
-      - type: sensor
-        entity: sensor.keller_fbh_waermezaehler_primaer_spreizung
-        name: ΔT Primärkreis
-        graph: line
-        hours_to_show: 24
-        detail: 2
-      - type: sensor
-        entity: sensor.keller_fbh_mischer_primaer_uebertemperatur
-        name: Primär Übertemperatur
-        graph: line
-        hours_to_show: 24
-        detail: 2
+            name: Primär Vorlauf (vor Mischer)
+          - entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
+            name: Sekundär Vorlauf (nach Mischer → FBH)
+          - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
+            name: Sekundär Rücklauf (FBH → Mischer)
+      - type: entities
+        entities:
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
+            name: Sekundärkreis (FBH)
+            state_header: VL
+            format: precision1
+            entities:
+              - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
+                name: RL
+                format: precision1
+              - entity: sensor.keller_fbh_mischer_sekundaer_spreizung
+                name: ΔT
+                format: precision1
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
+            name: Primärkreis (Mischer)
+            state_header: VL
+            format: precision1
+            entities:
+              - entity: sensor.keller_fbh_mischer_primaer_ruecklauftemperatur
+                name: RL
+                format: precision1
+              - entity: sensor.keller_fbh_mischer_primaer_uebertemperatur
+                name: ΔT Soll
+                format: precision1
+          - type: custom:multiple-entity-row
+            entity: sensor.heizungsregelung_gastherme_vorlauf
+            name: Gastherme (extern)
+            state_header: VL
+            format: precision1
+      - type: custom:expander-card
+        title: "ℹ️ Erklärung"
+        expanded: false
+        cards:
+          - type: markdown
+            content: |
+              **Signalfluss**: Gastherme → Primär VL → *Mischventil* → Sekundär VL → FBH-Kreise → Sekundär RL → *Mischventil* → Primär RL → Kessel
+
+              **Sensoren** (Graph, sortiert nach Signalfluss):
+              - **Gastherme VL**: Temperatur direkt am Wärmeerzeuger. Zeigt Brennerzyklen (30–65°C). Externer Sensor — nicht auf diesem ESP.
+              - **Primär VL**: Direkt vor dem Mischventil. Kann bei geschlossenem Ventil auskühlen (stehendes Wasser im Rohr).
+              - **Sekundär VL**: Regelgröße — die Temperatur die FF+PID auf den Sollwert hält.
+              - **Sekundär RL**: Rücklauf aus dem Estrich. Differenz zum Sekundär VL = Wärmeabgabe.
+              - **Primär RL**: Bei korrekter Hydraulik nahe dem Sekundär RL. Große Abweichung → hydraulischer Kurzschluss.
+
+              **Aktuelle Werte** (Tabelle unter dem Graph):
+              - **ΔT**: Spreizung (Vorlauf − Rücklauf) des jeweiligen Kreises. Zeigt den Wärmetransfer. Typisch 3–8 K.
+              - **ΔT Soll**: Primär Übertemperatur = T_Primär_VL − Sollwert. Zeigt die verfügbare Temperaturreserve. Unter 3 K pausiert der Stellantrieb.
+
+  # ===========================================================================
+  # REGELUNG — Vorlauftemperatur-Regelkreis (FF + PID + Ventil)
+  # apexcharts-card ermöglicht Temperatur (°C) und Ventilstellung (%) auf
+  # zwei Y-Achsen im selben Chart — das zentrale Analyse-Werkzeug.
+  # ===========================================================================
   - type: grid
     cards:
       - type: heading
-        heading: Vorlaufregelung
+        heading: Regelung
       - type: custom:better-thermostat-ui-card
         entity: climate.keller_fbh_mischer_vorlaufregelung
         name: Vorlaufregelung
@@ -118,61 +163,283 @@ sections:
               g#interaction {
                 display: none;
               }
-      - type: history-graph
-        hours_to_show: 12
-        entities:
-          - entity: sensor.keller_fbh_mischer_pid_stellgroesse
-            name: PID Stellgröße
-          - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
-            name: Feedforward
-          - entity: sensor.keller_fbh_mischer_pid_regelfehler
-            name: Regelfehler
-      - type: entities
-        title: PID-Anteile
-        entities:
-          - entity: sensor.keller_fbh_mischer_pid_p_anteil
-            name: P-Anteil
-          - entity: sensor.keller_fbh_mischer_pid_i_anteil
-            name: I-Anteil
-          - entity: sensor.keller_fbh_mischer_pid_d_anteil
-            name: D-Anteil
-  - type: grid
-    cards:
-      - type: heading
-        heading: Mischventil
-      - type: history-graph
-        hours_to_show: 12
-        entities:
+      - type: custom:apexcharts-card
+        header:
+          title: Vorlauf — Soll vs. Ist
+          show: true
+        graph_span: 12h
+        apex_config:
+          chart:
+            height: 180
+        yaxis:
+          - id: temp
+            apex_config:
+              decimalsInFloat: 1
+        series:
+          - entity: sensor.keller_fbh_mischer_vorlauf_sollwert
+            name: Sollwert
+            yaxis_id: temp
+            color: "#95a5a6"  # Grau: Referenzlinie
+            stroke_width: 1
+          - entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
+            name: Vorlauf Ist
+            yaxis_id: temp
+            color: "#e74c3c"  # Warm-Rot: Regelgröße
+            stroke_width: 2
+          - entity: sensor.keller_fbh_mischer_sekundaer_ruecklauftemperatur
+            name: Rücklauf
+            yaxis_id: temp
+            color: "#3498db"  # Blau: kühler Rücklauf
+            stroke_width: 1
+            opacity: 0.5
+      - type: custom:apexcharts-card
+        header:
+          title: Störkompensation — Primär vs. Ventil
+          show: true
+        graph_span: 12h
+        apex_config:
+          chart:
+            height: 180
+        yaxis:
+          - id: temp
+            apex_config:
+              title:
+                text: "°C"
+              decimalsInFloat: 1
+          - id: percent
+            min: 0
+            max: 100
+            opposite: true
+            apex_config:
+              title:
+                text: "%"
+              decimalsInFloat: 0
+        series:
+          - entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
+            name: Primär VL
+            yaxis_id: temp
+            color: "#e67e22"  # Orange: heiße Quelle
+            stroke_width: 2
           - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
-            name: Ist
-          - entity: sensor.keller_fbh_mischer_mischventil_oeffnung_soll
-            name: Soll
+            name: Ventil Ist
+            yaxis_id: percent
+            color: "#27ae60"  # Grün: Stellglied
+            stroke_width: 2
+      - type: custom:apexcharts-card
+        header:
+          title: FF-Modell — Berechnung vs. Realität
+          show: true
+        graph_span: 12h
+        apex_config:
+          chart:
+            height: 180
+        yaxis:
+          - id: percent
+            min: 0
+            max: 100
+            apex_config:
+              title:
+                text: "%"
+              decimalsInFloat: 0
+        series:
+          - entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
+            name: Feedforward (berechnet)
+            yaxis_id: percent
+            color: "#1abc9c"  # Teal: Modell/Berechnung
+            stroke_width: 2
+          - entity: sensor.keller_fbh_mischer_pid_stellgroesse
+            name: PID (Gesamt)
+            yaxis_id: percent
+            color: "#8e44ad"  # Lila: Regler-Output
+            stroke_width: 1
+            opacity: 0.6
+          - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
+            name: Ventil Ist (tatsächlich)
+            yaxis_id: percent
+            color: "#27ae60"  # Grün: Stellglied (konsistent mit Chart 2)
+            stroke_width: 2
       - type: entities
         entities:
           - entity: sensor.keller_fbh_mischer_reglerzustand
             name: Reglerzustand
+          - entity: sensor.keller_fbh_mischer_pid_regelfehler
+            name: PID Regelfehler
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_feedforward_ventilstellung
+            name: FF+PID → Ventil
+            state_header: FF
+            format: precision0
+            entities:
+              - entity: sensor.keller_fbh_mischer_pid_stellgroesse
+                name: PID
+                format: precision0
+              - entity: sensor.keller_fbh_mischer_mischventil_oeffnung
+                name: Ist
+                format: precision0
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_pid_stellgroesse
+            name: PID-Anteile
+            state_header: Gesamt
+            format: precision1
+            entities:
+              - entity: sensor.keller_fbh_mischer_pid_p_anteil
+                name: P
+                format: precision1
+              - entity: sensor.keller_fbh_mischer_pid_i_anteil
+                name: I
+                format: precision1
+              - entity: sensor.keller_fbh_mischer_pid_d_anteil
+                name: D
+                format: precision1
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_mischventil_oeffnung
+            name: Ventil Ist/Soll
+            state_header: Ist
+            format: precision0
+            entities:
+              - entity: sensor.keller_fbh_mischer_mischventil_oeffnung_soll
+                name: Soll
+                format: precision0
           - entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
             name: Ventil fährt
-          - entity: number.keller_fbh_mischer_mischventil_oeffnung_override
-            name: Override
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
-            state: "on"
-        card:
-          type: tile
-          entity: binary_sensor.keller_fbh_mischer_mischventil_faehrt
-          name: Ventil fährt gerade
-          color: amber
-          icon: mdi:valve
+      - type: custom:expander-card
+        title: "ℹ️ Erklärung"
+        expanded: false
+        cards:
+          - type: markdown
+            content: |
+              **Drei Diagramme**, jeweils eine Kernfrage:
+
+              **1. Vorlauf — Soll vs. Ist**: Hält die Regelung den Sollwert?
+              Sollwert (grau) = Zieltemperatur. Vorlauf Ist (rot) sollte stabil darauf liegen.
+              Rücklauf (blau) zeigt die Wärmeabgabe. Differenz Ist−RL = Sekundär-Spreizung.
+
+              **2. Störkompensation — Primär vs. Ventil**: Reagiert das System auf Störungen?
+              Wenn Primär VL (orange) steigt, muss Ventil Ist (grün) gegenläufig sinken — und umgekehrt.
+
+              **3. FF-Modell — Berechnung vs. Realität**: Stimmt das Feedforward-Modell?
+              FF (türkis) und Ventil Ist (grün) sollten nahe beieinander liegen. Große Abweichung =
+              PID muss stark korrigieren = FF-Modell ungenau (z.B. bei auskühlendem Primärsensor).
+
+              **Regelungskaskade**: Feedforward (70%) berechnet die Ventilöffnung aus der Mischungsgleichung
+              `V = (T_Soll − T_RL) / (T_Prim − T_RL)`. Der PID (30%) korrigiert Modellungenauigkeiten.
+
+              **Reglerzustand**: Aktueller Betriebsmodus — „Aktiv — FF+PID regelt", „Manuell — Override aktiv",
+              „Primaerkreis zu kalt", „Sicherheitsabschaltung", etc.
+
+              **FF+PID → Ventil**: FF = Feedforward-Berechnung, PID = absolute PID-Ausgabe, Ist = tatsächliche Ventilposition.
+              Im Normalbetrieb: FF und Ist nahe beieinander, PID liefert Korrektursignal.
+
+              **PID-Anteile**: P (proportional, sofortige Fehlerreaktion), I (integral, Offset-Korrektur), D (deaktiviert).
+
+              **Ventil fährt**: Zeigt ob der Stellantrieb gerade einen Impuls ausführt.
+
+              **Override**: −1 = Automatik (FF+PID regelt). 0–100 = feste Ventilöffnung in %, umgeht die gesamte Regelung.
+
+  # ===========================================================================
+  # WÄRMEÜBERTRAGUNG — Spreizungen, Leistung, Zähler
+  # ===========================================================================
   - type: grid
     cards:
       - type: heading
-        heading: Diagnose & Fehler
+        heading: Wärmeübertragung
+      - type: custom:mini-graph-card
+        name: Sekundär Spreizung (ΔT FBH)
+        entities:
+          - entity: sensor.keller_fbh_mischer_sekundaer_spreizung
+        hours_to_show: 24
+        line_width: 2
+        points_per_hour: 12
+        show:
+          labels: true
+          fill: fade
+        color_thresholds:
+          - value: 0
+            color: "#95a5a6"
+          - value: 2
+            color: "#3498db"
+          - value: 5
+            color: "#2ecc71"
+          - value: 8
+            color: "#e74c3c"
+      - type: custom:mini-graph-card
+        name: Thermische Leistung
+        entities:
+          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_leistung
+        hours_to_show: 24
+        line_width: 2
+        points_per_hour: 4
+        show:
+          labels: true
+          fill: fade
+        color_thresholds:
+          - value: 0
+            color: "#95a5a6"
+          - value: 1
+            color: "#3498db"
+          - value: 3
+            color: "#2ecc71"
+          - value: 5
+            color: "#e67e22"
+      - type: entities
+        title: Wärmezähler Primärkreis
+        entities:
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_waermezaehler_primaerkreis_durchfluss
+            name: Durchfluss & Spreizung
+            state_header: Flow
+            format: precision1
+            entities:
+              - entity: sensor.keller_fbh_waermezaehler_primaer_spreizung
+                name: ΔT Prim
+                format: precision1
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_waermezaehler_primaerkreis_energie
+            name: Energie & Volumen
+            state_header: kWh
+            format: precision2
+            entities:
+              - entity: sensor.keller_fbh_waermezaehler_primaerkreis_volumen
+                name: Vol
+                format: precision1
+      - type: custom:expander-card
+        title: "ℹ️ Erklärung"
+        expanded: false
+        cards:
+          - type: markdown
+            content: |
+              **Sekundär Spreizung** (T_VL − T_RL, FBH-Seite) — Farbzonen im Graph:
+              - **grau (<2 K)**: Kein/kaum Wärmetransfer — Pumpe könnte aus
+              - **blau (2–5 K)**: Moderate Wärmeabgabe, Normalbetrieb
+              - **grün (5–8 K)**: Estrich nimmt aktiv Wärme auf (Aufheizphase)
+              - **rot (>8 K)**: Sehr hohe Wärmeabgabe — Aufheizprogramm oder Störung
+
+              **Thermische Leistung** (kW) — Farbzonen im Graph:
+              - **grau (<1 kW)**: Minimale Leistung
+              - **blau (1–3 kW)**: Normalbetrieb
+              - **grün (3–5 kW)**: Hohe Leistung (Aufheizprogramm)
+              - **orange (>5 kW)**: Sehr hohe Leistung
+              Berechnet aus Durchfluss × Primär-Spreizung × Wärmekapazität.
+
+              **Wärmezähler Primärkreis**:
+              - **Durchfluss**: Aktueller Volumenstrom in L/min. Typisch 3–8 L/min bei FBH.
+              - **ΔT Prim**: Primärkreis-Spreizung — Maß für die dem Wärmeerzeuger entnommene Energie.
+              - **Energie**: Kumulierte thermische Energie in kWh (seit letztem ESP-Neustart).
+              - **Volumen**: Kumuliertes Durchflussvolumen in L.
+
+  # ===========================================================================
+  # DIAGNOSE — Fehlererkennung und Sicherheit
+  # ===========================================================================
+  - type: grid
+    cards:
+      - type: heading
+        heading: Diagnose
       - type: entities
         title: Fehlerzustand
+        state_color: true
         entities:
+          - entity: binary_sensor.keller_fbh_mischer_diagnose_fehlerstatus
+            name: Gesamtstatus
           - entity: binary_sensor.keller_fbh_mischer_sensorfehler
             name: Sensorfehler
           - entity: binary_sensor.keller_fbh_mischer_hydraulischer_kurzschluss
@@ -181,12 +448,40 @@ sections:
             name: Schwerkraftzirkulation
           - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
             name: Durchflussmangel
-      - type: sensor
-        entity: sensor.keller_fbh_mischer_ruecklauf_abweichung
-        name: Rücklauf-Abweichung (Primär − Sekundär)
-        graph: line
+      - type: custom:mini-graph-card
+        name: Rücklauf-Abweichung (Prim − Sek)
+        entities:
+          - entity: sensor.keller_fbh_mischer_ruecklauf_abweichung
         hours_to_show: 24
-        detail: 2
+        line_width: 2
+        points_per_hour: 12
+        show:
+          labels: true
+          fill: fade
+        color_thresholds:
+          - value: -1
+            color: "#2ecc71"
+          - value: 2
+            color: "#f39c12"
+          - value: 3
+            color: "#e74c3c"
+      - type: custom:mini-graph-card
+        name: Primär Übertemperatur
+        entities:
+          - entity: sensor.keller_fbh_mischer_primaer_uebertemperatur
+        hours_to_show: 24
+        line_width: 2
+        points_per_hour: 12
+        show:
+          labels: true
+          fill: fade
+        color_thresholds:
+          - value: 0
+            color: "#e74c3c"
+          - value: 3
+            color: "#f39c12"
+          - value: 8
+            color: "#2ecc71"
       - type: conditional
         conditions:
           - condition: state
@@ -200,62 +495,142 @@ sections:
           icon: mdi:shield-refresh
           tap_action:
             action: toggle
+      - type: custom:logbook-card
+        entity: sensor.keller_fbh_mischer_reglerzustand
+        title: Reglerzustand Verlauf
+        hours_to_show: 48
+        desc: true
+        max_items: 10
+      - type: custom:expander-card
+        title: "ℹ️ Erklärung"
+        expanded: false
+        cards:
+          - type: markdown
+            content: |
+              **Gesamtstatus**: OR-Verknüpfung aller Einzelfehler. OK wenn alle Einzelfehler OK.
+
+              **Sensorfehler**: Mindestens ein DS18B20 liefert ungültige Werte (NaN, <5°C, >80°C).
+              Ursachen: Kabelbruch, Kurzschluss, loser Kontakt, defekter Sensor.
+
+              **Hydraulischer Kurzschluss** (nur bei Pumpe EIN): Heißes Primärwasser fließt direkt in den
+              Rücklauf ohne den FBH-Kreis zu durchlaufen. Erkennbar an **Rücklauf-Abweichung > 3 K**.
+
+              **Schwerkraftzirkulation** (nur bei Pumpe AUS): Unkontrollierter Thermosiphon-Effekt —
+              heißes Wasser zirkuliert durch natürliche Konvektion. Ursache: Ventil schließt nicht vollständig.
+
+              **Durchflussmangel**: Pumpe läuft, Ventil offen >20%, Primär bietet >10 K Potenzial, aber
+              Sekundär-Spreizung < 1 K über 30 min. Ursachen: Luftblase, Pumpe defekt, Verteiler geschlossen.
+
+              **Rücklauf-Abweichung** (Primär_RL − Sekundär_RL) — Farbzonen im Graph:
+              - **grün (<2 K)**: Normal — beide Rückläufe kommen vom selben T-Stück
+              - **gelb (2–3 K)**: Auffällig — beobachten
+              - **rot (>3 K)**: Hydraulischer Kurzschluss wahrscheinlich
+
+              **Primär Übertemperatur** (T_Primär_VL − Sollwert) — Farbzonen im Graph:
+              - **grün (>8 K)**: Ausreichend Reserve, Regelung arbeitet frei
+              - **gelb (3–8 K)**: Knapp, Ventil nahe Anschlag
+              - **rot (<3 K)**: Stellantrieb pausiert — weiteres Öffnen wirkungslos
+              - Sicherheitsabschaltung bei Sekundär-VL > 50°C (Estrichschutz)
+
+              **Reglerzustand Verlauf**: Logbuch der letzten 48h — zeigt wann der Zustand gewechselt hat
+              (z.B. Sicherheitsabschaltung, Automatik ein/aus, Sensorfehler).
+
+  # ===========================================================================
+  # WARTUNG & BETRIEB — Zähler, manuelle Steuerung, Konfiguration
+  # ===========================================================================
+  - type: grid
+    cards:
+      - type: heading
+        heading: Wartung & Betrieb
+      - type: entities
+        title: Anlagensteuerung
+        entities:
+          - entity: switch.keller_fbh_mischer_automatik
+            name: Mischkreis Automatik
+          - entity: switch.keller_fbh_umwaelzpumpe_schalter
+            name: Umwälzpumpe
       - type: entities
         title: Manuelle Ventilsteuerung
         entities:
+          - entity: number.keller_fbh_mischer_mischventil_oeffnung_override
+            name: Ventil Override
           - entity: button.keller_fbh_mischer_mischventil_manuell_auf_10s
             name: Ventil manuell AUF (10s)
           - entity: button.keller_fbh_mischer_mischventil_manuell_zu_10s
             name: Ventil manuell ZU (10s)
           - entity: >-
               button.keller_fbh_mischer_mischventil_rekalibrierung_grundstellung_geschlossen
-            name: Ventil rekalibrieren
-  - type: grid
-    cards:
-      - type: heading
-        heading: Betrieb
-      - type: entities
-        title: Wärmezähler
-        entities:
-          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_volumen
-            name: Volumen
-          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_energie
-            name: Energie
-          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_durchfluss
-            name: Durchfluss
-          - entity: sensor.keller_fbh_waermezaehler_primaerkreis_leistung
-            name: Thermische Leistung
-      - type: sensor
-        entity: sensor.keller_fbh_waermezaehler_primaerkreis_leistung
-        name: Thermische Leistung
-        graph: line
-        hours_to_show: 24
-        detail: 2
-      - type: entities
-        title: Stromverbrauch
-        entities:
-          - entity: sensor.keller_fbh_regelung_elektrische_leistung
-            name: Elektrische Leistung
-          - entity: sensor.keller_fbh_regelung_elektrische_energie
-            name: Elektrische Energie
+            name: Ventil rekalibrieren (Grundstellung ZU)
       - type: entities
         title: Betriebszähler
         entities:
-          - entity: sensor.keller_fbh_umwaelzpumpe_betriebsstunden
-            name: Pumpe Betriebsstunden
-          - entity: sensor.keller_fbh_umwaelzpumpe_schaltzyklen
-            name: Pumpe Schaltzyklen
-          - entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
-            name: Stellantrieb Motorlaufzeit
-          - entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
-            name: Stellantrieb Schaltzyklen
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_umwaelzpumpe_betriebsstunden
+            name: Pumpe
+            state_header: Std
+            format: precision1
+            entities:
+              - entity: sensor.keller_fbh_umwaelzpumpe_schaltzyklen
+                name: Zyklen
+                format: precision0
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
+            name: Stellantrieb
+            state_header: Std
+            format: precision1
+            entities:
+              - entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
+                name: Zyklen
+                format: precision0
           - entity: sensor.keller_fbh_mischer_mischventil_rekalibrierung_alter
             name: Letzte Rekalibrierung
       - type: entities
-        title: Wartung
+        title: Stromverbrauch
         entities:
-          - entity: button.keller_fbh_mischer_pid_autotuning
-            name: PID Autotuning
+          - type: custom:multiple-entity-row
+            entity: sensor.keller_fbh_regelung_elektrische_leistung
+            name: Elektrisch
+            state_header: W
+            format: precision0
+            entities:
+              - entity: sensor.keller_fbh_regelung_elektrische_energie
+                name: Gesamt
+                format: precision2
+      - type: entities
+        title: Konfiguration
+        entities:
           - entity: number.keller_fbh_mischer_feedforward_anteil
             name: Feedforward Anteil
+          - entity: button.keller_fbh_mischer_pid_autotuning
+            name: PID Autotuning starten
+      - type: custom:expander-card
+        title: "ℹ️ Erklärung"
+        expanded: false
+        cards:
+          - type: markdown
+            content: |
+              **Anlagensteuerung**:
+              - **Mischkreis Automatik**: Aktiviert/deaktiviert die FF+PID-Regelung. Bei AUS: Ventilrelais abgeschaltet, Override auf Auto zurückgesetzt. Pumpe bleibt unberührt.
+              - **Umwälzpumpe**: Separater Schalter — unabhängig von der Automatik steuerbar.
+
+              **Manuelle Ventilsteuerung**:
+              - **AUF/ZU (10s)**: Bewegt das Ventil für 10 Sekunden in die gewählte Richtung. Für Tests und Feineinstellung.
+              - **Rekalibrieren**: Fährt Ventil 140s in Endlage ZU, setzt Positionsschätzung auf 0%.
+              Empfohlen 1× täglich nachts per HA-Automation. Nötig da der Stellantrieb kein Positionsfeedback hat.
+
+              **Betriebszähler** (persistent über Neustarts):
+              - **Pumpe Std/Zyklen**: Betriebsstunden (15-min-Intervall) und Einschaltvorgänge der Umwälzpumpe.
+              - **Stellantrieb Std/Zyklen**: Exakte Motorlaufzeit (Summe aller Impulse) und Anzahl aller Ventilbewegungen.
+              Typische Stellantrieb-Lebensdauer: >100.000 Zyklen.
+              - **Letzte Rekalibrierung**: Zeit seit der letzten Grundstellungsfahrt.
+
+              **Stromverbrauch**: Gesamtverbrauch der FBH-Anlage (Pumpe + Stellantrieb + ESP).
+              Gemessen über S0-Impulszähler (2000 imp/kWh).
+
+              **Feedforward Anteil** (0–100%): Gewichtung FF vs. PID. 70% = Standard. 0% = reiner PID (wie vor FF-Erweiterung).
+              Über HA änderbar ohne Firmware-Update. Persistent über Neustarts.
+
+              **PID Autotuning**: Erzwingt kontrollierte Schwingungen (1–3h). Nur bei stabilen Bedingungen starten
+              (Primärtemperatur konstant, kein Sollwert-Sprung). Ermittelte Parameter erscheinen im ESP-Log —
+              manuell in `keller-fbh-regelung.yaml` eintragen und flashen.
 cards: []
