@@ -19,12 +19,13 @@
 #   - Relais 3 (Reserve): GPIO33, standardmäßig deaktiviert.
 #
 #   - FBH Reglerzustand: Textsensor, der den aktuellen Betriebsmodus anzeigt:
-#       „Automatik AUS"           — Mischkreis Automatik deaktiviert
-#       „Sensorfehler"            — FBH-Vorlauf liefert keine Daten
-#       „Uebertemperaturschutz"   — T_FBH_VL > max_vorlauf (Estrichschutz)
-#       „Primaerkreis zu kalt"    — Übertemperatur < min_uebertemperatur
-#       „Manuell — Override aktiv"— Override-Wert ≥ 0 gesetzt
-#       „Aktiv — FF+PID regelt"   — Normalbetrieb (Feedforward + PID-Korrektur)
+#       „Sicherheitsabschaltung"             — Kritischer Lockout (Übertemp/Sensorfehler)
+#       „Untertemperatur — Heizkreis gesperrt"— Quellentemp. zu niedrig (auto-reversibel)
+#       „Manuell — Override aktiv"           — Override-Wert ≥ 0 gesetzt
+#       „Automatik AUS"                      — Mischkreis Automatik deaktiviert
+#       „Sensorfehler"                       — FBH-Vorlauf liefert keine Daten
+#       „Uebertemperaturschutz"              — T_FBH_VL > max_vorlauf (Estrichschutz)
+#       „Aktiv — FF+PID regelt"              — Normalbetrieb (Feedforward + PID-Korrektur)
 #
 # ======================================================================================================================
 
@@ -103,6 +104,9 @@ text_sensor:
       if (id(safety_lockout))
         return std::string("Sicherheitsabschaltung");
 
+      if (id(untertemperatur_sperre))
+        return std::string("Untertemperatur — Heizkreis gesperrt");
+
       if (id(manual_valve_override) >= 0.0f)
         return std::string("Manuell — Override aktiv");
 
@@ -111,12 +115,5 @@ text_sensor:
 
       float vl = id(t_fbh_vl).state;
       if (vl > ${max_vorlauf}) return std::string("Uebertemperaturschutz");
-
-      if (id(t_prim_vl).has_state()) {
-        float headroom = id(t_prim_vl).state
-                         - id(pid_mischkreis).target_temperature;
-        if (headroom < ${min_uebertemperatur})
-          return std::string("Primaerkreis zu kalt");
-      }
 
       return std::string("Aktiv — FF+PID regelt");

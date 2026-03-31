@@ -13,7 +13,7 @@ substitutions:
   sollwert_vorlauf: "35"
   # PID-Parameter — Tuning-Historie siehe keller_fbh_mischventil_pid.yaml
   pid_kp: "0.05"
-  pid_ki: "0.002"
+  pid_ki: "0.001"
   pid_kd: "0.0"
   # Sicherheitsgrenze: maximale FBH-Vorlauftemperatur [°C] (Estrichschutz)
   max_vorlauf: "50"
@@ -129,6 +129,7 @@ packages:
   - !include include/keller_fbh_pumpe.yaml
   - !include include/keller_fbh_betrieb.yaml
   - !include include/keller_fbh_sicherheit.yaml
+  - !include include/keller_fbh_untertemperatur.yaml
 
   # Stromzaehler — TOMZN Single-Phase DIN Rail Energy Meter (2000 imp/kWh)
   # Misst den Gesamtverbrauch der FBH-Anlage (Pumpe, Stellantrieb, ESP, etc.).

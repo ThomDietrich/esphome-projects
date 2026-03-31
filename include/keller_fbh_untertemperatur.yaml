@@ -1,0 +1,169 @@
+# ======================================================================================================================
+# Untertemperatur-Betriebssperre — Fussbodenheizung
+# ======================================================================================================================
+#
+# Sperrt den FBH-Heizkreis automatisch, wenn die Quellentemperatur (Gastherme VL) unter den
+# FBH-Sollwert fällt und Heizen damit wirkungslos oder kontraproduktiv wäre (Pumpe würde den
+# Estrich aktiv auskühlen statt zu heizen).
+#
+# Typischer Auslöser: Pufferspeicher über Nacht erschöpft, Holzofen nicht nachgelegt, Gastherme
+# noch nicht aktiv. Kein Defekt — normaler Betriebszustand, der automatisch aufgelöst wird.
+#
+#
+# VERHALTEN
+# ======================================================================================================================
+#
+#   Sperre aktivieren (T_Gastherme_VL < Sollwert − 2K):
+#     1. Ventil-Skripte stoppen
+#     2. Mischventil schließen (Relais ZU ein, verhindert Schwerkraftzirkulation)
+#     3. Umwälzpumpe abschalten (kein kaltes Wasser durch FBH-Kreise pumpen)
+#
+#   Sperre aufheben (T_Gastherme_VL > Sollwert + 3K, asymmetrische Hysterese):
+#     1. Ventil-Schließrelais aus
+#     2. Pumpe einschalten
+#     3. PID-Integral zurücksetzen (Anti-Windup)
+#     4. Positionsregler startet im nächsten Zyklus automatisch
+#
+#   Die Hysterese (−2K / +3K um Sollwert) ist asymmetrisch wie bei industriellen Reglern
+#   (TA UVR16x2): schnelles Abschalten, verzögertes Wiederanfahren verhindert Taktung.
+#
+#
+# SENSORWAHL
+# ======================================================================================================================
+#
+#   Gastherme VL (sensor.heizungsregelung_gastherme_vorlauf aus Home Assistant):
+#     - Misst an der Wärmequelle, unabhängig vom Pumpenzustand
+#     - Lokaler t_prim_vl (DS18B20) kühlt bei stehender Pumpe auf Raumtemperatur aus
+#       und ist für Reaktivierungsentscheidungen unbrauchbar
+#     - Bei HA-Sensorausfall greift die Sperre nicht → System verhält sich wie bisher
+#
+#   Einheitliches Kriterium (Gastherme VL) für Aktivierung und Deaktivierung:
+#     Ein alternatives Kriterium wäre Sekundär ΔT (VL−RL ≤ 0) für die Aktivierung —
+#     physikalisch präziser, da es den tatsächlichen Wärmeentzug misst statt die Quellen-
+#     temperatur. Jedoch führen asymmetrische Kriterien (ΔT für Aktivierung, Gastherme VL
+#     für Deaktivierung) zu einer Race Condition: Nach Reaktivierung kann ΔT im Grenzbereich
+#     sofort wieder ≤ 0 fallen, während Gastherme VL weiterhin über der Schwelle liegt →
+#     schnelle Taktung von Pumpe und Ventil. Ein einheitliches Kriterium (Gastherme VL für
+#     beides) vermeidet dieses Problem durch die inhärente Hysterese (−2K / +3K).
+#     Tradeoff: Marginale Wärme (Quelle knapp unter Sollwert, aber noch wärmer als Estrich)
+#     wird nicht genutzt — akzeptabel gegenüber dem Taktungsrisiko.
+#
+#
+# PRIORITÄT
+# ======================================================================================================================
+#
+#   safety_lockout (10s-Intervall) hat immer Vorrang vor untertemperatur_sperre (30s-Intervall).
+#   Beide können gleichzeitig aktiv sein — safety_lockout dominiert die Durchsetzung.
+#   Der position_controller prüft beide Flags und blockiert Ventilbewegung bei jedem aktiven Flag.
+#
+# ======================================================================================================================
+
+
+# ======================================================================================================================
+# Externer Sensor — Gastherme Vorlauftemperatur (aus Home Assistant)
+# ======================================================================================================================
+# Benötigt für Untertemperatur-Erkennung, da der lokale t_prim_vl bei stehender Pumpe
+# auf Raumtemperatur auskühlt und unbrauchbar wird.
+
+sensor:
+  - platform: homeassistant
+    id: t_gastherme_vl
+    entity_id: sensor.heizungsregelung_gastherme_vorlauf
+
+
+# ======================================================================================================================
+# Globale Variable — Sperrzustand
+# ======================================================================================================================
+
+globals:
+  - id: untertemperatur_sperre
+    type: bool
+    restore_value: true
+    initial_value: "false"
+
+
+# ======================================================================================================================
+# Binary Sensor — Untertemperatur Sperre (Status für Dashboard)
+# ======================================================================================================================
+
+binary_sensor:
+  - platform: template
+    name: "Untertemperatur Sperre"
+    id: untertemperatur_sperre_sensor
+    device_id: mischer
+    icon: "mdi:snowflake-alert"
+    device_class: problem
+    lambda: "return id(untertemperatur_sperre);"
+
+
+# ======================================================================================================================
+# Intervall — Untertemperatur-Überwachung (30s)
+# ======================================================================================================================
+
+interval:
+  - interval: 30s
+    then:
+      # (1) Sperre aktivieren: Quellentemperatur zu niedrig zum Heizen
+      - if:
+          condition:
+            lambda: |-
+              if (id(untertemperatur_sperre)) return false;
+              if (id(safety_lockout)) return false;
+              if (!id(t_gastherme_vl).has_state() || isnan(id(t_gastherme_vl).state)) return false;
+              float sollwert = id(pid_mischkreis).target_temperature;
+              return id(t_gastherme_vl).state < (sollwert - 2.0f);
+          then:
+            - lambda: "id(untertemperatur_sperre) = true;"
+            - script.stop: drive_valve_open
+            - script.stop: drive_valve_close
+            - script.stop: position_controller
+            - switch.turn_off: relais_ventil_auf
+            - delay: 500ms
+            - switch.turn_on: relais_ventil_zu
+            - switch.turn_off: pumpe_fbh
+            - component.update: reglerzustand
+            - logger.log:
+                level: WARN
+                format: "UNTERTEMPERATUR: Gastherme VL %.1f°C < Sollwert %.1f°C — Heizkreis gesperrt"
+                args:
+                  - "id(t_gastherme_vl).state"
+                  - "id(pid_mischkreis).target_temperature"
+
+      # (2) Sperre aufheben: Quellentemperatur ausreichend (Hysterese +3K über Sollwert)
+      - if:
+          condition:
+            lambda: |-
+              if (!id(untertemperatur_sperre)) return false;
+              if (!id(t_gastherme_vl).has_state() || isnan(id(t_gastherme_vl).state)) return false;
+              float sollwert = id(pid_mischkreis).target_temperature;
+              return id(t_gastherme_vl).state > (sollwert + 3.0f);
+          then:
+            - lambda: "id(untertemperatur_sperre) = false;"
+            - switch.turn_off: relais_ventil_zu
+            - lambda: "id(estimated_valve_position) = 0.0f;"
+            - switch.turn_on: pumpe_fbh
+            - climate.pid.reset_integral_term: pid_mischkreis
+            - component.update: reglerzustand
+            - logger.log:
+                level: INFO
+                format: "UNTERTEMPERATUR: Gastherme VL %.1f°C > Sollwert + 3K — Heizkreis freigegeben"
+                args:
+                  - "id(t_gastherme_vl).state"
+
+      # (3) Durchsetzung: Sicherstellen dass Sperre wirkt (z.B. nach manuellem Einschalten)
+      - if:
+          condition:
+            lambda: |-
+              if (!id(untertemperatur_sperre)) return false;
+              if (id(safety_lockout)) return false;
+              return id(pumpe_fbh).state
+                     || id(relais_ventil_auf).state
+                     || !id(relais_ventil_zu).state;
+          then:
+            - switch.turn_off: relais_ventil_auf
+            - delay: 500ms
+            - switch.turn_on: relais_ventil_zu
+            - switch.turn_off: pumpe_fbh
+            - logger.log:
+                level: WARN
+                format: "UNTERTEMPERATUR: Sperre durchgesetzt — Ventil/Pumpe korrigiert"
