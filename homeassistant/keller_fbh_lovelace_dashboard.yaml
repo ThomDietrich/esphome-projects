@@ -69,6 +69,8 @@ sections:
                 name: Schwerkraftzirkulation
               - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
                 name: Durchflussmangel
+          - entity: binary_sensor.keller_fbh_mischer_untertemperatur_sperre
+            name: Untertemperatur Sperre
   - type: grid
     cards:
       - type: heading
@@ -479,20 +481,28 @@ sections:
     cards:
       - type: heading
         heading: Diagnose
-      - type: entities
-        title: Fehlerzustand
-        state_color: true
-        entities:
-          - entity: binary_sensor.keller_fbh_mischer_diagnose_fehlerstatus
-            name: Gesamtstatus
-          - entity: binary_sensor.keller_fbh_mischer_sensorfehler
-            name: Sensorfehler
-          - entity: binary_sensor.keller_fbh_mischer_hydraulischer_kurzschluss
-            name: Hydraulischer Kurzschluss
-          - entity: binary_sensor.keller_fbh_mischer_schwerkraftzirkulation
-            name: Schwerkraftzirkulation
-          - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
-            name: Durchflussmangel
+      - type: custom:vertical-stack-in-card
+        cards:
+          - type: entities
+            title: Fehler
+            state_color: true
+            entities:
+              - entity: binary_sensor.keller_fbh_mischer_diagnose_fehlerstatus
+                name: Gesamtstatus
+              - entity: binary_sensor.keller_fbh_mischer_sensorfehler
+                name: Sensorfehler
+              - entity: binary_sensor.keller_fbh_mischer_hydraulischer_kurzschluss
+                name: Hydraulischer Kurzschluss
+              - entity: binary_sensor.keller_fbh_mischer_schwerkraftzirkulation
+                name: Schwerkraftzirkulation
+              - entity: binary_sensor.keller_fbh_mischer_durchflussmangel
+                name: Durchflussmangel
+          - type: entities
+            title: Warnungen
+            state_color: true
+            entities:
+              - entity: binary_sensor.keller_fbh_mischer_untertemperatur_sperre
+                name: Untertemperatur Sperre
       - type: custom:mini-graph-card
         name: Rücklauf-Abweichung (Prim − Sek)
         entities:
@@ -615,66 +625,74 @@ sections:
     cards:
       - type: heading
         heading: Wartung & Betrieb
-      - type: entities
-        title: Anlagensteuerung
-        entities:
-          - entity: switch.keller_fbh_mischer_automatik
-            name: Mischkreis Automatik
-          - entity: switch.keller_fbh_umwaelzpumpe_schalter
-            name: Umwälzpumpe
-      - type: entities
-        title: Manuelle Ventilsteuerung
-        entities:
-          - entity: number.keller_fbh_mischer_mischventil_oeffnung_override
-            name: Ventil Override
-          - entity: button.keller_fbh_mischer_mischventil_manuell_auf_10s
-            name: Ventil manuell AUF (10s)
-          - entity: button.keller_fbh_mischer_mischventil_manuell_zu_10s
-            name: Ventil manuell ZU (10s)
-          - entity: >-
-              button.keller_fbh_mischer_mischventil_rekalibrierung_grundstellung_geschlossen
-            name: Ventil rekalibrieren (Grundstellung ZU)
-      - type: entities
-        title: Betriebszähler
-        entities:
-          - type: custom:multiple-entity-row
-            entity: sensor.keller_fbh_umwaelzpumpe_betriebsstunden
-            name: Pumpe
-            state_header: Std
-            format: precision1
+      - type: custom:vertical-stack-in-card
+        cards:
+          - type: entities
+            title: Anlagensteuerung
             entities:
-              - entity: sensor.keller_fbh_umwaelzpumpe_schaltzyklen
-                name: Zyklen
-                format: precision0
-          - type: custom:multiple-entity-row
-            entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
-            name: Stellantrieb
-            state_header: Std
-            format: precision1
+              - entity: switch.keller_fbh_mischer_automatik
+                name: Mischkreis Automatik
+              - entity: switch.keller_fbh_umwaelzpumpe_schalter
+                name: Umwälzpumpe
+          - type: entities
+            title: Ventilsteuerung
             entities:
+              - entity: number.keller_fbh_mischer_mischventil_oeffnung_override
+                name: Ventil Override
+              - entity: button.keller_fbh_mischer_mischventil_manuell_auf_10s
+                name: Ventil manuell AUF (10s)
+              - entity: button.keller_fbh_mischer_mischventil_manuell_zu_10s
+                name: Ventil manuell ZU (10s)
               - entity: >-
-                  sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
-                name: Zyklen
-                format: precision0
-          - entity: sensor.keller_fbh_mischer_mischventil_rekalibrierung_alter
-            name: Letzte Rekalibrierung
-      - type: entities
-        title: Stromverbrauch
-        entities:
-          - type: custom:multiple-entity-row
-            entity: sensor.keller_fbh_regelung_elektrische_leistung
-            name: Elektrisch
-            state_header: W
-            format: precision0
+                  button.keller_fbh_mischer_mischventil_rekalibrierung_grundstellung_geschlossen
+                name: Ventil rekalibrieren (Grundstellung ZU)
+      - type: custom:vertical-stack-in-card
+        cards:
+          - type: entities
+            title: Betriebszähler
             entities:
-              - entity: sensor.keller_fbh_regelung_elektrische_energie
-                name: Gesamt
-                format: precision2
+              - type: custom:multiple-entity-row
+                entity: sensor.keller_fbh_umwaelzpumpe_betriebsstunden
+                name: Pumpe
+                state_header: Std
+                format: precision1
+                entities:
+                  - entity: sensor.keller_fbh_umwaelzpumpe_schaltzyklen
+                    name: Zyklen
+                    format: precision0
+              - type: custom:multiple-entity-row
+                entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
+                name: Stellantrieb
+                state_header: Std
+                format: precision1
+                entities:
+                  - entity: >-
+                      sensor.keller_fbh_mischer_mischventil_stellantrieb_schaltzyklen
+                    name: Zyklen
+                    format: precision0
+              - entity: sensor.keller_fbh_mischer_mischventil_rekalibrierung_alter
+                name: Letzte Rekalibrierung
+          - type: entities
+            title: Stromverbrauch
+            entities:
+              - type: custom:multiple-entity-row
+                entity: sensor.keller_fbh_regelung_elektrische_leistung
+                name: Elektrisch
+                state_header: W
+                format: precision0
+                entities:
+                  - entity: sensor.keller_fbh_regelung_elektrische_energie
+                    name: Gesamt
+                    format: precision2
       - type: entities
         title: Konfiguration
         entities:
           - entity: number.keller_fbh_mischer_feedforward_anteil
             name: Feedforward Anteil
+          - entity: number.keller_fbh_mischer_pid_kp
+            name: PID Kₚ
+          - entity: number.keller_fbh_mischer_pid_ki
+            name: PID Kᵢ
           - entity: button.keller_fbh_mischer_pid_autotuning
             name: PID Autotuning starten
       - type: custom:expander-card

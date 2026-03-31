@@ -296,6 +296,74 @@ sensor:
 
 
 # ======================================================================================================================
+# PID-Parameter — über Home Assistant live einstellbar
+# ======================================================================================================================
+# Kp und Ki können ohne Flash angepasst werden. Die Werte werden persistent gespeichert
+# und beim Boot an den PID-Regler übergeben. Änderungen wirken sofort, der I-Anteil wird
+# bei Kp/Ki-Änderung zurückgesetzt um Windup aus alten Parametern zu vermeiden.
+
+number:
+  - platform: template
+    name: "PID Kp"
+    id: pid_kp_nr
+    device_id: mischer
+    icon: "mdi:alpha-p-circle"
+    entity_category: config
+    min_value: 0.01
+    max_value: 1.0
+    step: 0.01
+    mode: box
+    initial_value: ${pid_kp}
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          id(pid_mischkreis).set_kp(x);
+      - climate.pid.reset_integral_term: pid_mischkreis
+      - logger.log:
+          level: INFO
+          format: "PID Kp geaendert: %.3f — Integral reset"
+          args: ['x']
+
+  - platform: template
+    name: "PID Ki"
+    id: pid_ki_nr
+    device_id: mischer
+    icon: "mdi:alpha-i-circle"
+    entity_category: config
+    min_value: 0.0001
+    max_value: 0.01
+    step: 0.0001
+    mode: box
+    initial_value: ${pid_ki}
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          id(pid_mischkreis).set_ki(x);
+      - climate.pid.reset_integral_term: pid_mischkreis
+      - logger.log:
+          level: INFO
+          format: "PID Ki geaendert: %.4f — Integral reset"
+          args: ['x']
+
+
+# ======================================================================================================================
+# Boot-Initialisierung — gespeicherte PID-Parameter laden
+# ======================================================================================================================
+
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          id(pid_mischkreis).set_kp(id(pid_kp_nr).state);
+          id(pid_mischkreis).set_ki(id(pid_ki_nr).state);
+          ESP_LOGI("pid", "PID-Parameter aus NVS geladen: Kp=%.3f Ki=%.4f",
+                   id(pid_kp_nr).state, id(pid_ki_nr).state);
+
+
+# ======================================================================================================================
 # Taste — PID-Autotuning
 # ======================================================================================================================
 
