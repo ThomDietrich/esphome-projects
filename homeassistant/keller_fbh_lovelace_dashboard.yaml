@@ -74,6 +74,50 @@ sections:
   - type: grid
     cards:
       - type: heading
+        heading: Raumklima
+      - type: tile
+        entity: sensor.og_baustelle_raumsensor_temperature
+        name: Raumtemperatur (OG Baustelle)
+        icon: mdi:home-thermometer
+      - type: tile
+        entity: sensor.og_baustelle_raumsensor_humidity
+        name: Luftfeuchte (OG Baustelle)
+        icon: mdi:water-percent
+      - type: history-graph
+        hours_to_show: 12
+        grid_options:
+          rows: 5
+        entities:
+          - entity: sensor.og_baustelle_raumsensor_temperature
+            name: Raumtemperatur
+          - entity: sensor.keller_fbh_mischer_sekundaer_vorlauftemperatur
+            name: Sekundär VL (FBH liefert)
+          - entity: sensor.keller_fbh_mischer_vorlauf_sollwert
+            name: Vorlauf Sollwert
+      - type: custom:expander-card
+        title: ℹ️ Erklärung
+        expanded: false
+        cards:
+          - type: markdown
+            content: >
+              **Raumtemperatur**: Gemessen im OG Baustelle, repräsentativ für
+              den gesamten Estrich-Aufheizbereich.
+
+
+              **Sekundär VL**: Was die FBH-Regelung an Vorlauftemperatur
+              liefert. Reagiert schnell auf Regelungsänderungen.
+
+
+              **Vorlauf Sollwert**: Die Zieltemperatur der FBH-Regelung.
+              Die Raumtemperatur folgt dem VL mit Stunden Verzögerung
+              (thermische Trägheit des Estrichs).
+
+
+              **Luftfeuchte**: Relevant für Estrich-Trocknung und
+              Behaglichkeit. Optimal: 40–60% rF.
+  - type: grid
+    cards:
+      - type: heading
         heading: Temperaturen
       - type: history-graph
         hours_to_show: 24
