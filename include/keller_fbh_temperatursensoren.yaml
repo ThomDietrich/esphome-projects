@@ -116,7 +116,7 @@ sensor:
   # FBH-Rücklauf (vom Heizkreisverteiler zurück)
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_bus
-    address: 0x933cd6045779db28
+    address: 0x5e000005fad5aa28
     name: "Sekundaer Ruecklauftemperatur"  # T_FBH_RL
     id: t_fbh_rl
     device_id: mischer

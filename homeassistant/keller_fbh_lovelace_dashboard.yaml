@@ -71,17 +71,15 @@ sections:
                 name: Durchflussmangel
           - entity: binary_sensor.keller_fbh_mischer_untertemperatur_sperre
             name: Untertemperatur Sperre
-  - type: grid
-    cards:
       - type: heading
         heading: Raumklima
       - type: tile
         entity: sensor.og_baustelle_raumsensor_temperature
-        name: Raumtemperatur (OG Baustelle)
+        name: Raumtemperatur
         icon: mdi:home-thermometer
       - type: tile
         entity: sensor.og_baustelle_raumsensor_humidity
-        name: Luftfeuchte (OG Baustelle)
+        name: Luftfeuchte
         icon: mdi:water-percent
       - type: history-graph
         hours_to_show: 12
@@ -108,13 +106,13 @@ sections:
               liefert. Reagiert schnell auf Regelungsänderungen.
 
 
-              **Vorlauf Sollwert**: Die Zieltemperatur der FBH-Regelung.
-              Die Raumtemperatur folgt dem VL mit Stunden Verzögerung
-              (thermische Trägheit des Estrichs).
+              **Vorlauf Sollwert**: Die Zieltemperatur der FBH-Regelung. Die
+              Raumtemperatur folgt dem VL mit Stunden Verzögerung (thermische
+              Trägheit des Estrichs).
 
 
-              **Luftfeuchte**: Relevant für Estrich-Trocknung und
-              Behaglichkeit. Optimal: 40–60% rF.
+              **Luftfeuchte**: Relevant für Estrich-Trocknung und Behaglichkeit.
+              Optimal: 40–60% rF.
   - type: grid
     cards:
       - type: heading
@@ -705,7 +703,8 @@ sections:
                     name: Zyklen
                     format: precision0
               - type: custom:multiple-entity-row
-                entity: sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
+                entity: >-
+                  sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit
                 name: Stellantrieb
                 state_header: Std
                 format: precision1
