@@ -52,6 +52,10 @@ Examples:
 - `stellantrieb_laufzeit_oeffnen_s` — clear: actuator travel time opening, in seconds
 - Bad: `laufzeit_s`, `position`, `runtime` — ambiguous without context
 
+## Documenting Project Knowledge
+
+Never store project information in hidden memory files. Document everything in the visible project files where it belongs — e.g. in YAML header comments, `.md` documentation files, or `CLAUDE.md`. The user must be able to see, review, and maintain all documented information.
+
 ## Working with Device Files
 
 When reviewing or editing a device YAML file, always read its referenced packages and includes first (`packages:`, `!include`). These define shared IDs, entities, and conventions that the device file depends on.

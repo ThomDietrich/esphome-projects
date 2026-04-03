@@ -9,3 +9,6 @@
 .claude/*
 !.claude/settings.json
 !.claude/commands/
+
+# MCP config (contains API tokens)
+.mcp.json
