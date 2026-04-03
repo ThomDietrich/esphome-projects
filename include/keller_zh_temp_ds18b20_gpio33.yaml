@@ -1,17 +1,17 @@
 # ======================================================================================================================
 # DS18B20 Sensorband — 1-Wire Bus 2 (GPIO33)
 # ======================================================================================================================
-# 11 DS18B20-Sensoren als vertikales Sensorband im Pufferspeicher blau (Buderus Logalux SF551, 550 Liter). Misst die
-# Temperaturschichtung von unten (Sensor 01) bis oben (Sensor 11).
+# 10 DS18B20-Sensoren als vertikales Sensorband im Pufferspeicher blau (Buderus Logalux SF551, 550 Liter). Misst die
+# Temperaturschichtung von unten (Sensor 01) bis oben (Sensor 10). Sensor 11 defekt, auskommentiert.
 #
 # Daraus wird der Speicher-Ladegrad berechnet:
 #   Jeder Sensor liefert einen prozentualen Wert zwischen einer festen Untergrenze (30°C = 0%) und der aktuellen
-#   Temperatur am obersten Sensor (min. 60°C = 100%). Der Mittelwert aller 11 Sensoren ergibt den Gesamtladegrad
+#   Temperatur am obersten Sensor (min. 60°C = 100%). Der Mittelwert aller 10 Sensoren ergibt den Gesamtladegrad
 #   in Prozent.
 #
 # Trigger-Optimierung:
-#   Alle 11 Sensoren teilen sich einen 1-Wire-Bus und aktualisieren nahezu gleichzeitig. Die Ladegrad-Neuberechnung
-#   wird nur von Sensor 01 (unten) und Sensor 11 (oben) ausgeloest, um 9 redundante Berechnungen pro Zyklus zu
+#   Alle 10 Sensoren teilen sich einen 1-Wire-Bus und aktualisieren nahezu gleichzeitig. Die Ladegrad-Neuberechnung
+#   wird nur von Sensor 01 (unten) und Sensor 10 (oben) ausgeloest, um 8 redundante Berechnungen pro Zyklus zu
 #   vermeiden.
 # ======================================================================================================================
 
@@ -23,9 +23,9 @@ one_wire:
 sensor:
 
   # Pufferspeicher blau: Sensorband DS18B20 Temperatursensoren
-  # Ladegrad update is only triggered by sensor 01 (bottom) and 11 (top).
-  # All 11 sensors share one 1-Wire bus and update nearly simultaneously,
-  # so triggering from every sensor would cause 11 redundant recalculations.
+  # Ladegrad update is only triggered by sensor 01 (bottom) and 10 (top).
+  # All 10 sensors share one 1-Wire bus and update nearly simultaneously,
+  # so triggering from every sensor would cause 10 redundant recalculations.
 
   - <<: !include ds18b20_template.yaml
     one_wire_id: one_wire_gpio33
@@ -101,18 +101,20 @@ sensor:
     name: Blau Sensorband 10
     id: puffer_blau_lg_sensor_10
     device_id: pufferspeicher
-
-  - <<: !include ds18b20_template.yaml
-    one_wire_id: one_wire_gpio33
-    address: 0x6d3ce1d4446bde28
-    name: Blau Sensorband 11
-    id: puffer_blau_lg_sensor_11
-    device_id: pufferspeicher
     on_value:
       then:
         - component.update: puffer_blau_ladegrad
         - component.update: puffer_blau_durchschnitt
         - component.update: puffer_blau_schichtung
+
+  # DEFEKT
+  #- <<: !include ds18b20_template.yaml
+  #  one_wire_id: one_wire_gpio33
+  #  address: 0x6d3ce1d4446bde28
+  #  name: Blau Sensorband 11
+  #  id: puffer_blau_lg_sensor_11
+  #  device_id: pufferspeicher
+
 
 
   # Pufferspeicher blau: Berechnete Kenngroessen
@@ -129,14 +131,14 @@ sensor:
     lambda: |-
       const float low = 30.0f;
 
-      float raw_high = id(puffer_blau_lg_sensor_11).state;
+      float raw_high = id(puffer_blau_lg_sensor_10).state;
       if (isnan(raw_high)) return NAN;
       float high = raw_high < 60.0f ? 60.0f : raw_high;
 
       float span = high - low;
       if (span <= 0.0f) span = 1.0f;
 
-      float vals[11] = {
+      float vals[10] = {
         id(puffer_blau_lg_sensor_01).state,
         id(puffer_blau_lg_sensor_02).state,
         id(puffer_blau_lg_sensor_03).state,
@@ -146,16 +148,15 @@ sensor:
         id(puffer_blau_lg_sensor_07).state,
         id(puffer_blau_lg_sensor_08).state,
         id(puffer_blau_lg_sensor_09).state,
-        id(puffer_blau_lg_sensor_10).state,
-        id(puffer_blau_lg_sensor_11).state
+        id(puffer_blau_lg_sensor_10).state
       };
 
-      for (int i = 0; i < 11; i++) {
+      for (int i = 0; i < 10; i++) {
         if (isnan(vals[i])) return NAN;
       }
 
       float total_pct = 0.0f;
-      for (int i = 0; i < 11; i++) {
+      for (int i = 0; i < 10; i++) {
         float v = vals[i];
         float pct;
         if (v <= low) pct = 0.0f;
@@ -164,7 +165,7 @@ sensor:
         total_pct += pct;
       }
 
-      float mean_pct = total_pct / 11.0f;
+      float mean_pct = total_pct / 10.0f;
       return roundf(mean_pct * 10.0f) / 10.0f;
 
   - platform: template
@@ -178,7 +179,7 @@ sensor:
     accuracy_decimals: 1
     update_interval: never
     lambda: |-
-      float vals[11] = {
+      float vals[10] = {
         id(puffer_blau_lg_sensor_01).state,
         id(puffer_blau_lg_sensor_02).state,
         id(puffer_blau_lg_sensor_03).state,
@@ -188,15 +189,14 @@ sensor:
         id(puffer_blau_lg_sensor_07).state,
         id(puffer_blau_lg_sensor_08).state,
         id(puffer_blau_lg_sensor_09).state,
-        id(puffer_blau_lg_sensor_10).state,
-        id(puffer_blau_lg_sensor_11).state
+        id(puffer_blau_lg_sensor_10).state
       };
       float sum = 0.0f;
-      for (int i = 0; i < 11; i++) {
+      for (int i = 0; i < 10; i++) {
         if (isnan(vals[i])) return NAN;
         sum += vals[i];
       }
-      return sum / 11.0f;
+      return sum / 10.0f;
 
   - platform: template
     id: puffer_blau_schichtung
@@ -209,7 +209,7 @@ sensor:
     accuracy_decimals: 1
     update_interval: never
     lambda: |-
-      float top = id(puffer_blau_lg_sensor_11).state;
+      float top = id(puffer_blau_lg_sensor_10).state;
       float bottom = id(puffer_blau_lg_sensor_01).state;
       if (isnan(top) || isnan(bottom)) return NAN;
       return top - bottom;
