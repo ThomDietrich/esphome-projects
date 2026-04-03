@@ -6,7 +6,22 @@
 #
 # Anlagenkomponenten:
 #   - Gastherme: Buderus GB 162-25 (Gas-Brennwertkessel)
-#   - Feststoffkessel: MPM DS WOOD 18 kW (Holzvergaserkessel)
+#   - Feststoffkessel: MPM DS WOOD 18 kW (Holzvergaserkessel, Naturzug ohne Geblaese)
+#     Hersteller: MPM PROJEKT Marcin Nykiel, Rozwienica (PL). Handbuch: kotly.com
+#     Nennleistung 18 kW, Wirkungsgrad 89%, Energieeffizienzklasse A+
+#     Abgastemperatur bei Nennleistung: 125-140°C, Betriebstemperatur: 60-90°C
+#     Ruecklauftemperatur min. 55°C (Garantiebedingung, Korrosionsschutz)
+#     Brennstoff: Scheitholz ~20 cm Umfang, mind. 2 Jahre gelagert, 12-20% Feuchte
+#     Brenndauer bei Nennleistung: ca. 5 h, Kraftstoffverbrauch: 5,5 kg/h
+#     Ladekammer: ~70 dm3 (~25 kg), Ladetueroeffnung: 250x370 mm (seitlich)
+#     Wassermenge im Kessel: 80 dm3, Gewicht: 370 kg, max. Betriebsdruck: 1,5 bar
+#     Luftregelung: Primaerluft ueber Aschetuer + Kette durch mechanischen Zugregler (Pos. 19)
+#       TODO: Genaues Modell des thermostatischen Zugreglers
+#       Primaerluft-Skala auf 55-60 einstellen (je nach Holzart)
+#     Sekundaerluft: 2 Schiebeklappen an der Kesselrueckseite unten (Abb. 9)
+#     Direktzugklappe: Kurzschlussklappenhebel rechts unter Kesselreinigung (Abb. 7/8)
+#     Flammenfarbe via Flammenbetrachter: rot=zu wenig, weiss=zu viel, gelb=optimal Sekundaerluft
+#     Erforderlicher Abgaszug: ~0,19 mbar, min. Schornsteinhoehe: 8 m
 #   - Pufferspeicher grau: EPS 600 (PAEPS2), 600L (Hauptkeller)
 #   - Pufferspeicher blau: Buderus Logalux SF551 (5501), 550L (Hauptkeller)
 #     TODO: Hydraulische Verschaltung der Pufferspeicher untereinander und mit der restlichen Anlage dokumentieren
