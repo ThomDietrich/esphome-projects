@@ -122,7 +122,7 @@ sections:
         grid_options:
           rows: 10
         entities:
-          - entity: sensor.heizungsregelung_gastherme_vorlauf
+          - entity: sensor.keller_zh_gastherme_vorlauftemperatur
             name: Gastherme Vorlauf (extern, vorgelagert)
           - entity: sensor.keller_fbh_mischer_primaer_vorlauftemperatur
             name: Primär Vorlauf (vor Mischer)
@@ -157,7 +157,7 @@ sections:
                 name: ΔT Soll
                 format: precision1
           - type: custom:multiple-entity-row
-            entity: sensor.heizungsregelung_gastherme_vorlauf
+            entity: sensor.keller_zh_gastherme_vorlauftemperatur
             name: Gastherme (extern)
             state_header: VL
             format: precision1
