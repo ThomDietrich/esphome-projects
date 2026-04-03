@@ -15,8 +15,10 @@
 #     Brenndauer bei Nennleistung: ca. 5 h, Kraftstoffverbrauch: 5,5 kg/h
 #     Ladekammer: ~70 dm3 (~25 kg), Ladetueroeffnung: 250x370 mm (seitlich)
 #     Wassermenge im Kessel: 80 dm3, Gewicht: 370 kg, max. Betriebsdruck: 1,5 bar
-#     Luftregelung: Primaerluft ueber Aschetuer + Kette durch mechanischen Zugregler (Pos. 19)
-#       TODO: Genaues Modell des thermostatischen Zugreglers
+#     Luftregelung: Primaerluft ueber Aschetuer, Kette gezogen durch DK System Unister (Pos. 19)
+#       Elektronischer Zugregler mit Kettenantrieb — misst Kesseltemperatur,
+#       oeffnet/schliesst Luftklappe mechanisch ueber Kette
+#       Handbuch (PL): https://www.dksystem.pl/download/UNISTER_P4_INS_006-001.pdf
 #       Primaerluft-Skala auf 55-60 einstellen (je nach Holzart)
 #     Sekundaerluft: 2 Schiebeklappen an der Kesselrueckseite unten (Abb. 9)
 #     Direktzugklappe: Kurzschlussklappenhebel rechts unter Kesselreinigung (Abb. 7/8)
