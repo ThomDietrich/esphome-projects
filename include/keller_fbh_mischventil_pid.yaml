@@ -3,7 +3,7 @@
 # ======================================================================================================================
 #
 # Regelt die FBH-Vorlauftemperatur über das Dreiwege-Mischventil (Oventrop Regumat).
-# Kombination aus Störgrößenaufschaltung (Feedforward, keller_fbh_mischventil_feedforward.yaml) und PID-Feinkorrektur.
+# Die Kombination mit dem Feedforward erfolgt in keller_fbh_mischventil_steuerung.yaml.
 #
 #   Regelgröße:    FBH-Vorlauftemperatur T_FBH_VL (DS18B20, 5s Abtastrate)
 #   Führungsgröße: Vorlauf-Solltemperatur (einstellbar über HA Climate-Entity)
@@ -18,22 +18,17 @@
 #   ┌─────────────────────────────────────────────────────────────────────────────────┐
 #   │  Feedforward (*_feedforward.yaml)                                   → V_ff    │
 #   │    V_ff = (T_Soll - T_RL) / (T_Prim - T_RL)                                  │
-#   │    Primärtemp. von Gastherme-Sensor (Fallback: lokaler DS18B20)               │
 #   ├─────────────────────────────────────────────────────────────────────────────────┤
 #   │  PID-Regler (dieses File)                                           → V_pid   │
 #   │    Korrigiert Modellungenauigkeiten und Restfehler                             │
 #   ├─────────────────────────────────────────────────────────────────────────────────┤
-#   │  Mischung (pid_output_position, dieses File)                                   │
+#   │  Kombination + Positionsregler (*_steuerung.yaml)                    Stufe 2   │
 #   │    V_soll = α × V_ff + (1 − α) × V_pid                                       │
-#   │    α = FF_Anteil (Standard 70%, über HA einstellbar)                           │
-#   ├─────────────────────────────────────────────────────────────────────────────────┤
-#   │  Positionsregler (*_steuerung.yaml)                                  Stufe 2   │
 #   │    Vergleicht V_soll mit geschätzter Ist-Öffnung                               │
 #   │    Erzeugt diskrete Relaisimpulse für 3-Punkt-Stellantrieb                     │
-#   │    Takt: 10s, max. 15s Impuls (~10% Hub pro Zyklus)                           │
 #   └─────────────────────────────────────────────────────────────────────────────────┘
 #
-#   Manueller Override (keller_fbh_mischventil_steuerung.yaml) umgeht die gesamte Kaskade.
+#   Manueller Override (*_steuerung.yaml) umgeht die gesamte Kaskade.
 #
 #
 # 2. PID-REGLER
@@ -161,53 +156,18 @@
 
 
 # ======================================================================================================================
-# Globale Variablen — Soll-Öffnung
+# Template-Output — PID-Ausgang
 # ======================================================================================================================
-
-globals:
-  # Gewünschte Ventilöffnung — Ergebnis aus FF+PID-Mischung (0.0–1.0)
-  - id: desired_valve_position
-    type: float
-    restore_value: false
-    initial_value: "0.5"
-
-
-# ======================================================================================================================
-# Template-Output — Schnittstelle zwischen Feedforward/PID und Positionsregler
-# ======================================================================================================================
-# Die PID climate-Komponente schreibt ihre Stellgröße auf diesen Output. Hier wird sie mit dem
-# Feedforward-Wert gemischt. Der Positionsregler (keller_fbh_mischventil_steuerung.yaml) liest dann
-# desired_valve_position als Soll-Öffnung.
+# Die PID climate-Komponente schreibt ihre Stellgröße auf diesen Output. Der Wert wird
+# gespeichert und an recalculate_valve_target (keller_fbh_mischventil_steuerung.yaml)
+# übergeben, wo die Kombination mit dem Feedforward erfolgt.
 
 output:
   - platform: template
     id: pid_output_position
     type: float
     write_action:
-      - lambda: |-
-          float pid_out = state;
-
-          // Feedforward aus Mischungsgleichung: V = (T_Soll - T_RL) / (T_Prim - T_RL)
-          // T_Prim = lokaler DS18B20 vor dem Mischer (tatsächliche Temperatur am Mischpunkt).
-          float ff = pid_out;  // Fallback: reiner PID wenn FF nicht berechenbar
-          if (id(t_prim_vl).has_state() && id(t_fbh_rl).has_state()) {
-            float t_prim = id(t_prim_vl).state;
-            float t_soll = id(pid_mischkreis).target_temperature;
-            float t_rl = id(t_fbh_rl).state;
-            float denom = t_prim - t_rl;
-            if (denom > 2.0f) {
-              ff = (t_soll - t_rl) / denom;
-              ff = std::max(0.0f, std::min(1.0f, ff));
-            }
-          }
-          id(feedforward_position) = ff;
-
-          // Gewichtete Mischung: FF liefert Basis, PID korrigiert Restfehler
-          float alpha = id(ff_anteil_wert);
-          id(desired_valve_position) = std::max(0.0f, std::min(1.0f,
-            alpha * ff + (1.0f - alpha) * pid_out));
-      - component.update: ventilstellung_soll_sensor
-      - component.update: feedforward_sensor
+      - script.execute: recalculate_valve_target
 
 
 # ======================================================================================================================

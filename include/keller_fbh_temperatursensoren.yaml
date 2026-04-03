@@ -84,6 +84,7 @@ sensor:
       then:
         - component.update: t_prim_diff
         - component.update: t_prim_headroom
+        - script.execute: recalculate_feedforward
 
   # Primärkreis-Rücklauf (aus dem Mischventil zurück zum Wärmeerzeuger)
   - <<: !include ds18b20_template.yaml
@@ -125,6 +126,7 @@ sensor:
       then:
         - component.update: t_fbh_diff
         - component.update: t_rl_diff
+        - script.execute: recalculate_feedforward
 
 
   # ---- Abgeleitete Werte ----

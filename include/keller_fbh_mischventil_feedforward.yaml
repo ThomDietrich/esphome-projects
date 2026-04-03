@@ -2,8 +2,8 @@
 # Störgrößenaufschaltung (Feedforward) — Mischventilregelung
 # ======================================================================================================================
 #
-# Berechnet die physikalisch korrekte Ventilöffnung aus der Mischungsgleichung und kombiniert
-# sie gewichtet mit dem PID-Regler (keller_fbh_mischventil_pid.yaml).
+# Berechnet die physikalisch korrekte Ventilöffnung aus der Mischungsgleichung.
+# Die Kombination mit dem PID-Regler erfolgt in keller_fbh_mischventil_steuerung.yaml.
 #
 #
 # MISCHUNGSGLEICHUNG
@@ -28,17 +28,6 @@
 #   - Gastherme VL reagiert sofort auf Brennerzyklen, obwohl die Hitze erst verzögert am
 #     Mischer ankommt — verursacht unnötige FF-Schwankungen
 # Prim VL löst beide Probleme: korrekte Temperatur und natürliche Glättung durch Rohrleitung.
-#
-#
-# KOMBINATION MIT PID
-# ======================================================================================================================
-#
-#   V_soll = α × V_ff + (1 − α) × V_pid
-#
-#   α = FF_Anteil (0–100%, Standard 70%, über HA einstellbar):
-#     0%   = reiner PID, kein Feedforward
-#     70%  = Feedforward dominiert, PID korrigiert Restfehler (empfohlen)
-#     100% = reines Feedforward, keine PID-Korrektur
 #
 #
 # VENTILKENNLINIE
@@ -81,6 +70,36 @@ globals:
     initial_value: "0.6"
 
 
+# ======================================================================================================================
+# Feedforward-Neuberechnung
+# ======================================================================================================================
+# Wird aufgerufen bei: Temperaturänderung (t_prim_vl, t_fbh_rl) und periodisch (60s).
+# Nach Aktualisierung von feedforward_position wird recalculate_valve_target
+# (keller_fbh_mischventil_steuerung.yaml) aufgerufen, um die Kombination mit PID
+# und die Soll-Öffnung zu aktualisieren.
+
+script:
+  - id: recalculate_feedforward
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(t_prim_vl).has_state() || !id(t_fbh_rl).has_state()) return;
+          float t_prim = id(t_prim_vl).state;
+          float t_soll = id(pid_mischkreis).target_temperature;
+          float t_rl = id(t_fbh_rl).state;
+          float denom = t_prim - t_rl;
+          if (denom > 2.0f) {
+            float ff = (t_soll - t_rl) / denom;
+            id(feedforward_position) = std::max(0.0f, std::min(1.0f, ff));
+          }
+      - component.update: feedforward_sensor
+      - script.execute: recalculate_valve_target
+
+interval:
+  - interval: 60s
+    then:
+      - script.execute: recalculate_feedforward
+
 
 sensor:
   # Feedforward-Stellgröße aus der Mischungsgleichung (ohne PID-Anteil)
@@ -119,9 +138,4 @@ number:
     set_action:
       - lambda: |-
           id(ff_anteil_wert) = x / 100.0f;
-          // V_soll mit neuem α sofort neu berechnen
-          float alpha = id(ff_anteil_wert);
-          float pid_out = id(pid_mischkreis).get_output_value();
-          id(desired_valve_position) = std::max(0.0f, std::min(1.0f,
-            alpha * id(feedforward_position) + (1.0f - alpha) * pid_out));
-      - component.update: ventilstellung_soll_sensor
+      - script.execute: recalculate_valve_target

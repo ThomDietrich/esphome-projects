@@ -20,12 +20,28 @@
 #   - Tasten: Manuelle Ventilfahrt (10s AUF/ZU), Rekalibrierung
 #
 #
+# REGELUNGSSTRATEGIE — Stufe 1½: Kombination FF + PID
+# ======================================================================================================================
+#
+#   V_soll = α × V_ff + (1 − α) × V_pid
+#
+#   α = FF_Anteil (0–100%, Standard 70%, über HA einstellbar):
+#     0%   = reiner PID, kein Feedforward
+#     70%  = Feedforward dominiert, PID korrigiert Restfehler (empfohlen)
+#     100% = reines Feedforward, keine PID-Korrektur
+#
+#   Auslöser für Neuberechnung (recalculate_valve_target):
+#     - PID-Ausgang ändert sich (write_action in *_pid.yaml)
+#     - FF-Eingangstemperaturen ändern sich (*_feedforward.yaml via *_temperatursensoren.yaml)
+#     - FF-Anteil wird über HA angepasst (*_feedforward.yaml)
+#     - Periodisch (60s Fallback in *_feedforward.yaml)
+#
+#
 # REGELUNGSSTRATEGIE — Stufe 2: Positionsregler
 # ======================================================================================================================
 #
-#   Die kombinierte Ausgabe aus Feedforward und PID (keller_fbh_mischventil_pid.yaml,
-#   keller_fbh_mischventil_feedforward.yaml) liefert die gewünschte Ventilöffnung als
-#   Wert von 0.0 bis 1.0 in desired_valve_position. Der Positionsregler vergleicht
+#   Die gewünschte Ventilöffnung (desired_valve_position, 0.0–1.0) wird vom
+#   recalculate_valve_target-Skript aus FF und PID berechnet. Der Positionsregler vergleicht
 #   diese Soll-Öffnung mit der geschätzten Ist-Öffnung und berechnet daraus Relaisimpulse:
 #
 #   ┌──────────────────────────────────────────────────────────────┐
@@ -126,6 +142,12 @@ switch:
 # ======================================================================================================================
 
 globals:
+  # Gewünschte Ventilöffnung — Ergebnis aus FF+PID-Kombination (0.0–1.0)
+  - id: desired_valve_position
+    type: float
+    restore_value: false
+    initial_value: "0.5"
+
   # Geschätzte aktuelle Ventilöffnung (0.0–1.0), persistent über Neustarts
   - id: estimated_valve_position
     type: float
@@ -176,6 +198,18 @@ globals:
 # Mehrfachausführung.
 
 script:
+  # Kombination FF + PID → Soll-Öffnung. Aufgerufen von *_feedforward.yaml und *_pid.yaml.
+  - id: recalculate_valve_target
+    mode: single
+    then:
+      - lambda: |-
+          float alpha = id(ff_anteil_wert);
+          float ff = id(feedforward_position);
+          float pid_out = id(pid_mischkreis).get_output_value();
+          id(desired_valve_position) = std::max(0.0f, std::min(1.0f,
+            alpha * ff + (1.0f - alpha) * pid_out));
+      - component.update: ventilstellung_soll_sensor
+
   # Ventil AUF fahren — Öffnung wird alle 1,4s um ±1% nachgeführt
   - id: drive_valve_open
     mode: restart
