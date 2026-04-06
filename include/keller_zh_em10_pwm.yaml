@@ -12,32 +12,18 @@
 #   Die Umrechnung basiert auf einer linearen Regression (Messwerte aus Kalibriertabelle). Die Koeffizienten sind im
 #   Lambda hinterlegt.
 #
-# Sollwert-Persistenz und Betriebsmodus-Kopplung:
-#   Der Heiz-Sollwert wird persistent gespeichert (Vorgabe 30°C). Beim Booten und bei Moduswechsel wendet das Script
-#   apply_gastherme_sollwert den korrekten PWM-Wert an:
-#     - Aus:        0°C (Gastherme inaktiv)
-#     - Heizen:     gespeicherter Sollwert
-#     - Warmwasser: gespeicherter Sollwert (von Gastherme in WWB ignoriert)
+# Sollwert-Steuerung:
+#   Der Heiz-Sollwert wird durch die Betriebssteuerung (keller_zh_gastherme_betriebssteuerung.yaml) verwaltet.
+#   Das Script apply_gastherme_sollwert liest global_heizung_sollwert und wendet den korrekten PWM-Wert an.
+#   Im Modus "Aus" wird 0°C angewendet (kein Signal).
 #
 #   Hinweis zum WWB-Modus: Die Gastherme ignoriert das 0-10V Signal (Y1) im Warmwasserbereitungsmodus. Sie nutzt
 #   stattdessen ihren internen Temperatursensor am Waermetauscher und regelt auf einen eigenen Sollwert (einstellbar am
 #   Geraet, typisch 60°C). Das 0-10V Signal steuert nur die Heizkreis-Vorlaufmodulation.
 #
-#   Bidirektionale Kopplung mit Betriebsmodus (keller_zh_relais.yaml):
-#     Sollwert → 0°C:         Betriebsmodus wechselt zu "Aus"
-#     Sollwert > 0°C bei Aus: Betriebsmodus wechselt zu "Heizen"
-#     Moduswechsel:           Sollwert wird entsprechend angewendet
-#
-# Steuerung ueber Home Assistant:
-#   Die API-Action "gastherme_solltemperatur_set" nimmt eine Temperatur in °C entgegen und setzt PWM-Ausgang sowie vier
-#   Diagnosesensoren (Temperatur, Spannung, PWM-Prozent, Regelabweichung).
+# Diagnose-Sensoren:
+#   Vier Sensoren zeigen den aktuellen Sollwert in verschiedenen Einheiten (°C, V, %, K Abweichung).
 # ======================================================================================================================
-
-globals:
-  - id: global_gastherme_sollwert_degc
-    type: float
-    restore_value: yes
-    initial_value: '30.0'
 
 output:
   - platform: ledc
@@ -48,17 +34,16 @@ output:
     min_power: 0.00
     max_power: 1.00
 
-# Wendet den gespeicherten Sollwert an, abhaengig vom Betriebsmodus.
-# Wird aufgerufen bei: Boot, Moduswechsel, Sollwert-Aenderung via API.
+# Wendet den Heiz-Sollwert als PWM-Signal an.
+# Wird von der Betriebssteuerung aufgerufen bei: Boot, Moduswechsel, Sollwert-Aenderung.
+# Im Modus "Aus" ist global_heizung_sollwert = 0, daher degc = 0 → kein Signal.
 script:
   - id: apply_gastherme_sollwert
     then:
       - lambda: |-
-          float degc = 0.0f;
-          if (id(gastherme_betriebsmodus).state != "Aus") {
-            degc = id(global_gastherme_sollwert_degc);
-          }
-          degc = std::min(90.0f, std::max(0.0f, degc));
+          float degc = std::min(90.0f, std::max(0.0f, id(global_heizung_sollwert)));
+          // Im Modus "Aus" ist global_heizung_sollwert 0 → degc = 0 → kein PWM-Signal.
+          // Im WWB-Modus bleibt der Heiz-Sollwert erhalten, die Therme ignoriert das Signal.
           float volt = std::max(0.0f, degc * 0.1253f - 1.2751f);
           float pwm_pct = std::max(0.0f, (volt - 0.4535f) * 10.05f);
           id(gastherme_sollwert_degc_sensor).publish_state(degc);
@@ -67,12 +52,6 @@ script:
           id(heiz_sollwert_pwm_output).set_level(
             std::min(1.0f, std::max(0.0f, pwm_pct / 100.0f))
           );
-
-esphome:
-  on_boot:
-    - priority: 500
-      then:
-        - script.execute: apply_gastherme_sollwert
 
 sensor:
   - platform: template
@@ -121,34 +100,3 @@ sensor:
     on_value:
       - component.update: gastherme_regelabweichung
 
-api:
-  actions:
-    - action: gastherme_solltemperatur_set
-      variables:
-        temperature: float
-      then:
-        - globals.set:
-            id: global_gastherme_sollwert_degc
-            value: !lambda 'return temperature;'
-        - if:
-            condition:
-              lambda: |-
-                return temperature <= 0.0f
-                  && id(gastherme_betriebsmodus).state != "Aus";
-            then:
-              - select.set:
-                  id: gastherme_betriebsmodus
-                  option: "Aus"
-            else:
-              - if:
-                  condition:
-                    lambda: |-
-                      return temperature > 0.0f
-                        && id(gastherme_betriebsmodus).state == "Aus";
-                  then:
-                    - select.set:
-                        id: gastherme_betriebsmodus
-                        option: "Heizen"
-                  else:
-                    # Mode unchanged — apply new setpoint directly
-                    - script.execute: apply_gastherme_sollwert

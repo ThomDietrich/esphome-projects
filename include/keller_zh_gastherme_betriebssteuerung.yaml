@@ -1,0 +1,251 @@
+# ======================================================================================================================
+# Gastherme Betriebssteuerung — Anforderungsbasierte Modussteuerung
+# ======================================================================================================================
+# Zentrale Steuerungslogik fuer die Buderus GB 162-25 Gastherme. Empfaengt zwei unabhaengige
+# Anforderungen von Home Assistant (Heizung und Warmwasserbereitung) und arbitriert den
+# resultierenden Betriebsmodus der Gastherme.
+#
+# Anforderungsmodell:
+#   HA sendet Anforderungen, ESP entscheidet autonom ueber den Betriebsmodus.
+#   - heizung_anfordern(sollwert):       Sollwert > 0 = Heizbedarf, 0 = kein Bedarf
+#   - warmwasser_anfordern(zieltemperatur): Startet autonome WWB mit Zieltemperatur
+#
+# Betriebsmodi (resultierender Zustand):
+#   - Aus:        Keine Anforderung aktiv → Relais AUS, Sollwert 0°C
+#   - Heizen:     Heizung angefordert, keine WWB aktiv → Relais AUS, Sollwert anwenden
+#   - Warmwasser: WWB aktiv (Vorrang vor Heizung) → Relais EIN, Therme regelt intern
+#
+# WWB-Vorrang:
+#   Warmwasserbereitung hat immer Vorrang vor Heizung. Die Gastherme kann physisch nur
+#   eine Funktion gleichzeitig ausfuehren (3-Wege-Umschaltventil). Nach Ende der WWB
+#   wird automatisch zum vorherigen Zustand zurueckgekehrt (Heizen oder Aus).
+#
+# Autonome WWB-Abschaltung (ESP-seitig, unabhaengig von HA):
+#   1. Zieltemperatur erreicht (warmwasserspeicher_oben >= zieltemperatur)
+#   2. Maximale Laufzeit ueberschritten (konfigurierbar, Default 25 min)
+#   3. Maximale Speichertemperatur ueberschritten (konfigurierbar, Default 70°C)
+#   4. Sensorausfall (warmwasserspeicher_oben NaN fuer > 30s)
+#
+# Abhaengigkeiten (IDs aus anderen Dateien):
+#   - wwb_anforderung (switch, keller_zh_relais.yaml): Relais 4
+#   - warmwasserspeicher_oben (sensor, keller_zh_temp_ds18b20_gpio32.yaml): DS18B20
+#   - apply_gastherme_sollwert (script, keller_zh_em10_pwm.yaml): PWM-Sollwert anwenden
+#   - heiz_sollwert_pwm_output (output, keller_zh_em10_pwm.yaml): PWM-Ausgang
+#   - gastherme_sollwert_degc_sensor (sensor, keller_zh_em10_pwm.yaml): Diagnose
+#   - gastherme_sollwert_volt_sensor (sensor, keller_zh_em10_pwm.yaml): Diagnose
+#   - gastherme_sollwert_pwm_sensor (sensor, keller_zh_em10_pwm.yaml): Diagnose
+# ======================================================================================================================
+
+globals:
+  # Letzter Heizungs-Sollwert von HA (persistent — ueberlebt ESP-Neustart)
+  - id: global_heizung_sollwert
+    type: float
+    restore_value: yes
+    initial_value: '0.0'
+
+  # WWB-Zieltemperatur (nicht persistent — nach Neustart keine WWB aktiv)
+  - id: global_wwb_zieltemperatur
+    type: float
+    restore_value: no
+    initial_value: '0.0'
+
+  # WWB laeuft gerade (nicht persistent)
+  - id: global_wwb_aktiv
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+  # millis() bei WWB-Start (fuer Laufzeitbegrenzung)
+  - id: global_wwb_startzeit_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+  # Zaehler fuer aufeinanderfolgende NaN-Werte des Speichersensors (fuer 30s-Timeout)
+  - id: global_wwb_nan_zaehler
+    type: uint8_t
+    restore_value: no
+    initial_value: '0'
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Konfigurierbare Parameter
+# ----------------------------------------------------------------------------------------------------------------------
+
+number:
+  - platform: template
+    name: "Warmwasserbereitung Max. Laufzeit"
+    id: wwb_max_laufzeit_min
+    device_id: gastherme
+    icon: mdi:timer-alert-outline
+    unit_of_measurement: "min"
+    min_value: 5
+    max_value: 60
+    step: 1
+    initial_value: 25
+    restore_value: true
+    optimistic: true
+
+  - platform: template
+    name: "Warmwasserbereitung Max. Speichertemperatur"
+    id: wwb_max_speichertemperatur
+    device_id: gastherme
+    icon: mdi:thermometer-alert
+    unit_of_measurement: "°C"
+    min_value: 50
+    max_value: 90
+    step: 1
+    initial_value: 70
+    restore_value: true
+    optimistic: true
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Status-Sensoren (Rueckmeldung an HA)
+# ----------------------------------------------------------------------------------------------------------------------
+
+text_sensor:
+  - platform: template
+    name: "Betriebsmodus"
+    id: gastherme_betriebsmodus
+    device_id: gastherme
+    icon: mdi:thermostat
+
+  - platform: template
+    name: "Warmwasserbereitung Ergebnis"
+    id: wwb_ergebnis
+    device_id: gastherme
+    icon: mdi:water-thermometer
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Arbitrierungslogik
+# ----------------------------------------------------------------------------------------------------------------------
+
+script:
+  # Zentrale Auswertung: wird bei jeder Zustandsaenderung aufgerufen
+  - id: betriebssteuerung_auswerten
+    then:
+      - lambda: |-
+          if (id(global_wwb_aktiv)) {
+            // WWB hat Vorrang — Relais EIN, Sollwert beibehalten (Therme ignoriert ihn im WWB-Modus)
+            id(wwb_anforderung).turn_on();
+            id(gastherme_betriebsmodus).publish_state("Warmwasser");
+          } else if (id(global_heizung_sollwert) > 0.0f) {
+            // Heizung angefordert — Relais AUS, Sollwert anwenden
+            id(wwb_anforderung).turn_off();
+            id(gastherme_betriebsmodus).publish_state("Heizen");
+          } else {
+            // Keine Anforderung — alles aus
+            id(wwb_anforderung).turn_off();
+            id(gastherme_betriebsmodus).publish_state("Aus");
+          }
+      - script.execute: apply_gastherme_sollwert
+
+  # WWB beenden: setzt Globals zurueck, publiziert Ergebnis, wertet Arbitrierung neu aus
+  - id: wwb_beenden
+    parameters:
+      grund: string
+    then:
+      - lambda: |-
+          id(global_wwb_aktiv) = false;
+          id(global_wwb_zieltemperatur) = 0.0f;
+          id(wwb_ergebnis).publish_state(grund.c_str());
+      - script.execute: betriebssteuerung_auswerten
+
+  # WWB-Ueberwachung: prueft zyklisch die Abbruchbedingungen waehrend aktiver WWB.
+  # Intervall 5s — bei NaN zaehlt ein Counter hoch, nach 6x (≈30s) wird abgebrochen.
+  - id: wwb_ueberwachung
+    mode: single
+    then:
+      - lambda: 'id(global_wwb_nan_zaehler) = 0;'
+      - while:
+          condition:
+            lambda: 'return id(global_wwb_aktiv);'
+          then:
+            - lambda: |-
+                // --- Abbruchbedingung 1 (hoechste Prio): Sensorausfall ---
+                if (isnan(id(warmwasserspeicher_oben).state)) {
+                  id(global_wwb_nan_zaehler) += 1;
+                  if (id(global_wwb_nan_zaehler) >= 6) {
+                    id(wwb_beenden).execute("Sensorausfall");
+                  }
+                  return;  // Warten oder abgebrochen — naechste Iteration
+                }
+                id(global_wwb_nan_zaehler) = 0;  // Sensor OK — Zaehler zuruecksetzen
+
+                float temp = id(warmwasserspeicher_oben).state;
+
+                // --- Abbruchbedingung 2: Maximale Speichertemperatur ---
+                if (temp >= id(wwb_max_speichertemperatur).state) {
+                  id(wwb_beenden).execute("Maximale Speichertemperatur");
+                  return;
+                }
+
+                // --- Abbruchbedingung 3: Zieltemperatur erreicht ---
+                if (temp >= id(global_wwb_zieltemperatur)) {
+                  id(wwb_beenden).execute("Zieltemperatur erreicht");
+                  return;
+                }
+
+                // --- Abbruchbedingung 4: Maximale Laufzeit ---
+                uint32_t laufzeit_ms = millis() - id(global_wwb_startzeit_ms);
+                uint32_t max_laufzeit_ms = (uint32_t)(id(wwb_max_laufzeit_min).state * 60000.0f);
+                if (laufzeit_ms > max_laufzeit_ms) {
+                  id(wwb_beenden).execute("Maximale Laufzeit");
+                  return;
+                }
+            - delay: 5s
+
+# ----------------------------------------------------------------------------------------------------------------------
+# API-Actions (Schnittstelle zu Home Assistant)
+# ----------------------------------------------------------------------------------------------------------------------
+
+api:
+  actions:
+    - action: heizung_anfordern
+      variables:
+        sollwert: float
+      then:
+        - globals.set:
+            id: global_heizung_sollwert
+            value: !lambda 'return sollwert;'
+        - script.execute: betriebssteuerung_auswerten
+
+    - action: warmwasser_anfordern
+      variables:
+        zieltemperatur: float
+      then:
+        - lambda: |-
+            // Guard: Sensorausfall — Anforderung ablehnen
+            if (isnan(id(warmwasserspeicher_oben).state)) {
+              id(wwb_ergebnis).publish_state("Sensorausfall");
+              return;
+            }
+            // Guard: Zieltemperatur bereits erreicht — Anforderung ignorieren
+            if (id(warmwasserspeicher_oben).state >= zieltemperatur) {
+              id(wwb_ergebnis).publish_state("Zieltemperatur erreicht");
+              return;
+            }
+            // WWB starten
+            id(global_wwb_zieltemperatur) = zieltemperatur;
+            id(global_wwb_aktiv) = true;
+            id(global_wwb_startzeit_ms) = millis();
+            id(wwb_ergebnis).publish_state("Aktiv");
+        - if:
+            condition:
+              lambda: 'return id(global_wwb_aktiv);'
+            then:
+              - script.execute: betriebssteuerung_auswerten
+              - script.execute: wwb_ueberwachung
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Boot-Verhalten
+# ----------------------------------------------------------------------------------------------------------------------
+
+esphome:
+  on_boot:
+    - priority: 600
+      then:
+        # Nach Neustart: WWB ist inaktiv (nicht persistent), Heizungs-Sollwert wird
+        # aus Flash wiederhergestellt. Arbitrierung auswerten ergibt Heizen oder Aus.
+        - lambda: |-
+            id(wwb_ergebnis).publish_state("Bereit");
+        - script.execute: betriebssteuerung_auswerten

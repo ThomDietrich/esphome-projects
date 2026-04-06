@@ -90,6 +90,7 @@ keller-zh-regelung.yaml
 ├── common/boilerplate.yaml
 ├── include/keller_zh_i2c_enclosure.yaml
 ├── include/keller_zh_relais.yaml
+├── include/keller_zh_gastherme_betriebssteuerung.yaml
 ├── include/keller_zh_temp_pt1000_spi.yaml
 ├── include/keller_zh_temp_ds18b20_gpio32.yaml
 │   └── include/ds18b20_template.yaml (×15)
@@ -104,7 +105,7 @@ keller-zh-regelung.yaml
 └── include/s0_energy_meter_template.yaml (×1, Stromzaehler)
 ```
 
-**15 Dateien, 13 direkte Packages, 29 Template-Instanzen** (26× DS18B20, 2× Waermezaehler, 1× S0)
+**16 Dateien, 14 direkte Packages, 29 Template-Instanzen** (26× DS18B20, 2× Waermezaehler, 1× S0)
 
 ### 1.4 GPIO-Belegung
 
@@ -135,52 +136,63 @@ keller-zh-regelung.yaml
 
 ## 2. Datenfluss und Steuerlogik
 
-### 2.1 Betriebsmodus-Zustandsmaschine
+### 2.1 Betriebssteuerung (Anforderungsbasiertes Modell)
+
+HA sendet zwei unabhaengige Anforderungen, der ESP arbitriert und steuert die Gastherme autonom.
 
 ```
-                        ┌──────────────┐
-                        │     Aus      │
-                        │ Relais 4: AUS│
-                        │ Sollwert: 0°C│
-                        └──┬───────┬───┘
-              Sollwert>0°C │       │ Sollwert=0°C
-              (auto "Heizen")     (auto "Aus")
-                           │       │
-                 ┌─────────┴───┐   │
-                 │   Heizen    │◄──┘
-                 │ Relais 4:AUS│
-                 │ Sollwert:   │
-                 │ gespeichert │
-                 └──────┬──────┘
-                        │ Manuell via Select
-                        ▼
-                 ┌─────────────┐
-                 │ Warmwasser  │
-                 │ Relais 4:EIN│
-                 │ Sollwert:   │   Gastherme ignoriert 0-10V
-                 │ gespeichert │   im WWB-Modus, regelt intern
-                 └─────────────┘
+HA (Anforderungen)                    ESP (Arbitrierung)                 Hardware
+─────────────────                    ──────────────────                 ─────────
+Heizkennlinie ──→ heizung_anfordern(sollwert) ──┐
+                                                 ├──→ betriebssteuerung ──→ Relais 4
+Zeitplaene ─────→ warmwasser_anfordern(ziel) ───┘    _auswerten           + PWM
+Schwellwerte ───→                                       │
+                                                        ▼
+                                              Betriebsmodus (text_sensor, read-only)
+                                              WWB Ergebnis (text_sensor)
 ```
 
-**Bidirektionale Kopplung** (em10_pwm.yaml ↔ relais.yaml):
-- API setzt Sollwert → 0°C: Modus wechselt automatisch zu "Aus"
-- API setzt Sollwert > 0°C bei Modus "Aus": Modus wechselt zu "Heizen"
-- Moduswechsel → Script `apply_gastherme_sollwert` setzt PWM-Ausgang
+**Architekturentscheidungen:**
+- Zwei logisch unabhaengige Anforderungen → ein physischer Zustand: gehoert auf die hardwarenahe Ebene
+- Sicherheitskritische Abschaltungen (Uebertemperatur, Sensorausfall) muessen ohne HA funktionieren
+- WWB hat immer Vorrang (Branchenstandard Warmwasservorrangschaltung, thermische Traegheit Gebaeude)
+- Race-Conditions eliminiert: ESP verwaltet den Zustand atomar
+
+**Resultierender Betriebsmodus:**
+
+| Zustand | Bedingung | Relais 4 | Sollwert |
+|---------|-----------|----------|----------|
+| Aus | Keine Anforderung aktiv | AUS | 0°C |
+| Heizen | Heizung angefordert, WWB nicht aktiv | AUS | Gespeicherter Sollwert |
+| Warmwasser | WWB aktiv (Vorrang) | EIN | Gespeicherter Sollwert (von Therme ignoriert) |
+
+**WWB-Abbruchbedingungen (ESP-autonom):**
+
+| Prio | Bedingung | Ergebnis-Text |
+|------|-----------|---------------|
+| 1 | Sensorausfall (warmwasserspeicher_oben NaN >30s) | Sensorausfall |
+| 2 | Max. Speichertemperatur ueberschritten | Maximale Speichertemperatur |
+| 3 | Zieltemperatur erreicht | Zieltemperatur erreicht |
+| 4 | Max. Laufzeit ueberschritten | Maximale Laufzeit |
+
+**Schnittstellenvertrag ESP ↔ HA:**
+- API-Actions: `heizung_anfordern(sollwert)`, `warmwasser_anfordern(zieltemperatur)`
+- Sensoren: `Betriebsmodus` (Aus/Heizen/Warmwasser), `Warmwasserbereitung Ergebnis`
+- Invarianten: Exklusivitaet, WWB-Vorrang, autonome Abschaltung, Guard bei Anforderung
 
 **Boot-Reihenfolge:**
-1. Prioritaet 600 (relais.yaml): Relais-Zustand aus gespeichertem Modus wiederherstellen
-2. Prioritaet 500 (em10_pwm.yaml): PWM-Sollwert anwenden
+1. Prioritaet 600 (betriebssteuerung.yaml): Arbitrierung auswerten, Ergebnis = "Bereit"
+2. Script `apply_gastherme_sollwert` wird von Betriebssteuerung aufgerufen
+
+Vollstaendige Spezifikation: `docs/superpowers/specs/2026-04-05-gastherme-betriebssteuerung-design.md`
 
 ### 2.2 Sollwert-Signalkette
 
 ```
-global_gastherme_sollwert_degc (persistent, default 30°C)
+global_heizung_sollwert (persistent, default 0°C)
         │
         ▼
-apply_gastherme_sollwert (Script)
-        │
-        ├── Modus "Aus" → degc = 0°C
-        ├── Sonst → degc = gespeicherter Wert
+apply_gastherme_sollwert (Script, aufgerufen von Betriebssteuerung)
         │
         ▼  Lineare Regression (kalibriert):
    T [°C] ──→ V = T × 0.1253 − 1.2751 [V] ──→ PWM = (V − 0.4535) × 10.05 [%]
