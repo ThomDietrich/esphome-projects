@@ -17,13 +17,14 @@
 # Lockout-Auslöser:
 #
 #   Übertemperaturschutz (10s-Intervall):
-#     Wenn die FBH-Vorlauftemperatur den Grenzwert max_vorlauf überschreitet. Schützt den Estrich vor thermischer
-#     Überlastung (typisch: 50°C).
+#     Wenn die FBH-Vorlauftemperatur den Grenzwert max_vorlauf ueberschreitet. Schuetzt den Estrich
+#     vor thermischer Ueberlastung (typisch: 50°C).
 #
 #   Sensorfehler-Watchdog (30s-Intervall, 60s Boot-Karenzzeit):
-#     Wenn einer der vier DS18B20-Sensoren ungültige Werte liefert (kein Messwert, NaN, < 5°C oder > 80°C). Verhindert
-#     unkontrolliertes Aufheizen bei Sensorausfall. Die 60s Karenzzeit nach Boot verhindert Fehlauslösung bevor die
-#     Sensoren ihre ersten Messwerte liefern. Ventil wird sofort aktiv geschlossen (identisch zu Übertemperaturschutz).
+#     Wenn einer der vier DS18B20-Sensoren ungueltige Werte liefert (kein Messwert, NaN, < 5°C
+#     oder > 80°C). Verhindert unkontrolliertes Aufheizen bei Sensorausfall. Die 60s Karenzzeit
+#     nach Boot verhindert Fehlausloesung bevor die Sensoren ihre ersten Messwerte liefern. Ventil
+#     wird sofort aktiv geschlossen (identisch zu Uebertemperaturschutz).
 #
 # Untertemperatur-Betriebssperre (separates File):
 #
@@ -31,9 +32,9 @@
 #   keller_fbh_untertemperatur.yaml ausgelagert, da sie kein sicherheitskritischer Lockout ist,
 #   sondern eine automatisch reversible Betriebssperre.
 #
-# Alle Funktionen arbeiten unabhängig vom Reglerzustand und vom FBH Hauptschalter. Sie greifen direkt auf die Relais
-# zu. Der Lockout wird zusätzlich vom Positionsregler geprüft (keller_fbh_mischventil_steuerung.yaml) und blockiert jede
-# Ventilbewegung.
+# Alle Funktionen arbeiten unabhaengig vom Reglerzustand und vom FBH Hauptschalter. Sie greifen
+# direkt auf die Relais zu. Der Lockout wird zusaetzlich vom Positionsregler geprueft
+# (keller_fbh_mischventil_steuerung.yaml) und blockiert jede Ventilbewegung.
 #
 # ======================================================================================================================
 
@@ -55,14 +56,58 @@ globals:
 # Sicherheits-Intervalle
 # ======================================================================================================================
 
+# ======================================================================================================================
+# Uebertemperaturschutz — Reaktiv via binary_sensor
+# ======================================================================================================================
+# Loest Lockout aus wenn die FBH-Vorlauftemperatur laenger als 3s ueber dem Grenzwert liegt.
+# Reagiert sofort auf Sensorwerte statt per Polling-Intervall.
+
+binary_sensor:
+  - platform: template
+    name: "Sekundaer Uebertemperaturschutz"
+    id: sekundaer_uebertemperaturschutz
+    device_id: mischer
+    device_class: heat
+    icon: "mdi:thermometer-alert"
+    lambda: |-
+      // Kein Messwert seit Boot → kein Uebertemperatur-Urteil (verhindert Fehlausloesung)
+      if (!id(t_fbh_vl).has_state()) return false;
+      return id(t_fbh_vl).state > ${max_vorlauf};
+    filters:
+      - delayed_on: 3s
+    on_press:  # OFF→ON: Temperatur > Grenzwert fuer > 3s
+      - lambda: "id(safety_lockout) = true;"
+      - script.stop: drive_valve_open
+      - script.stop: drive_valve_close
+      - script.stop: position_controller
+      - switch.turn_off: relais_ventil_auf
+      - delay: 500ms
+      - switch.turn_on: relais_ventil_zu
+      - switch.turn_off: pumpe_fbh
+      - component.update: reglerzustand
+      - homeassistant.service:
+          service: persistent_notification.create
+          data:
+            title: "FBH Sicherheitsabschaltung"
+            notification_id: "fbh_safety"
+          data_template:
+            message: "Uebertemperaturschutz: FBH-Vorlauf {{ vl }}°C ueberschreitet Grenzwert ${max_vorlauf}°C. Ventil geschlossen, Pumpe abgeschaltet. Manueller Reset erforderlich."
+          variables:
+            vl: "return id(t_fbh_vl).state;"
+      - logger.log:
+          level: ERROR
+          format: "SICHERHEIT: Uebertemperatur %.1f°C > ${max_vorlauf}°C — LOCKOUT!"
+          args: ['id(t_fbh_vl).state']
+
+# ======================================================================================================================
+# Lockout-Durchsetzung — Watchdog (10s)
+# ======================================================================================================================
+# Erzwingt den sicheren Zustand periodisch, falls nach Lockout jemand oder etwas (Reboot,
+# manueller Eingriff) Relais oder Pumpe wieder einschaltet.
+
 interval:
-  # ---- LOCKOUT-DURCHSETZUNG + ÜBERTEMPERATURSCHUTZ (10s) ----
-  # Zwei Aufgaben in einem Intervall:
-  # 1) Bei aktivem Lockout: sicheren Zustand erzwingen (auch nach Reboot)
-  # 2) Bei neuem Übertemperatur-Ereignis: Lockout auslösen
   - interval: 10s
     then:
-      # (1) Lockout durchsetzen — Pumpe aus, Ventil geschlossen halten
       - if:
           condition:
             lambda: "return id(safety_lockout);"
@@ -81,36 +126,6 @@ interval:
                   - logger.log:
                       level: WARN
                       format: "SICHERHEIT: Lockout aktiv — sicherer Zustand erzwungen"
-      # (2) Neuer Übertemperatur-Lockout
-      - if:
-          condition:
-            lambda: |-
-              if (id(safety_lockout)) return false;
-              return id(t_fbh_vl).has_state()
-                     && id(t_fbh_vl).state > ${max_vorlauf};
-          then:
-            - lambda: "id(safety_lockout) = true;"
-            - script.stop: drive_valve_open
-            - script.stop: drive_valve_close
-            - script.stop: position_controller
-            - switch.turn_off: relais_ventil_auf
-            - delay: 500ms
-            - switch.turn_on: relais_ventil_zu
-            - switch.turn_off: pumpe_fbh
-            - component.update: reglerzustand
-            - homeassistant.service:
-                service: persistent_notification.create
-                data:
-                  title: "FBH Sicherheitsabschaltung"
-                  notification_id: "fbh_safety"
-                data_template:
-                  message: "Uebertemperaturschutz: FBH-Vorlauf {{ vl }}°C ueberschreitet Grenzwert ${max_vorlauf}°C. Ventil geschlossen, Pumpe abgeschaltet. Manueller Reset erforderlich."
-                variables:
-                  vl: "return id(t_fbh_vl).state;"
-            - logger.log:
-                level: ERROR
-                format: "SICHERHEIT: Uebertemperatur %.1f°C > ${max_vorlauf}°C — LOCKOUT aktiviert!"
-                args: ['id(t_fbh_vl).state']
 
   # ---- SENSORFEHLER-WATCHDOG (30s) ----
   # Prüft alle vier DS18B20-Sensoren. 60s Boot-Karenzzeit, damit Sensoren
@@ -168,7 +183,6 @@ button:
     on_press:
       - lambda: "id(safety_lockout) = false;"
       - switch.turn_off: relais_ventil_zu
-      - lambda: "id(estimated_valve_position) = 0.0f;"
       - component.update: ventilstellung_ist_sensor
       - component.update: reglerzustand
       - homeassistant.service:

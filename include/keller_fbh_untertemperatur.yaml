@@ -114,6 +114,7 @@ interval:
               return id(t_gastherme_vl).state < (sollwert - 2.0f);
           then:
             - lambda: "id(untertemperatur_sperre) = true;"
+            - climate.pid.reset_integral_term: pid_mischkreis
             - script.stop: drive_valve_open
             - script.stop: drive_valve_close
             - script.stop: position_controller
@@ -140,7 +141,6 @@ interval:
           then:
             - lambda: "id(untertemperatur_sperre) = false;"
             - switch.turn_off: relais_ventil_zu
-            - lambda: "id(estimated_valve_position) = 0.0f;"
             - switch.turn_on: pumpe_fbh
             - climate.pid.reset_integral_term: pid_mischkreis
             - component.update: reglerzustand

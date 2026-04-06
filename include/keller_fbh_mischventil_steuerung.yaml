@@ -44,57 +44,57 @@
 #   recalculate_valve_target-Skript aus FF und PID berechnet. Der Positionsregler vergleicht
 #   diese Soll-Öffnung mit der geschätzten Ist-Öffnung und berechnet daraus Relaisimpulse:
 #
-#   ┌──────────────────────────────────────────────────────────────┐
-#   │  Positionsregler (Skript, 10s-Zyklus + Ereignisauslösung)   │
-#   │                                                              │
-#   │  Vergleicht Soll-Öffnung (vom PID oder Override) mit         │
-#   │  geschätzter Ist-Öffnung des Ventils.                        │
-#   │                                                              │
-#   │  Totzone: 3% (≈ 4,2s Laufzeit). Unterhalb dieser Schwelle   │
-#   │  erfolgt keine Korrektur → Antrieb steht still.              │
-#   │                                                              │
-#   │  Bei Abweichung > Totzone:                                   │
-#   │    Impulsdauer = |Soll − Ist| × Gesamtlaufzeit (140s)       │
-#   │    Mindestimpuls: 2s (Anlaufzeit des Motors)                 │
-#   │    Maximalimpuls: 15s (≈ 10% Hub, erzwingt Neubewertung)    │
-#   │    Richtung: AUF wenn Soll > Ist, ZU wenn Soll < Ist        │
-#   └──────────────────────┬───────────────────────────────────────┘
-#                          │ Relaisimpuls (Dauer + Richtung)
-#                          ▼
-#   ┌──────────────────────────────────────────────────────────────┐
-#   │  Fahr-Skripte (drive_valve_open / drive_valve_close)         │
-#   │                                                              │
-#   │  Steuern das Relais für die berechnete Impulsdauer an.       │
-#   │  Die Stoppzeit wird absolut berechnet (millis() + Dauer).    │
-#   │  Während der Fahrt wird die geschätzte Ventilöffnung         │
-#   │  alle 1,4s um ±1% nachgeführt und an die UI gemeldet.    │
-#   │  Nach Abschluss: Motorlaufzeit und Schaltzyklen zählen.     │
-#   └──────────────────────┬───────────────────────────────────────┘
-#                          │
-#                          ▼
-#   ┌──────────────────────────────────────────────────────────────┐
-#   │  Stellantrieb: Oventrop NR230-507                            │
-#   │                                                              │
-#   │  3-Punkt-Steuerung: AUF (GPIO26/Relay 2) / ZU (GPIO25/Relay 1) / HALT │
-#   │  Laufzeit 0→90°: 140s | Drehmoment: 5 Nm | 230V AC         │
-#   │  Kein Positionsfeedback — Öffnung wird in Software           │
-#   │  geschätzt (Open-Loop auf Basis der Relais-Einschaltdauer).  │
-#   └──────────────────────────────────────────────────────────────┘
+#   ┌────────────────────────────────────────────────────────┐
+#   │  Positionsregler (Skript, 10s-Zyklus + Ereignis)      │
+#   │                                                        │
+#   │  Vergleicht Soll-Öffnung (vom PID oder Override)       │
+#   │  mit geschätzter Ist-Öffnung des Ventils.              │
+#   │                                                        │
+#   │  Totzone: 3% (≈ 4,2s). Unterhalb → kein Impuls.       │
+#   │                                                        │
+#   │  Bei Abweichung > Totzone:                             │
+#   │    Impulsdauer = |Soll − Ist| × Gesamtlaufzeit (140s) │
+#   │    Mindestimpuls: 1% Hub (1,4s)                        │
+#   │    Maximalimpuls AUF: 3% Hub (4,2s) — 18%/min         │
+#   │    Maximalimpuls ZU: 6% Hub (8,4s) — 36%/min          │
+#   │    Richtung: AUF wenn Soll > Ist, ZU wenn Soll < Ist  │
+#   └────────────────────────┬───────────────────────────────┘
+#                            │ Relaisimpuls (Dauer + Richtung)
+#                            ▼
+#   ┌────────────────────────────────────────────────────────┐
+#   │  Fahr-Skripte (drive_valve_open / drive_valve_close)   │
+#   │                                                        │
+#   │  Steuern das Relais fuer die berechnete Impulsdauer.   │
+#   │  Stoppzeit absolut berechnet (millis() + Dauer).       │
+#   │  Waehrend der Fahrt: geschaetzte Oeffnung alle 1,4s   │
+#   │  um ±1% nachgefuehrt und an die UI gemeldet.           │
+#   │  Nach Abschluss: Motorlaufzeit + Schaltzyklen zaehlen. │
+#   └────────────────────────┬───────────────────────────────┘
+#                            │
+#                            ▼
+#   ┌────────────────────────────────────────────────────────┐
+#   │  Stellantrieb: Oventrop NR230-507                      │
+#   │                                                        │
+#   │  3-Punkt: AUF (GPIO26/R2) / ZU (GPIO25/R1) / HALT     │
+#   │  Laufzeit 0→90°: 140s | Drehmoment: 5 Nm | 230V AC   │
+#   │  Kein Positionsfeedback — Oeffnung wird in Software    │
+#   │  geschaetzt (Open-Loop, Basis Relais-Einschaltdauer).  │
+#   └────────────────────────────────────────────────────────┘
 #
 # Verhalten im eingeschwungenen Zustand:
-#   Wenn die Vorlauftemperatur den Sollwert erreicht hat, konvergieren Soll- und Ist-Öffnung. Die Differenz fällt unter
-#   die Totzone (3%). Beide Relais bleiben AUS — der Antrieb steht still. Korrekturen erfolgen nur bei
-#   Störgrößenänderungen (Außentemperatur, Rücklauftemperatur, Sollwertverstellung).
+#   Wenn die Vorlauftemperatur den Sollwert erreicht hat, konvergieren Soll- und Ist-Oeffnung.
+#   Die Differenz faellt unter die Totzone (3%). Beide Relais bleiben AUS — der Antrieb steht still.
+#   Korrekturen erfolgen nur bei Stoergroessenaenderungen (Aussentemperatur, Ruecklauf, Sollwert).
 #
 # Positionsdrift und Rekalibrierung:
-#   Da der Stellantrieb keine Positionsrückmeldung besitzt, ist die Software-Schätzung der Ventilöffnung unvermeidlich
-#   driftbehaftet. Ursachen: Relais-Schaltzeiten, Motoranlauf/-auslauf, mechanische Toleranzen,
-#   Spannungsunterbrechungen.
+#   Da der Stellantrieb keine Positionsrueckmeldung besitzt, ist die Software-Schaetzung der
+#   Ventiloeffnung unvermeidlich driftbehaftet. Ursachen: Relais-Schaltzeiten, Motoranlauf/-auslauf,
+#   mechanische Toleranzen, Spannungsunterbrechungen.
 #
-#   Gegenmaßnahmen:
-#   - Periodische Rekalibrierung: Das Ventil wird für eine volle Laufzeit (140s) in Endlage ZU gefahren und die
-#     geschätzte Öffnung auf 0% zurückgesetzt. Empfehlung: 1x täglich während einer Schwachlastphase (z.B. nachts per
-#     HA-Automation).
+#   Gegenmassnahmen:
+#   - Periodische Rekalibrierung: Das Ventil wird fuer eine volle Laufzeit (140s) in Endlage ZU
+#     gefahren und die geschaetzte Oeffnung auf 0% zurueckgesetzt. Empfehlung: 1x taeglich waehrend
+#     einer Schwachlastphase (z.B. nachts per HA-Automation).
 #   - Die Rekalibrierung kann manuell über einen Button in Home Assistant oder per Automation ausgelöst werden.
 #   - Die Regelung über den PID-Regler kompensiert moderate Drift selbsttätig, da die Regelgröße (Temperatur)
 #     unabhängig von der Öffnungsschätzung gemessen wird.
@@ -336,15 +336,17 @@ script:
           float diff = soll - ist;
 
           const float TOTZONE = 0.03f;
-          const int MIN_IMPULS_MS = 2000;
-          const int MAX_IMPULS_MS = 15000;  // ~10% Ventilhub pro Zyklus
           const int LAUFZEIT_MS = ${stellantrieb_laufzeit_s} * 1000;
+          const int MIN_IMPULS_MS = LAUFZEIT_MS / 100;          // 1% Hub (1,4s)
+          const int MAX_IMPULS_AUF_MS = LAUFZEIT_MS * 3 / 100;  // 3% Hub (4,2s) — 18%/min bei 10s Intervall
+          const int MAX_IMPULS_ZU_MS = LAUFZEIT_MS * 6 / 100;   // 6% Hub (8,4s) — 36%/min bei 10s Intervall
 
           if (abs(diff) < TOTZONE) return;
 
           int dauer_ms = (int)(abs(diff) * LAUFZEIT_MS);
           if (dauer_ms < MIN_IMPULS_MS) dauer_ms = MIN_IMPULS_MS;
-          if (dauer_ms > MAX_IMPULS_MS) dauer_ms = MAX_IMPULS_MS;
+          int max_ms = (diff > 0) ? MAX_IMPULS_AUF_MS : MAX_IMPULS_ZU_MS;
+          if (dauer_ms > max_ms) dauer_ms = max_ms;
 
           id(pulse_duration_ms) = dauer_ms;
 
@@ -470,9 +472,9 @@ binary_sensor:
 # ======================================================================================================================
 # Manuelle Öffnungsvorgabe (Override)
 # ======================================================================================================================
-# Setzt eine feste Mischventil-Öffnung und umgeht den PID-Regler. Wert -1 = Auto (PID regelt), 0–100 = feste Öffnung
-# in Prozent. Nützlich für: Sommerbetrieb (0%), Spülen (100%), Testen. Der Reglerzustand-Textsensor zeigt „Manuell —
-# Override aktiv" an.
+# Setzt eine feste Mischventil-Oeffnung und umgeht den PID-Regler. Wert -1 = Auto (PID regelt),
+# 0-100 = feste Oeffnung in Prozent. Nuetzlich fuer: Sommerbetrieb (0%), Spuelen (100%), Testen.
+# Der Reglerzustand-Textsensor zeigt "Manuell — Override aktiv" an.
 
 number:
   - platform: template

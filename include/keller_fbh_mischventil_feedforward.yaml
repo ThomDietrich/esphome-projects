@@ -11,6 +11,10 @@
 #
 #   V_ff = (T_Soll − T_Rücklauf) / (T_Primär − T_Rücklauf)
 #
+# T_Rücklauf ist hier der FBH-Sekundär-Rücklauf (t_fbh_rl), der in dieser Anlage identisch
+# mit der Bypass-Temperatur ist (Rücklauf vom Heizkreisverteiler geht direkt in den
+# Bypass-Eingang des Mischventils).
+#
 # Beispiel:  T_Soll=25°C, T_RL=22°C
 #            T_Prim=32°C → V_ff = 3/10  = 30%
 #            T_Prim=48°C → V_ff = 3/26  = 11.5%    (Ventil schließt sofort beim Brennerstart)
