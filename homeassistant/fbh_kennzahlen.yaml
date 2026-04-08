@@ -1,0 +1,64 @@
+# Fussbodenheizung — Abgeleitete Kennzahlen
+#
+# Berechnet aus ESP-Sensoren des keller-fbh-regelung Geraets.
+# Alle Quell-Entities stammen vom FBH-ESP (Keller FBH Mischer / Umwaelzpumpe / Waermezaehler).
+#
+# Zieldatei: /Volumes/config/packages/heizungsregelung/fbh_kennzahlen.yaml
+
+template:
+  - sensor:
+      # Stellantrieb Duty Cycle: Anteil der Zeit in der sich das Ventil bewegt.
+      # Hoher Wert (>5%) deutet auf unruhige Regelung hin.
+      # Quelle: Motorlaufzeit (h, total_increasing) und ESP Uptime (s).
+      - name: Keller FBH Mischer Stellantrieb Duty Cycle
+        unique_id: uniqueid__keller_fbh_mischer_stellantrieb_duty_cycle
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:percent-circle-outline
+        state: >
+          {% set motor_h = states('sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit') | float(0) %}
+          {% set uptime_s = states('sensor.keller_fbh_regelung_esp_device_uptime') | float(1) %}
+          {% set uptime_h = uptime_s / 3600 %}
+          {{ ((motor_h / uptime_h) * 100) | round(2) if uptime_h > 0.1 else 0 }}
+        availability: >
+          {{ has_value('sensor.keller_fbh_mischer_mischventil_stellantrieb_motorlaufzeit')
+             and has_value('sensor.keller_fbh_regelung_esp_device_uptime') }}
+
+      # FF-Modell Abweichung: Differenz zwischen tatsaechlicher Ventiloeffnung und FF-Vorhersage.
+      # Persistent hoher Wert bedeutet das FF-Modell stimmt nicht (nichtlineare Ventilkennlinie,
+      # Bypass-Effekte). Der PID muss dann staendig kompensieren.
+      - name: Keller FBH Mischer FF Modell Abweichung
+        unique_id: uniqueid__keller_fbh_mischer_ff_modell_abweichung
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:delta
+        state: >
+          {% set ist = states('sensor.keller_fbh_mischer_mischventil_oeffnung') | float(0) %}
+          {% set ff = states('sensor.keller_fbh_mischer_feedforward_stellgroesse') | float(0) %}
+          {{ (ist - ff) | round(1) }}
+        availability: >
+          {{ has_value('sensor.keller_fbh_mischer_mischventil_oeffnung')
+             and has_value('sensor.keller_fbh_mischer_feedforward_stellgroesse') }}
+
+# Regelfehler Statistik (gleitendes 1h-Fenster)
+# Liefert standard_deviation ueber die letzte Stunde.
+# StdDev < 0.5K = sehr gut, 0.5-1K = ok, >1K = Schwingung/Instabilitaet.
+sensor:
+  - platform: statistics
+    name: Keller FBH Mischer Regelfehler Statistik
+    unique_id: uniqueid__keller_fbh_mischer_regelfehler_statistik
+    entity_id: sensor.keller_fbh_mischer_pid_regelfehler
+    state_characteristic: standard_deviation
+    max_age:
+      hours: 1
+    sampling_size: 720
+    precision: 2
+
+# Taegliche Waermeenergie (Reset um Mitternacht)
+# Basiert auf dem Primaerkreis-Waermezaehler (kWh, total_increasing).
+utility_meter:
+  keller_fbh_waermeenergie_taeglich:
+    name: Keller FBH Waermeenergie Taeglich
+    unique_id: uniqueid__keller_fbh_waermeenergie_taeglich
+    source: sensor.keller_fbh_waermezaehler_primaerkreis_energie
+    cycle: daily
