@@ -5,6 +5,11 @@ substitutions:
 
   status_led_pin: GPIO2
 
+light:
+  - id: !extend on_board_led
+    pin:
+      ignore_strapping_warning: true
+
   # Desk: Sanodesk EC4
   # Controller: LoctekMotion HCB223A-1
   # Similar product https://en.loctek.com/Desk-Frames/Dual-Motors/ET268

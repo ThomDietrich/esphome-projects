@@ -5,6 +5,10 @@ substitutions:
 
   status_led_pin: GPIO2
 
+light:
+  - id: !extend on_board_led
+    pin:
+      ignore_strapping_warning: true
 
 esphome:
   name: ${device_name}
