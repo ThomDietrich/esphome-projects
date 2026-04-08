@@ -50,7 +50,7 @@
 #   │  Vergleicht Soll-Öffnung (vom PID oder Override)       │
 #   │  mit geschätzter Ist-Öffnung des Ventils.              │
 #   │                                                        │
-#   │  Totzone: 3% (≈ 4,2s). Unterhalb → kein Impuls.       │
+#   │  Totzone: 2% (≈ 2,8s). Unterhalb → kein Impuls.       │
 #   │                                                        │
 #   │  Bei Abweichung > Totzone:                             │
 #   │    Impulsdauer = |Soll − Ist| × Gesamtlaufzeit (140s) │
@@ -83,7 +83,7 @@
 #
 # Verhalten im eingeschwungenen Zustand:
 #   Wenn die Vorlauftemperatur den Sollwert erreicht hat, konvergieren Soll- und Ist-Oeffnung.
-#   Die Differenz faellt unter die Totzone (3%). Beide Relais bleiben AUS — der Antrieb steht still.
+#   Die Differenz faellt unter die Totzone (2%). Beide Relais bleiben AUS — der Antrieb steht still.
 #   Korrekturen erfolgen nur bei Stoergroessenaenderungen (Aussentemperatur, Ruecklauf, Sollwert).
 #
 # Positionsdrift und Rekalibrierung:
@@ -335,7 +335,7 @@ script:
           float ist = id(estimated_valve_position);
           float diff = soll - ist;
 
-          const float TOTZONE = 0.03f;
+          const float TOTZONE = 0.02f;
           const int LAUFZEIT_MS = ${stellantrieb_laufzeit_s} * 1000;
           const int MIN_IMPULS_MS = LAUFZEIT_MS / 100;          // 1% Hub (1,4s)
           const int MAX_IMPULS_AUF_MS = LAUFZEIT_MS * 3 / 100;  // 3% Hub (4,2s) — 18%/min bei 10s Intervall
