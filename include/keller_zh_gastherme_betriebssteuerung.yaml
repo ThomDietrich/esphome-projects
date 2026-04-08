@@ -81,6 +81,7 @@ number:
     min_value: 5
     max_value: 60
     step: 1
+    mode: box
     initial_value: 25
     restore_value: true
     optimistic: true
@@ -93,7 +94,8 @@ number:
     unit_of_measurement: "°C"
     min_value: 50
     max_value: 90
-    step: 1
+    step: 0.1
+    mode: box
     initial_value: 70
     restore_value: true
     optimistic: true
