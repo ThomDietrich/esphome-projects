@@ -13,6 +13,9 @@
   
 # Bienenstockwaage
 #
+# Hardware: ESP32 DevKit + HX711 Waegezelle, Stromversorgung ueber USB-Netzteil.
+# Bis zu 7 Waagen (scale_id 01-07) plus Testwaage, jeweils eigene Kalibrierung.
+#
 # Beispielhafte Umrechnungsformel: weight = 0.00004194443 * raw + 6.318476
 # Wenn sich das Gewicht stark ändert (z.B. beim Kalibrieren) dauert es bis der Wert völlig stabil ist.
 #   Nach 15 Minuten: Circa 15 Gramm vom unmittelbaren Messwert
