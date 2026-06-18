@@ -11,6 +11,13 @@ wifi:
     ssid: "${device_name}"
     password: !secret wifi_fallback_pw
   min_auth_mode: WPA2
+  # Stabilere Verbindung (v.a. Outdoor/Randlage); ESP32-Default ist LIGHT.
+  # NONE vermeidet Modem-Sleep-Latenz/Verbindungsabbrueche, kostet ~20-40mA mehr.
+  power_save_mode: NONE
+
+# Reboot-Loop-Schutz: nach mehreren fehlgeschlagenen Boots bleiben nur WiFi + OTA aktiv,
+# sodass das Geraet erreichbar und flashbar bleibt.  https://esphome.io/components/safe_mode/
+safe_mode:
 
 sensor:
   # Reports the WiFi signal strength/RSSI in dB
