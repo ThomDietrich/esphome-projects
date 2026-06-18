@@ -1,24 +1,47 @@
 
 # https://esphome.io/components/sensor/adc.html
 # https://esphome.io/components/sensor/#config-sensor
+#
+# Wasserdruck — Sensor sitzt parallel zu den 4 Ventilen am gemeinsamen Verteiler.
+# ESPHome erlaubt nur EINEN Sensor je ADC-Pin: daher liest ein einziger ADC-Sensor die Rohspannung an
+# GPIO34 (diagnostisch), und der eigentliche Druck wird per 'copy' daraus kalibriert.
 sensor:
+  # Roh-ADC-Spannung an GPIO34 — zugleich Kalibrier-Hilfssensor.
+  # KALIBRIEREN: Referenzmanometer in die Zuleitung; bei mind. 2 bekannten Druecken (ideal ~0 bar / Mitte /
+  # Maximaldruck) die Rohspannung [V] ablesen und unten in 'calibrate_linear' als <V> -> <bar> eintragen.
+  # Sensor ist 'internal' (entlastet den HA-Recorder) -> Wert in der ESPHome-Web-UI (Port 80) / im Log ablesen,
+  # oder zum Kalibrieren temporaer 'internal: false' setzen. Mehr Punkte = genauer.
+  # Hinweis: ESP32 nutzt seit ESPHome 2021.11 die Hersteller-ADC-Kalibrierung -> Spannung ist bereits
+  # linearisiert; die alten Punkte (1.13->1.5 / 1.97->4.2) ggf. neu vermessen.
   - platform: adc
-    name: Wasserdruck
-    id: water_pressure_adc
+    name: Wasserdruck Rohspannung
+    id: wasserdruck_rohspannung_v
     pin: 34
     attenuation: auto
     update_interval: 1s
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    icon: mdi:sine-wave
+    entity_category: diagnostic
+    internal: true   # nicht an HA exportieren (kein Recorder-Spam); speist weiterhin den copy-Sensor unten
+
+  # Kalibrierter Wasserdruck, abgeleitet aus der Rohspannung.
+  - platform: copy
+    source_id: wasserdruck_rohspannung_v
+    name: Wasserdruck
+    id: wasserdruck
     unit_of_measurement: bar
     icon: mdi:gauge
     device_class: pressure
     state_class: measurement
     accuracy_decimals: 2
     filters:
+      # Wertepaare:  <ADC-Rohspannung [V]> -> <Druck [bar]>
       - calibrate_linear:
          datapoints:
           - 1.13 -> 1.5
           - 1.97 -> 4.2
-      - lambda: if (x < 0.0 & x > -0.5) return 0.0; else return x;
+      - lambda: if (x < 0.0 && x > -0.5) return 0.0; else return x;
       - or:
         - delta: 0.03
         - heartbeat: 30min
