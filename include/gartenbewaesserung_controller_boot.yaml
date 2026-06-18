@@ -3,54 +3,54 @@ esphome:
     - priority: 600
       then:
         - select.set:
-            id: button_0_led
+            id: taster_0_led
             option: red
     - priority: 250
       then:
         - select.set:
-            id: button_1_led
+            id: taster_1_led
             option: orange
     - priority: 200
       then:
         - select.set:
-            id: button_2_led
+            id: taster_2_led
             option: orange
     - priority: 0
       then:
         - select.set:
-            id: button_3_led
+            id: taster_3_led
             option: orange
     - priority: -100
       then:
         - delay: 500ms
         - select.set:
-            id: button_0_led
+            id: taster_0_led
             option: green
         - select.set:
-            id: button_1_led
+            id: taster_1_led
             option: green
         - select.set:
-            id: button_2_led
+            id: taster_2_led
             option: green
         - select.set:
-            id: button_3_led
+            id: taster_3_led
             option: green
         - select.set:
-            id: button_4_led
+            id: taster_4_led
             option: green
         - delay: 3000ms
         - select.set:
-            id: button_0_led
+            id: taster_0_led
             option: "off"
         - select.set:
-            id: button_1_led
+            id: taster_1_led
             option: "off"
         - select.set:
-            id: button_2_led
+            id: taster_2_led
             option: "off"
         - select.set:
-            id: button_3_led
+            id: taster_3_led
             option: "off"
         - select.set:
-            id: button_4_led
+            id: taster_4_led
             option: "off"

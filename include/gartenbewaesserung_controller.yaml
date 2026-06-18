@@ -41,31 +41,38 @@
 #
 # Noetige Aenderungen:
 #
-#   1. Hardware: MCP23017 INTB (Pin 19) mit einem Kabel an einen freien ESP32-GPIO verbinden.
-#      INTB wird verwendet weil alle 5 Taster auf Port B liegen (PB0, PB2, PB3, PB5, PB7).
+#   1. Hardware: EINEN freien ESP32-GPIO mit dem INT-Ausgang des MCP23017 verbinden (INTA ODER INTB).
+#      Im Interrupt-Betrieb spiegelt der MCP23017 (MIRROR-Bit) alle 16 Pins auf beide INT-Ausgaenge —
+#      ein einzelner Interrupt-Pin genuegt also fuer alle Taster. Dass diese auf BEIDEN Ports liegen
+#      (Taster 0/1/2 = Port B: PB7/PB3/PB0;  Taster 3/4 = Port A: PA2/PA5) spielt damit keine Rolle.
 #      Belegte GPIOs: 4 (LED), 12 (Buzzer), 13 (SDA), 14 (SCL), 25/26/32/33 (Relais).
 #      Freie GPIOs am ASTRA BR4G8AL: GPIO2, GPIO15, GPIO16, GPIO17, GPIO18, GPIO19, GPIO21-23, GPIO27.
 #      Empfehlung: GPIO27 (kein Strapping-Pin, gut zugaenglich).
 #
-#   2. Software: Interrupt-Pin in der MCP23017-Konfiguration ergaenzen:
+#   2. Software (a): Interrupt-Pin am MCP23017-Hub ergaenzen:
 #
 #      mcp23017:
-#        - id: mcp23017_expander
+#        - id: mcp23017_portexpander
 #          address: 0x20
-#          open_drain_interrupt: true     # MCP23017 INT als Open-Drain (empfohlen)
-#          pin_b:                         # Port B Interrupt (Taster)
-#            number: 27                   # ESP32-GPIO, verbunden mit MCP23017 INTB
-#            mode: INPUT_PULLUP
-#            inverted: true               # Open-Drain: aktiv-low
+#          interrupt_pin: GPIO27          # ESP32-GPIO, verbunden mit MCP23017 INTA oder INTB
+#          # open_drain_interrupt: true   # nur falls MCP23017 mit >3.3V versorgt wird (ext. Pull-up noetig)
 #
-#   3. Die binary_sensor-Konfiguration der Taster bleibt unveraendert — der MCP23017-Treiber
-#      nutzt automatisch den Interrupt statt Polling wenn ein Interrupt-Pin konfiguriert ist.
+#   3. Software (b): An JEDEM Taster-binary_sensor den Interrupt-Trigger ergaenzen (sonst weiter Polling):
+#
+#      pin:
+#        mcp23xxx: mcp23017_portexpander
+#        number: 15                       # Beispiel Taster 0
+#        mode: INPUT_PULLUP
+#        inverted: true
+#        interrupt: CHANGE                # CHANGE | RISING | FALLING
+#
+#   Doku: https://esphome.io/components/mcp230xx/
 # ------------------------------------------------------------------------------------------------------------------------
 
 
 # https://esphome.io/components/mcp230xx.html
 mcp23017:
-  - id: mcp23017_expander
+  - id: mcp23017_portexpander
     address: 0x20
 
 
@@ -74,7 +81,7 @@ mcp23017:
 event:
   - platform: template
     name: Taster
-    id: controller_button_pressed_event
+    id: taster_ereignis
     device_class: button
     event_types:
       - controller_button_pressed_event_0
@@ -89,7 +96,7 @@ binary_sensor:
   - platform: gpio
     name: Taster 0
     pin:
-      mcp23xxx: mcp23017_expander
+      mcp23xxx: mcp23017_portexpander
       number: 15
       mode: INPUT_PULLUP
       inverted: true
@@ -100,13 +107,13 @@ binary_sensor:
       then:
         # Schaltlogik für Pumpe in HA realisiert
         - event.trigger:
-            id: controller_button_pressed_event
+            id: taster_ereignis
             event_type: controller_button_pressed_event_0
 
   - platform: gpio
     name: Taster 1
     pin:
-      mcp23xxx: mcp23017_expander
+      mcp23xxx: mcp23017_portexpander
       number: 11
       mode: INPUT_PULLUP
       inverted: true
@@ -115,15 +122,15 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
-        - switch.toggle: valve_1
+        - switch.toggle: ventil_1
         - event.trigger:
-            id: controller_button_pressed_event
+            id: taster_ereignis
             event_type: controller_button_pressed_event_1
 
   - platform: gpio
     name: Taster 2
     pin:
-      mcp23xxx: mcp23017_expander
+      mcp23xxx: mcp23017_portexpander
       number: 8
       mode: INPUT_PULLUP
       inverted: true
@@ -132,15 +139,15 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
-        - switch.toggle: valve_2
+        - switch.toggle: ventil_2
         - event.trigger:
-            id: controller_button_pressed_event
+            id: taster_ereignis
             event_type: controller_button_pressed_event_2
 
   - platform: gpio
     name: Taster 3
     pin:
-      mcp23xxx: mcp23017_expander
+      mcp23xxx: mcp23017_portexpander
       number: 2
       mode: INPUT_PULLUP
       inverted: true
@@ -149,15 +156,15 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
-        - switch.toggle: valve_3
+        - switch.toggle: ventil_3
         - event.trigger:
-            id: controller_button_pressed_event
+            id: taster_ereignis
             event_type: controller_button_pressed_event_3
 
   - platform: gpio
     name: Taster 4
     pin:
-      mcp23xxx: mcp23017_expander
+      mcp23xxx: mcp23017_portexpander
       number: 5
       mode: INPUT_PULLUP
       inverted: true
@@ -166,153 +173,9 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
-        - switch.toggle: valve_4
+        - switch.toggle: ventil_4
         - event.trigger:
-            id: controller_button_pressed_event
+            id: taster_ereignis
             event_type: controller_button_pressed_event_4
 
 
-output:
-  # Taster 0
-  - platform: gpio
-    id: output_button_0_led_red
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 14
-
-  - platform: gpio
-    id: output_button_0_led_green
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 13
-
-  - platform: gpio
-    id: output_button_0_led_orange
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 12
-
-  # Taster 1
-  - platform: gpio
-    id: output_button_1_led_green
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 10
-
-  - platform: gpio
-    id: output_button_1_led_orange
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 9
-
-  # Taster 2
-  - platform: gpio
-    id: output_button_2_led_green
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 0
-
-  - platform: gpio
-    id: output_button_2_led_orange
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 1
-
-  # Taster 3
-  - platform: gpio
-    id: output_button_3_led_green
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 3
-
-  - platform: gpio
-    id: output_button_3_led_orange
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 4
-
-  # Taster 4
-  - platform: gpio
-    id: output_button_4_led_green
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 6
-
-  - platform: gpio
-    id: output_button_4_led_orange
-    pin:
-      mcp23xxx: mcp23017_expander
-      number: 7
-
-
-light:
-  # Taster 0
-  - platform: binary
-    name: Taster 0 LED rot
-    id: button_0_led_red
-    output: output_button_0_led_red
-    internal: true
-
-  - platform: binary
-    name: Taster 0 LED gruen
-    id: button_0_led_green
-    output: output_button_0_led_green
-    internal: true
-
-  - platform: binary
-    name: Taster 0 LED orange
-    id: button_0_led_orange
-    output: output_button_0_led_orange
-    internal: true
-
-  # Taster 1
-  - platform: binary
-    name: Taster 1 LED gruen
-    id: button_1_led_green
-    output: output_button_1_led_green
-    internal: true
-
-  - platform: binary
-    name: Taster 1 LED orange
-    id: button_1_led_orange
-    output: output_button_1_led_orange
-    internal: true
-
-  # Taster 2
-  - platform: binary
-    name: Taster 2 LED gruen
-    id: button_2_led_green
-    output: output_button_2_led_green
-    internal: true
-
-  - platform: binary
-    name: Taster 2 LED orange
-    id: button_2_led_orange
-    output: output_button_2_led_orange
-    internal: true
-
-  # Taster 3
-  - platform: binary
-    name: Taster 3 LED gruen
-    id: button_3_led_green
-    output: output_button_3_led_green
-    internal: true
-
-  - platform: binary
-    name: Taster 3 LED orange
-    id: button_3_led_orange
-    output: output_button_3_led_orange
-    internal: true
-
-  # Taster 4
-  - platform: binary
-    name: Taster 4 LED gruen
-    id: button_4_led_green
-    output: output_button_4_led_green
-    internal: true
-
-  - platform: binary
-    name: Taster 4 LED orange
-    id: button_4_led_orange
-    output: output_button_4_led_orange
-    internal: true

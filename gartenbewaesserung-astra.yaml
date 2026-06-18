@@ -1,16 +1,89 @@
+# ======================================================================================================================
+# Gartenbewaesserung Astra — Pumpen- und Ventilsteuerung fuer Troepfchenbewaesserung
+# ======================================================================================================================
+# Hardware: Rocket Controller ASTRA BR4G8AL (ESP32, 4x 16A Relais, 8 GPIO 3.3V, AC-Versorgung, Buzzer, Status-LED)
+# https://rocketcontroller.com/product/astra-controller-4-relays-16a-8-gpio-input-dc-power-led-br4g8al/
+# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
+# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
+# Allgemeine ASTRA-GPIO-Map und Hardware-Hinweise: siehe keller-fbh-regelung.yaml (baugleiche Hardware).
+#
+# PHYSISCHE BAUGRUPPE
+# ----------------------------------------------------------------------------------------------------------------------
+#   Astra-Controller, Netzteil, Tasmota-Pumpensteuerung, Verrohrung, Druckwaechter und Ausdehnungsgefaess sitzen
+#   gemeinsam als "Pumpensteuerung" auf einem Brett im Garten (Outdoor).
+#
+# ANLAGE / WASSERWEG
+# ----------------------------------------------------------------------------------------------------------------------
+#   Brunnen -> Brunnenpumpe -> Druckwaechter + Ausdehnungsgefaess -> Verteiler mit 4 Ventilen -> Tropfschlaeuche
+#
+#   - Brunnenpumpe: extern 230V. Der ASTRA schaltet sie NICHT direkt; sie wird in Home Assistant ueber einen
+#     Tasmota-Schalter repraesentiert:  switch.gartenbewaesserung_pumpe
+#   - Druckwaechter (mechanischer Druckschalter) + Ausdehnungsgefaess (Membrandruckkessel) takten die Pumpe
+#     druckabhaengig autonom. Primaere Nutzung ist Troepfchenbewaesserung (sehr geringer Durchfluss); das
+#     Ausdehnungsgefaess haelt den Druck und verhindert staendiges Takten der Pumpe.
+#   - Wasserdrucksensor (analog, ADC GPIO34): sitzt parallel zu den 4 Ventilen am gemeinsamen Verteiler und macht
+#     den Systemdruck in HA sichtbar (Diagnose; aktuell in keiner Schaltlogik verwendet).
+#
+# VENTILE (4x 16A Relais, Magnetventile — bedarfsgerechte Nutzung, KEINE feste Zonenzuordnung)
+# ----------------------------------------------------------------------------------------------------------------------
+#   - Ventil 1 (GPIO25, Relais 1): UNBELEGT — derzeit kein physisches Ventil angeschlossen (Reserve)
+#   - Ventil 2 (GPIO26, Relais 2): Tropf-Strang nach Bedarf
+#   - Ventil 3 (GPIO33, Relais 3): Tropf-Strang nach Bedarf
+#   - Ventil 4 (GPIO32, Relais 4): Tropf-Strang nach Bedarf
+#
+# BEDIENPANEL (custom): MCP23017 I2C-Portexpander @0x20 mit 5 Leuchttastern
+# ----------------------------------------------------------------------------------------------------------------------
+#   - Taster 0 = Power/Pumpe (LED rot/gruen/orange/gelb)
+#   - Taster 1-4 = Ventil 1-4 (LED gruen/orange/gelb)
+#   Detaillierte MCP23017-Port-Belegung und optionales Interrupt-Upgrade: include/gartenbewaesserung_controller.yaml
+#
+# STEUERLOGIK (Aufteilung ESP <-> Home Assistant)
+# ----------------------------------------------------------------------------------------------------------------------
+#   - Ventile 1-4: Taster 1-4 toggeln das jeweilige Ventil DIREKT auf dem ESP (switch.toggle). Zusaetzlich feuert
+#     jeder Tastendruck ein Event (controller_button_pressed_event_1..4).
+#   - Pumpe: Taster 0 schaltet NICHT direkt, sondern feuert nur ein Event (controller_button_pressed_event_0).
+#     Die Pumpenfreigabe (Tasmota-Schalter) wird in HA getoggelt.
+#     HA-Regeln: packages/gartenbewaesserung_controller.yaml (im Home-Assistant-Config-Repo)
+#       * Event Taster 0  -> switch.gartenbewaesserung_pumpe umschalten (an/aus, OHNE Ventil-Guard)
+#       * Pumpe an  -> Taster-0-LED gruen ;  Pumpe aus -> Taster-0-LED aus
+#
+# LED-SEMANTIK
+# ----------------------------------------------------------------------------------------------------------------------
+#   - Taster 0:   gruen = Pumpe freigegeben/an,  aus = Pumpe aus   (rot = nur Boot; orange/gelb = ungenutzt)
+#   - Taster 1-4: gruen = Ventil offen,  aus = Ventil zu           (orange = nur Boot-Animation; gelb = ungenutzt)
+#   - Boot-Animation ueber on_boot-Prioritaeten: include/gartenbewaesserung_controller_boot.yaml
+#
+# GPIO-BELEGUNG (ESP32 / ASTRA BR4G8AL)
+# ----------------------------------------------------------------------------------------------------------------------
+#   GPIO   | Funktion                  | Richtung | Notes
+#  --------+---------------------------+----------+-----------------------------------------------------
+#   GPIO4  | Status-LED (blau)         | Output   | Active LOW (inverted)
+#   GPIO12 | Buzzer (Piezo)            | Output   | LEDC/PWM, Strapping-Pin
+#   GPIO25 | Relais 1 -> Ventil 1      | Output   | 16A — UNBELEGT (Reserve)
+#   GPIO26 | Relais 2 -> Ventil 2      | Output   | 16A
+#   GPIO33 | Relais 3 -> Ventil 3      | Output   | 16A
+#   GPIO32 | Relais 4 -> Ventil 4      | Output   | 16A
+#   GPIO34 | ADC Wasserdruck           | Input    | Input-only, analog; Druck parallel zu den Ventilen
+#   GPIO13 | I2C SDA                   | Bidir    | -> MCP23017 (Tasterpanel)
+#   GPIO14 | I2C SCL                   | Bidir    | -> MCP23017 (Tasterpanel)
+#  --------+---------------------------+----------+-----------------------------------------------------
+#   MCP23017 @0x20 (I2C, 50 kHz): 5 Leuchttaster + LEDs (Port-Map siehe controller-Include)
+#   Freie ASTRA-GPIOs: GPIO2, 15, 16, 17, 18, 19, 21, 22, 23, 27, 35, 36, 39
+#   Hinweis: I2C laeuft hier ueber die GPIO-Leiste (GPIO13/14), nicht ueber die I2C-RJ-Buchse (GPIO21/22).
+#
+# WICHTIGE HINWEISE
+# ----------------------------------------------------------------------------------------------------------------------
+#   - Ventil-Relais restore_mode ALWAYS_OFF ist hardwarebedingt (Astra-Verhalten) nicht aenderbar.
+#   - Trockenlauf-/Druckschutz erfolgt mechanisch ueber den Druckwaechter — nicht durch den ESP.
+# ======================================================================================================================
+
 substitutions:
   device_name: gartenbewaesserung-astra
   device_friendly_name: Gartenbewaesserung Astra
   device_area: Garten
 
-  buzzer_pin: GPIO12
-  blue_led_pin: GPIO4
-
-# https://rocketcontroller.com/yaml-configuration-esphome-home-assistant-for-esp32r4-controller/
-# https://rocketcontroller.com/documentation-astra-configuration-esphome-home-assistant-for-astra-module/
-
-# ASTRA BR4G8AL
-# https://rocketcontroller.com/product/astra-controller-4-relays-16a-8-gpio-input-dc-power-led-br4g8al/
+  buzzer_pin: GPIO12      # Piezo-Buzzer (LEDC/PWM)
+  blue_led_pin: GPIO4     # Status-LED (active LOW, inverted)
 
 esphome:
   name: ${device_name}
@@ -23,7 +96,7 @@ esphome:
 esp32:
   board: esp32dev
   framework:
-    type: arduino
+    type: esp-idf   # seit ESPHome 2026.1 Default fuer ESP32; kleinere Binaries, schnellere Builds (baugleich FBH)
 
 packages:
   - !include common/wifi.yaml
@@ -33,7 +106,38 @@ packages:
   - !include include/gartenbewaesserung_sensors.yaml
   - !include include/gartenbewaesserung_controller.yaml
   - !include include/gartenbewaesserung_controller_boot.yaml
-  - !include include/gartenbewaesserung_controller_extra.yaml
+  # Taster-LEDs (Leuchttaster) — je Taster ein Template (LED-Kanaele + Farb-Select). gelb = gruen+orange.
+  - !include
+    file: include/gartenbewaesserung_taster_led_4farben_template.yaml
+    vars:
+      taster_idx: "0"
+      pin_rot: "14"
+      pin_gruen: "13"
+      pin_orange: "12"
+  - !include
+    file: include/gartenbewaesserung_taster_led_3farben_template.yaml
+    vars:
+      taster_idx: "1"
+      pin_gruen: "10"
+      pin_orange: "9"
+  - !include
+    file: include/gartenbewaesserung_taster_led_3farben_template.yaml
+    vars:
+      taster_idx: "2"
+      pin_gruen: "0"
+      pin_orange: "1"
+  - !include
+    file: include/gartenbewaesserung_taster_led_3farben_template.yaml
+    vars:
+      taster_idx: "3"
+      pin_gruen: "3"
+      pin_orange: "4"
+  - !include
+    file: include/gartenbewaesserung_taster_led_3farben_template.yaml
+    vars:
+      taster_idx: "4"
+      pin_gruen: "6"
+      pin_orange: "7"
 
 output:
   - id: !extend rtttl_out_buzzer

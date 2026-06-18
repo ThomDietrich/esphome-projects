@@ -1,0 +1,103 @@
+# ======================================================================================================================
+# Template: Leuchttaster mit 4 Farben (rot / gruen / orange / gelb) — fuer Taster 0 (Power/Pumpe)
+# ======================================================================================================================
+# Physisch 3 LED-Kanaele (rot + gruen + orange); gelb = gruen + orange gleichzeitig an.
+# Erwartet einen MCP23017-Hub mit  id: mcp23017_portexpander  (aus gartenbewaesserung_controller.yaml).
+#
+# Verwendung (in packages: des Geraete-YAML):
+#   - !include
+#     file: include/gartenbewaesserung_taster_led_4farben_template.yaml
+#     vars:
+#       taster_idx: "0"
+#       pin_rot: "14"
+#       pin_gruen: "13"
+#       pin_orange: "12"
+#
+# Erzeugt:  output_taster_${taster_idx}_led_{rot,gruen,orange}  (gpio)
+#           taster_${taster_idx}_led_{rot,gruen,orange}          (light, intern)
+#           taster_${taster_idx}_led                              (select: unknown/off/red/green/orange/yellow)
+# ======================================================================================================================
+
+output:
+  - platform: gpio
+    id: output_taster_${taster_idx}_led_rot
+    pin:
+      mcp23xxx: mcp23017_portexpander
+      number: ${pin_rot}
+  - platform: gpio
+    id: output_taster_${taster_idx}_led_gruen
+    pin:
+      mcp23xxx: mcp23017_portexpander
+      number: ${pin_gruen}
+  - platform: gpio
+    id: output_taster_${taster_idx}_led_orange
+    pin:
+      mcp23xxx: mcp23017_portexpander
+      number: ${pin_orange}
+
+light:
+  - platform: binary
+    name: Taster ${taster_idx} LED rot
+    id: taster_${taster_idx}_led_rot
+    output: output_taster_${taster_idx}_led_rot
+    internal: true
+  - platform: binary
+    name: Taster ${taster_idx} LED gruen
+    id: taster_${taster_idx}_led_gruen
+    output: output_taster_${taster_idx}_led_gruen
+    internal: true
+  - platform: binary
+    name: Taster ${taster_idx} LED orange
+    id: taster_${taster_idx}_led_orange
+    output: output_taster_${taster_idx}_led_orange
+    internal: true
+
+select:
+  - platform: template
+    name: Taster ${taster_idx} LED
+    id: taster_${taster_idx}_led
+    icon: mdi:led-outline
+    optimistic: true
+    options:
+      - unknown
+      - "off"
+      - red
+      - green
+      - orange
+      - yellow
+    set_action:
+      - if:
+          condition:
+            - lambda: 'return x == "off";'
+          then:
+            - light.turn_off: taster_${taster_idx}_led_rot
+            - light.turn_off: taster_${taster_idx}_led_gruen
+            - light.turn_off: taster_${taster_idx}_led_orange
+      - if:
+          condition:
+            - lambda: 'return x == "red";'
+          then:
+            - light.turn_on: taster_${taster_idx}_led_rot
+            - light.turn_off: taster_${taster_idx}_led_gruen
+            - light.turn_off: taster_${taster_idx}_led_orange
+      - if:
+          condition:
+            - lambda: 'return x == "green";'
+          then:
+            - light.turn_off: taster_${taster_idx}_led_rot
+            - light.turn_on: taster_${taster_idx}_led_gruen
+            - light.turn_off: taster_${taster_idx}_led_orange
+      - if:
+          condition:
+            - lambda: 'return x == "orange";'
+          then:
+            - light.turn_off: taster_${taster_idx}_led_rot
+            - light.turn_off: taster_${taster_idx}_led_gruen
+            - light.turn_on: taster_${taster_idx}_led_orange
+      - if:
+          condition:
+            - lambda: 'return x == "yellow";'
+          then:
+            - light.turn_off: taster_${taster_idx}_led_rot
+            - light.turn_on: taster_${taster_idx}_led_gruen
+            - light.turn_on: taster_${taster_idx}_led_orange
