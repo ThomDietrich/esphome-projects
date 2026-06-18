@@ -60,6 +60,10 @@ Never store project information in hidden memory files. Document everything in t
 
 When reviewing or editing a device YAML file, always read its referenced packages and includes first (`packages:`, `!include`). These define shared IDs, entities, and conventions that the device file depends on.
 
+## Reusable Template Includes
+
+Includes meant to be instantiated multiple times via `!include … vars:` carry the `_template` suffix in their filename (e.g. `ds18b20_template.yaml`, `s0_energy_meter_template.yaml`, `water_meter_heat_counter_template.yaml`, `gartenbewaesserung_taster_led_3farben_template.yaml`). They reference all device-specific values (IDs, pins, names) as `${var}` substitutions and must not hard-code them, so the same file can be included several times with different `vars:`.
+
 ## Cross-Project Impact
 
 Each root-level YAML is a separate ESPHome device project. Files in `include/` and `common/` may be shared across projects. Before modifying a shared file, check which root-level YAMLs import it. If multiple projects are affected, list them and confirm with the user before applying.
