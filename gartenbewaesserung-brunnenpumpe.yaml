@@ -1,0 +1,160 @@
+# ======================================================================================================================
+# Gartenbewaesserung Brunnenpumpe — Schaltsteckdose der Brunnenpumpe (Migration Tasmota -> ESPHome)
+# ======================================================================================================================
+# Hardware: "CurrySmarter 30A" Schaltsteckdose mit Leistungsmessung (ESP8266EX, BL0937 Energiemess-IC).
+# Vorher Tasmota 14.1.0; migriert nach ESPHome, um spaeter eine direkte ESP-zu-ESP-Steuerung
+# (packet_transport/UDP) mit dem Gartenbewaesserung-Astra aufzubauen (Phase 2) — ohne Home Assistant im Steuerkreis.
+#
+# GPIO-BELEGUNG (aus Tasmota-Template "CurrySmarter 30A", BASE 18 / Generic)
+# ----------------------------------------------------------------------------------------------------------------------
+#   GPIO   | Tasmota          | Funktion
+#  --------+------------------+-----------------------------------------------------
+#   GPIO4  | Heartbeat        | EXTERNER HARDWARE-WATCHDOG — muss periodisch getoggelt werden, sonst Reset!
+#   GPIO5  | Relay1           | Pumpenrelais (230V)
+#   GPIO12 | BL0937 CF        | Leistungspuls (CF)
+#   GPIO13 | Button1          | Taster (Geraetebutton)
+#   GPIO14 | HLWBL CF1        | Spannungs-/Strompuls (CF1, via SEL gemultiplext)
+#   GPIO15 | HLWBL SEL_i      | U/I-Umschaltung (BL0937: invertiert -> model handhabt das intern)
+#   GPIO16 | Led_i            | Status-/Link-LED (invertiert)
+#   GPIO0,1,2,3,17 | None     | frei/unbelegt
+#
+# KALIBRIERUNG (Leistungsmessung)
+# ----------------------------------------------------------------------------------------------------------------------
+#   Tasmota-Werte (Quercheck):  PowerCal 9683, VoltageCal 1559, CurrentCal 3500.  Es gibt KEINE direkte
+#   Tasmota->ESPHome-Formel -> nach dem Flashen 1-Punkt-kalibrieren:
+#     1. Spannung: 'Spannung' sollte ~Netzspannung (~230 V) zeigen. Faktor in 'voltage_divider' anpassen
+#        (Anzeige zu hoch -> voltage_divider verkleinern, zu niedrig -> vergroessern), bis ~230 V stimmen.
+#     2. Leistung: bekannte ohmsche Last (z.B. Wasserkocher/Heizluefter, PF~1) einstecken, 'Leistung' mit dem
+#        echten Wert vergleichen und 'current_resistor' anpassen (Anzeige zu niedrig -> current_resistor
+#        verkleinern). Die Brunnenpumpe (~922 W lt. Tasmota) ist induktiv (PF<1) und als Referenz nur grob geeignet.
+#   Die hier gesetzten Werte sind ESPHome-Defaults und nur Startpunkte.
+#
+# HINWEISE
+# ----------------------------------------------------------------------------------------------------------------------
+#   - Relais 'restore_mode: ALWAYS_OFF' = Fail-safe: Pumpe ist nach jedem Boot AUS.
+#   - Flash: ESP8266 1 MB Layout (esp01_1m). Chip ist physisch 4 MB (Tasmota meldete FlashSize 4096) — falls der
+#     OTA-Build nicht ins 1-MB-Layout passt, auf ein 4-MB-Board/flash_size umstellen.
+#   - api bleibt aktiv -> Geraet bleibt in HA sichtbar (Dashboards/History). Gesteuert wird es spaeter direkt
+#     vom Astra (Phase 2, packet_transport) — HA dann nicht mehr im Steuerkreis.
+#   - Historischer Energie-Total (Tasmota: 102.589 kWh) laesst sich beim Firmware-Wechsel nicht uebernehmen.
+# ======================================================================================================================
+
+substitutions:
+  device_name: gartenbewaesserung-brunnenpumpe
+  device_friendly_name: Gartenbewaesserung Brunnenpumpe
+  device_area: Garten
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${device_friendly_name}
+  area: ${device_area}
+
+# CurrySmarter 30A (ESP8266EX)
+esp8266:
+  board: esp01_1m
+
+packages:
+  - !include common/wifi.yaml
+  - !include common/boilerplate.yaml
+
+logger:
+  baud_rate: 0  # Sealed Plug: kein serieller Zugang -> UART-Log aus (Logs via api/web_server)
+
+# Zeit fuer den taeglichen Energie-Reset — sntp statt HA, damit HA-unabhaengig
+time:
+  - platform: sntp
+    id: time_sntp
+
+# Status-/Link-LED (zeigt WLAN-/API-Status)
+status_led:
+  pin:
+    number: GPIO16
+    inverted: true
+
+# --------------------------------------------------------------------------------------------------------------------
+# EXTERNER HARDWARE-WATCHDOG (GPIO4): muss periodisch getoggelt werden, sonst resettet der WDT den Stecker.
+# Ersetzt die Tasmota-"Heartbeat"-Funktion. Square-Wave ~0,5 Hz (Flanke jede Sekunde) haelt den WDT zufrieden.
+# WICHTIG: nach dem Flashen pruefen, dass der Stecker NICHT periodisch neu bootet.
+# --------------------------------------------------------------------------------------------------------------------
+output:
+  - platform: gpio
+    pin: GPIO4
+    id: watchdog_feed
+
+globals:
+  - id: watchdog_state
+    type: bool
+    restore_value: no
+    initial_value: "false"
+
+interval:
+  - interval: 1s
+    then:
+      - lambda: |-
+          id(watchdog_state) = !id(watchdog_state);
+          id(watchdog_feed).set_state(id(watchdog_state));
+
+# Pumpenrelais — Fail-safe: nach Boot AUS
+switch:
+  - platform: gpio
+    name: Schalter
+    id: pumpe_relais
+    pin: GPIO5
+    restore_mode: ALWAYS_OFF
+
+# Geraetebutton: toggelt lokal das Relais (Tasmota-Default-Verhalten; in Phase 2 hat die Astra-Anforderung Vorrang)
+binary_sensor:
+  - platform: gpio
+    name: Taster
+    pin:
+      number: GPIO13
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on_off: 50ms
+    on_press:
+      - switch.toggle: pumpe_relais
+
+# Leistungsmessung BL0937
+sensor:
+  - platform: hlw8012
+    model: BL0937
+    sel_pin:
+      number: GPIO15
+    cf_pin: GPIO12
+    cf1_pin: GPIO14
+    current_resistor: 0.001 ohm   # Startwert (Default) — kalibrieren, siehe Header
+    voltage_divider: 2351         # Startwert (Default) — kalibrieren, siehe Header
+    update_interval: 5s
+    voltage:
+      name: Spannung
+      id: pumpe_spannung
+      device_class: voltage
+      unit_of_measurement: V
+      accuracy_decimals: 1
+    current:
+      name: Strom
+      id: pumpe_strom
+      device_class: current
+      unit_of_measurement: A
+      accuracy_decimals: 3
+    power:
+      name: Leistung
+      id: pumpe_leistung
+      device_class: power
+      unit_of_measurement: W
+      accuracy_decimals: 1
+      icon: mdi:flash
+
+  - platform: total_daily_energy
+    name: Energie heute
+    power_id: pumpe_leistung
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    icon: mdi:meter-electric
+    filters:
+      - multiply: 0.001
