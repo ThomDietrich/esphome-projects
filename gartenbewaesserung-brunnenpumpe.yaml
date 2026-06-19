@@ -123,10 +123,11 @@ sensor:
     model: BL0937
     sel_pin:
       number: GPIO15
+      inverted: true   # SEL fuer dieses Board invertiert (Tasmota: HLWBL SEL_i) -> sonst V und I vertauscht
     cf_pin: GPIO12
     cf1_pin: GPIO14
     current_resistor: 0.001 ohm   # Startwert (Default) — kalibrieren, siehe Header
-    voltage_divider: 2351         # Startwert (Default) — kalibrieren, siehe Header
+    voltage_divider: 1603         # kalibriert: 337.3 V @2351 -> ~230 V (Netz). current_resistor noch via Last kalibrieren.
     update_interval: 5s
     voltage:
       name: Spannung
