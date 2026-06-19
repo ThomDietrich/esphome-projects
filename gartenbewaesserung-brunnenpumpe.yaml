@@ -151,7 +151,6 @@ sensor:
       accuracy_decimals: 1
       icon: mdi:flash
       filters:
-        # HA-Updates beruhigen: nur bei >=10 W Aenderung publishen, sonst alle 120 s ein Heartbeat
         - or:
             - delta: 2
             - heartbeat: 30s
@@ -166,3 +165,26 @@ sensor:
     icon: mdi:meter-electric
     filters:
       - multiply: 0.001
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Pumpen-Zustandsmaschine (on-device): explizit aus Relais + Leistung (Motor zieht Strom).
+# Vier Faelle (Wahrheitstabelle Relais x Last); der else-Fall ist ein Fehlerzustand:
+#   Relais AUS + ~0 W   -> "Aus"            (sauber stromlos)
+#   Relais AN  + ~0 W   -> "Einsatzbereit"  (Druckwaechter haelt den Motor an)
+#   Relais AN  + Last   -> "Laeuft"          (Motor zieht Strom, > 20 W)
+#   Relais AUS + Last   -> "Fehler"          (Strom trotz Relais AUS -> klebendes Relais / Messfehler)
+# Schwelle 20 W robust (Leerlauf ~0 W); nach der current_resistor-Kalibrierung ggf. anpassen.
+# ----------------------------------------------------------------------------------------------------------------------
+text_sensor:
+  - platform: template
+    name: Pumpenzustand
+    id: pumpe_zustand
+    icon: mdi:state-machine
+    update_interval: 2s
+    lambda: |-
+      bool relais = id(pumpe_relais).state;
+      bool last = id(pumpe_leistung).has_state() && id(pumpe_leistung).state > 20.0f;
+      if (!relais && !last) return std::string("Aus");
+      if ( relais && !last) return std::string("Einsatzbereit");
+      if ( relais &&  last) return std::string("Laeuft");
+      return std::string("Fehler");   // !relais && last: Strom trotz Relais AUS
