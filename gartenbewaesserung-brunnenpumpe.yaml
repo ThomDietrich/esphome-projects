@@ -128,16 +128,18 @@ sensor:
     cf1_pin: GPIO14
     current_resistor: 0.001 ohm   # Startwert (Default) — kalibrieren, siehe Header
     voltage_divider: 1603         # kalibriert: 337.3 V @2351 -> ~230 V (Netz). current_resistor noch via Last kalibrieren.
-    update_interval: 5s
+    update_interval: 2s           # schnelle Erfassung des Pumpenlaufs (Druckwaechter-getaktet, asynchron); HA-Last via delta-Filter gedaempft
     voltage:
       name: Spannung
       id: pumpe_spannung
+      internal: true            # nicht nach HA exportieren (nur intern; Leistung genuegt)
       device_class: voltage
       unit_of_measurement: V
       accuracy_decimals: 1
     current:
       name: Strom
       id: pumpe_strom
+      internal: true            # nicht nach HA exportieren (nur intern)
       device_class: current
       unit_of_measurement: A
       accuracy_decimals: 3
@@ -148,6 +150,11 @@ sensor:
       unit_of_measurement: W
       accuracy_decimals: 1
       icon: mdi:flash
+      filters:
+        # HA-Updates beruhigen: nur bei >=10 W Aenderung publishen, sonst alle 120 s ein Heartbeat
+        - or:
+            - delta: 2
+            - heartbeat: 30s
 
   - platform: total_daily_energy
     name: Energie heute
