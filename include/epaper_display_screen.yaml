@@ -10,14 +10,20 @@ spi:
 # This is an E-Ink display module, 4.2inch, 400x300 resolution, with embedded controller,
 # communicating via SPI interface, supports red, black, and white three-color display.
 
+# Farben fuer das 3-Farb-Panel (schwarz/weiss/rot); Rot fuer Alerts im Lambda.
+color:
+  - id: farbe_rot
+    red: 100%
+    green: 0%
+    blue: 0%
+
 display:
-  - platform: waveshare_epaper
+  - platform: waveshare_uc8176_bwr
     id: epaperdisplay
     cs_pin: GPIO19
     dc_pin: GPIO21
     busy_pin: GPIO22
     reset_pin: GPIO25
-    model: 4.20in
     update_interval: 30min
 
     lambda: !include epaper_display_screen_content.yaml

@@ -15,16 +15,13 @@ esphome:
   friendly_name: ${device_friendly_name}
   area: ${device_area}
 
-  on_boot:
-    - priority: -10
-      then:
-        - delay: 15s
-        - component.update: epaperdisplay
-
-# TRY THIS
-# logger:
-#   level: DEBUG
-#   hardware_uart: USB_SERIAL_JTAG
+# Lokaler Custom-Treiber fuer das originale Waveshare 4.2" B (UC8176) Tri-Color-Panel.
+# Das eingebaute 4.20in-bV2-bwr (UC8179/V2) steuert nur die halbe Flaeche an (Issue #5369).
+external_components:
+  - source:
+      type: local
+      path: components
+    components: [waveshare_uc8176_bwr]
 
 packages:
   - !include system/stamp_pico.yaml
@@ -42,8 +39,21 @@ sensor:
     id: epaperdisplay_last_update
 
 button:
+  # Kurze Auffrischung: normaler (Mono-)Refresh, ~2-3 Farbwechsel — zeichnet den
+  # aktuellen Inhalt schnell neu. Ist Rot im Bild, wird automatisch Tri-Color.
   - platform: template
-    name: Force Cotent Update
-    icon: mdi:calendar-refresh
+    name: Auffrischung (kurz)
+    icon: mdi:refresh
+    entity_category: config
     on_press:
+      - component.update: epaperdisplay
+
+  # Volle Auffrischung: erzwingt den vollen Tri-Color-OTP-Refresh (lange Waveform,
+  # ~15s) auch ohne Rot — frischt das ganze Panel auf (heller/weisserer Hintergrund).
+  - platform: template
+    name: Auffrischung (voll)
+    icon: mdi:image-refresh
+    entity_category: config
+    on_press:
+      - lambda: 'id(epaperdisplay).request_full_refresh();'
       - component.update: epaperdisplay

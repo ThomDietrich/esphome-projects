@@ -110,8 +110,8 @@
     cal_index += 1;
   }
   if (id(opstate_waschmaschine).state == "Finished") {
-    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
-    it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "Waschmaschine ist fertig!");
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), id(farbe_rot), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
+    it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), id(farbe_rot), TextAlign::BASELINE_LEFT, "Waschmaschine ist fertig!");
     cal_index += 1;
   }
   if (id(cal_geburtstag).state != "unknown" && id(cal_geburtstag).state != "unavailable" && id(cal_geburtstag).state != "") {
@@ -135,8 +135,8 @@
     cal_index += 1;
   }
   if (id(muell_entsorgung_tage).state < 2) {
-    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰩺"); // mdi-trash-can-outline
-    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(muell_entsorgung).state.c_str());
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), id(farbe_rot), TextAlign::BASELINE_CENTER, "󰩺"); // mdi-trash-can-outline
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), id(farbe_rot), TextAlign::BASELINE_LEFT, "%s", id(muell_entsorgung).state.c_str());
     cal_index += 1;
   }
 
@@ -220,26 +220,4 @@
 
 
   /////////////////////////////////////////////////////////////////////////
-  /* FOOTER */
-  //it.strftime(365, 295, id(font_footer), TextAlign::BASELINE_RIGHT , "%d. %b  %H:%M", id(homeassistant_time).now());
-
-  // if(id(wifi_signal_db).has_state()) {
-  //   int x = 380;
-  //   int y = 297;
-  //   if (id(wifi_signal_db).state >= -50) {
-  //     //Excellent
-  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤨");
-  //   } else if (id(wifi_signal_db).state  >= -60) {
-  //     //Good
-  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤥");
-  //   } else if (id(wifi_signal_db).state  >= -75) {
-  //     //Fair
-  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤢");
-  //   } else if (id(wifi_signal_db).state  >= -100) {
-  //     //Weak
-  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤟");
-  //   } else {
-  //     //Unlikely working signal
-  //     it.print(x, y, id(mdi_wifi), TextAlign::BASELINE_CENTER, "󰤫");
-  //   }
-  // }
+  /* FOOTER entfernt: Draw war deaktiviert (font_footer/mdi_wifi ungenutzt). */
