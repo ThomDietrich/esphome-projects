@@ -1,49 +1,37 @@
 # Load used fonts and symbols
+#
+# Text-Fonts: Roboto direkt aus Google Fonts (file.type: gfonts) — keine
+# gebuendelten TTFs mehr noetig. Zeichensatz via glyphsets (GF_Latin_Core deckt
+# ASCII + westeuropaeische Sonderzeichen inkl. Umlaute/ß/é ab); die Symbole
+# ° º µ ³ sind explizit ergaenzt, falls das Glyphset sie nicht fuehrt.
+# Sabon (font_calendar) ist eine lokale, kommerzielle Font und behaelt daher
+# ihre explizite Glyph-Liste. Icon-Fonts (MDI) nutzen lokale TTF + Codepoints.
 font:
-  # https://materialdesignicons.com/
-  # https://pictogrammers.github.io/@mdi/font/5.3.45/
+  # https://pictogrammers.com/library/mdi/  (Codepoints der MDI-Icons)
 
   - id: font_header
-    file: 'fonts/Roboto-Bold.ttf'
+    file:
+      type: gfonts
+      family: Roboto
+      weight: 700
     size: 20
-    glyphs: [
-      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
-      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
-    ]
-
-  - id: font_footer
-    file: 'fonts/Roboto-Regular.ttf'
-    size: 14
-    glyphs: [
-      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
-      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
-    ]
+    glyphsets: [GF_Latin_Core]
+    glyphs: ['°', 'º', 'µ', '³']
+    # GF_Latin_Core enthaelt kombinierende Akzente (U+0302 etc.), die Roboto hier
+    # nicht fuehrt und die das Display nicht nutzt (nur vorkomponierte ä ö ü é).
+    ignore_missing_glyphs: true
 
   - id: font_position
-    file: 'fonts/Roboto-Regular.ttf'
+    file:
+      type: gfonts
+      family: Roboto
+      weight: 400
     size: 18
-    glyphs: [
-      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
-      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
-    ]
+    glyphsets: [GF_Latin_Core]
+    glyphs: ['°', 'º', 'µ', '³']
+    # GF_Latin_Core enthaelt kombinierende Akzente (U+0302 etc.), die Roboto hier
+    # nicht fuehrt und die das Display nicht nutzt (nur vorkomponierte ä ö ü é).
+    ignore_missing_glyphs: true
 
   - id: font_calendar
   #  file: 'fonts/Roboto-Light.ttf'
@@ -61,46 +49,40 @@ font:
     ]
 
   - id: font_wetter_klein
-    file: 'fonts/Roboto-Regular.ttf'
+    file:
+      type: gfonts
+      family: Roboto
+      weight: 400
     size: 21
-    glyphs: [
-      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
-      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
-    ]
+    glyphsets: [GF_Latin_Core]
+    glyphs: ['°', 'º', 'µ', '³']
+    # GF_Latin_Core enthaelt kombinierende Akzente (U+0302 etc.), die Roboto hier
+    # nicht fuehrt und die das Display nicht nutzt (nur vorkomponierte ä ö ü é).
+    ignore_missing_glyphs: true
 
   - id: font_wetter_mittel
-    file: 'fonts/Roboto-Regular.ttf'
+    file:
+      type: gfonts
+      family: Roboto
+      weight: 400
     size: 23
-    glyphs: [
-      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
-      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
-    ]
+    glyphsets: [GF_Latin_Core]
+    glyphs: ['°', 'º', 'µ', '³']
+    # GF_Latin_Core enthaelt kombinierende Akzente (U+0302 etc.), die Roboto hier
+    # nicht fuehrt und die das Display nicht nutzt (nur vorkomponierte ä ö ü é).
+    ignore_missing_glyphs: true
 
   - id: font_wetter_gross
-    file: 'fonts/Roboto-Medium.ttf'
+    file:
+      type: gfonts
+      family: Roboto
+      weight: 500
     size: 50
-    glyphs: [
-      ' ', '.', ',', ':', ';', '!', '?', '+', '-', '_', '"', '<', '>', '(', ')', '[', ']',
-      '&', '@',  '%', '°', '/', 'º', 'µ', '³',
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-      'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-      'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-      'ä', 'ö', 'ü', 'Ä', 'Ö', 'Ü', 'ß', 'é',
-    ]
+    glyphsets: [GF_Latin_Core]
+    glyphs: ['°', 'º', 'µ', '³']
+    # GF_Latin_Core enthaelt kombinierende Akzente (U+0302 etc.), die Roboto hier
+    # nicht fuehrt und die das Display nicht nutzt (nur vorkomponierte ä ö ü é).
+    ignore_missing_glyphs: true
 
   - id: mdi_wetter_klein
     file: 'fonts/materialdesignicons-webfont.ttf'
@@ -169,23 +151,4 @@ font:
       '󰧓', # mdi-calendar-star
       '󰻚', # mdi-calendar-weekend-outline
       '󰩺', # mdi-trash-can-outline
-      ]
-
-  - id: mdi_wifi
-    file: 'fonts/materialdesignicons-webfont.ttf'
-    size: 18
-    glyphs: [
-      '󰤫', # mdi-wifi-strength-alert-outline
-      '󰤟', # mdi-wifi-strength-1
-      '󰤢', # mdi-wifi-strength-2
-      '󰤥', # mdi-wifi-strength-3
-      '󰤨', # mdi-wifi-strength-4
-
-      ]
-
-  - id: mdi_med
-    file: 'fonts/materialdesignicons-webfont.ttf'
-    size: 33
-    glyphs: [
-      '󰀦', # mdi-alert
       ]
