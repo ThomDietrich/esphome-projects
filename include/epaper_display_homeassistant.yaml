@@ -2,22 +2,24 @@
 time:
   - platform: homeassistant
     id: homeassistant_time
+    # Erst-Refresh, sobald die HA-Zeit synchron ist (API verbunden + Daten da);
+    # ersetzt den blinden on_boot-Delay. component.update ist lokal -> sofort ok.
+    on_time_sync:
+      then:
+        - delay: 5s
+        - component.update: epaperdisplay
 
 sensor:
   - platform: homeassistant
-    entity_id: sensor.weather_station_outtemp_c
+    entity_id: sensor.garten_ventus_w830_aussentemperatur
     id: temperature
 
   - platform: homeassistant
-    entity_id: sensor.weather_station_outtemp_c_18h_min
+    entity_id: sensor.garten_ventus_w830_aussentemperatur_minimum_18h
     id: temperature_min
 
   - platform: homeassistant
-    entity_id: sensor.weather_station_outhumidity
-    id: humidity
-
-  - platform: homeassistant
-    entity_id: sensor.weather_station_rain24_mm
+    entity_id: sensor.garten_ventus_w830_regen_24h
     id: rain_24h
 
   - platform: homeassistant
@@ -49,7 +51,7 @@ sensor:
     id: muell_entsorgung_tage
 
   - platform: homeassistant
-    entity_id: sensor.keller_zh_regelung_warmwasserspeicher_oben
+    entity_id: sensor.keller_zh_warmwasserspeicher_temperatur_oben
     id: heizung_warmwasser
 
 text_sensor:
