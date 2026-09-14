@@ -9,7 +9,7 @@ python_version = "3.13"
 [dev-packages]
 
 [packages]
-esphome = "*"
 pillow = "*"
 esptool = "*"
 yamllint = "*"
+esphome = "*"
