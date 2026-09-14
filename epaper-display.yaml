@@ -1,5 +1,23 @@
 # esphome -s device_name epaper-display-oben -s device_friendly_name "ePaper Display oben" -s device_area "kitchen" run epaper-display.yaml
 # esphome -s device_name epaper-display-unten -s device_friendly_name "ePaper Display unten" -s device_area "Untere Etage" run epaper-display.yaml
+#
+# Hardware: Beide Geraete (oben = Büro oben, unten = Küche unten) sind baugleich und
+# laufen mit dieser einen Config, nur die Substitutions unterscheiden sich:
+#   - M5Stack STAMP Pico (ESP32, system/stamp_pico.yaml), Status-LED SK6812 an GPIO27
+#   - Waveshare 4.2inch e-Paper Module (B): 400x300, schwarz/weiss/rot, originaler
+#     UC8176-Controller -> lokaler Treiber components/waveshare_uc8176_bwr
+#   - Gleiche Verkabelung, Pins in include/epaper_display_screen.yaml
+#     (CLK GPIO18, DIN GPIO26, CS GPIO19, DC GPIO21, BUSY GPIO22, RST GPIO25)
+#
+# Bekannter Zustand (2026-09-14, gemessen mit einem Diagnose-Build auf beiden Geraeten):
+#   - oben: BUSY-Signal ok. POWER ON ~40 ms, Mono-Refresh 2-4 s, Tri-Color ~26.5 s.
+#   - unten: Das Panel zeichnet korrekt, aber die BUSY-Leitung (GPIO22) wird nicht
+#     getrieben: ohne Pull-up dauerhaft LOW, mit Pull-up dauerhaft HIGH - auch
+#     waehrend eines Refresh. An "oben" liess sich das nicht erzeugen (auch nicht per
+#     Neustart mitten im Refresh) -> spricht fuer eine unterbrochene Leitung.
+#     Der Treiber erkennt das je Refresh und nutzt feste Refresh-Zeiten (6 s / 32 s);
+#     Log-Warnung: "BUSY gives no usable signal ... check the BUSY wire".
+#     Abhilfe: Kontakt/Kabel der BUSY-Leitung an diesem Geraet pruefen.
 
 substitutions:
   device_name: epaper-display-default
