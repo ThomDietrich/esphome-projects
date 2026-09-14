@@ -1,0 +1,132 @@
+# ======================================================================================================================
+# Phase 2: Direkter Link Astra <-> Brunnenpumpe (packet_transport/UDP, verschluesselt, Subnetz-Broadcast).
+# Ersetzt die HA-Automationen (Pumpe-Toggle + Pumpen-LED) — die Pumpensteuerung laeuft ohne HA im Steuerkreis.
+#   sendet:    pumpe_anforderung   (Soll-Zustand, von Taster 0 getoggelt; persistent)
+#   empfaengt: pumpe_zustand_code   (Zustandsmaschine der Pumpe: 0=Aus 1=Einsatzbereit 2=Laeuft 3=Fehler)
+# packet_transport kann keine text_sensor uebertragen -> die Pumpe sendet ihren Zustand als Zahl. Die Pumpe bleibt
+# damit die EINZIGE Quelle der Zustandslogik; der Astra bildet ihn nur noch auf LEDs/Toene ab.
+#
+# Taster-0-LED (Pumpe):  aus = Aus | gruen = Einsatzbereit | gelb = Laeuft | rot = Fehler
+#   Folgt dem ECHTEN Pumpenzustand (Taster 0 / lokaler Plug-Taster / HA gleichermassen). Taster 0 setzt die LED
+#   zusaetzlich SOFORT (optimistisch aus dem Soll), bis der Ist-Zustand zurueckkommt.
+# Ventil-LEDs (Taster 1-4): aus = zu | gelb = offen aber Pumpe aus | gruen = offen + Pumpe freigegeben (Code 1/2).
+# Taster 0 toggelt den Soll-Zustand (siehe gartenbewaesserung_controller.yaml).
+# ======================================================================================================================
+
+globals:
+  - id: pumpe_soll
+    type: bool
+    restore_value: yes          # Soll-Zustand uebersteht einen Astra-Reboot
+    initial_value: "false"
+  - id: pumpe_zustand_alt
+    type: int
+    restore_value: no
+    initial_value: "-1"         # letzter empfangener Zustands-Code (fuer die "Wasser fliesst"-Flanke)
+
+udp:
+  id: udp_packet
+  addresses:
+    - 192.168.23.255            # Subnetz-Broadcast (Astra + Pumpe im selben Netz)
+
+packet_transport:
+  - platform: udp
+    id: astra_transport
+    udp_id: udp_packet
+    encryption: !secret packet_transport_key
+    update_interval: 5s
+    binary_sensors:
+      - pumpe_anforderung
+    providers:
+      - name: gartenbewaesserung-brunnenpumpe
+        encryption: !secret packet_transport_key
+
+binary_sensor:
+  # Soll-Zustand der Pumpe (Taster 0 toggelt ihn) -> wird an die Pumpe gesendet
+  - platform: template
+    id: pumpe_anforderung
+    name: Pumpe Anforderung (Soll)
+    internal: false
+
+sensor:
+  # Pumpen-Zustandsmaschine (von der Pumpe empfangen): 0=Aus 1=Einsatzbereit 2=Laeuft 3=Fehler
+  - platform: packet_transport
+    transport_id: astra_transport
+    provider: gartenbewaesserung-brunnenpumpe
+    remote_id: pumpe_zustand_code
+    id: pumpe_zustand_rx
+    name: Pumpenzustand (Pumpe)
+    internal: true              # reiner Logik-Eingang (LED/Ventile/Ton); der Zustand ist am Pumpen-Geraet sichtbar
+    accuracy_decimals: 0
+    on_value:
+      - script.execute: taster0_led_aktualisieren
+      - script.execute: ventil_leds_aktualisieren
+      # B: kurzer Bestaetigungston, wenn der Lauf BEGINNT (Code -> 2), nicht bei jedem 5s-Re-Broadcast
+      - if:
+          condition:
+            lambda: 'return (int) roundf(x) == 2 && id(pumpe_zustand_alt) != 2;'
+          then:
+            - rtttl.play: "flow:d=16,o=6,b=200:e6,g6"
+      - lambda: 'id(pumpe_zustand_alt) = (int) roundf(x);'
+
+script:
+  # Taster-0-LED aus dem (empfangenen) Pumpenzustand; Fallback auf den lokalen Soll, bis etwas empfangen wurde (Boot)
+  - id: taster0_led_aktualisieren
+    mode: restart
+    then:
+      - select.set:
+          id: taster_0_led
+          option: !lambda |-
+            if (!id(pumpe_zustand_rx).has_state())
+              return std::string(id(pumpe_soll) ? "green" : "off");
+            switch ((int) roundf(id(pumpe_zustand_rx).state)) {
+              case 0:  return std::string("off");      // Aus
+              case 1:  return std::string("green");    // Einsatzbereit
+              case 2:  return std::string("yellow");   // Laeuft
+              default: return std::string("red");      // 3 = Fehler
+            }
+
+  # Ventil-LEDs (Taster 1-4): zu -> aus | offen & Pumpe aus -> gelb | offen & Pumpe freigegeben (Code 1/2) -> gruen.
+  # "Pumpe freigegeben?" = empfangener Code 1/2, Fallback auf den lokalen Soll bis zum ersten Empfang (Boot).
+  - id: ventil_leds_aktualisieren
+    mode: restart
+    then:
+      - select.set:
+          id: taster_1_led
+          option: !lambda |-
+            if (!id(ventil_1).state) return std::string("off");
+            bool an = id(pumpe_zustand_rx).has_state()
+                      ? ((int) roundf(id(pumpe_zustand_rx).state) == 1 || (int) roundf(id(pumpe_zustand_rx).state) == 2)
+                      : id(pumpe_soll);
+            return an ? std::string("green") : std::string("yellow");
+      - select.set:
+          id: taster_2_led
+          option: !lambda |-
+            if (!id(ventil_2).state) return std::string("off");
+            bool an = id(pumpe_zustand_rx).has_state()
+                      ? ((int) roundf(id(pumpe_zustand_rx).state) == 1 || (int) roundf(id(pumpe_zustand_rx).state) == 2)
+                      : id(pumpe_soll);
+            return an ? std::string("green") : std::string("yellow");
+      - select.set:
+          id: taster_3_led
+          option: !lambda |-
+            if (!id(ventil_3).state) return std::string("off");
+            bool an = id(pumpe_zustand_rx).has_state()
+                      ? ((int) roundf(id(pumpe_zustand_rx).state) == 1 || (int) roundf(id(pumpe_zustand_rx).state) == 2)
+                      : id(pumpe_soll);
+            return an ? std::string("green") : std::string("yellow");
+      - select.set:
+          id: taster_4_led
+          option: !lambda |-
+            if (!id(ventil_4).state) return std::string("off");
+            bool an = id(pumpe_zustand_rx).has_state()
+                      ? ((int) roundf(id(pumpe_zustand_rx).state) == 1 || (int) roundf(id(pumpe_zustand_rx).state) == 2)
+                      : id(pumpe_soll);
+            return an ? std::string("green") : std::string("yellow");
+
+esphome:
+  on_boot:
+    - priority: -200            # nach der Boot-LED-Animation (-100): Soll senden + LEDs auf den echten Stand setzen
+      then:
+        - lambda: 'id(pumpe_anforderung).publish_state(id(pumpe_soll));'
+        - script.execute: taster0_led_aktualisieren
+        - script.execute: ventil_leds_aktualisieren

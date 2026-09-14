@@ -105,10 +105,28 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
-        # Schaltlogik für Pumpe in HA realisiert
         - event.trigger:
             id: taster_ereignis
             event_type: controller_button_pressed_event_0
+        # Phase 2: Pumpen-Soll lokal toggeln + an die Pumpe senden (siehe gartenbewaesserung_pumpe_link.yaml).
+        # Ersetzt die alte HA-Pumpe-Toggle-Automation.
+        - lambda: 'id(pumpe_soll) = !id(pumpe_soll);'
+        - lambda: 'id(pumpe_anforderung).publish_state(id(pumpe_soll));'
+        # Sofort-Feedback (optimistisch aus dem Soll) + Ton; taster0_led_aktualisieren korrigiert spaeter auf den
+        # echten Zustand (gruen=einsatzbereit -> gelb sobald Last anliegt, siehe gartenbewaesserung_pumpe_link.yaml).
+        - if:
+            condition:
+              lambda: 'return id(pumpe_soll);'
+            then:
+              - select.set:
+                  id: taster_0_led
+                  option: "green"
+              - rtttl.play: "pumpon:d=16,o=6,b=160:g5,c6"     # aufsteigend = Pumpe AN
+            else:
+              - select.set:
+                  id: taster_0_led
+                  option: "off"
+              - rtttl.play: "pumpoff:d=16,o=6,b=160:c6,g5"    # absteigend = Pumpe AUS
 
   - platform: gpio
     name: Taster 1

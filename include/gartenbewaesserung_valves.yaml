@@ -1,4 +1,10 @@
 
+# Ventile (Magnetventile, 4x 16A Relais) — bedarfsgerechte Nutzung, KEINE feste Zonenzuordnung.
+# Ventil-Taster-LED (Bedeutung "fliesst hier Wasser?"):
+#   aus = Ventil zu | gelb = offen, aber Pumpe aus (kein Wasser) | gruen = offen + Pumpe freigegeben (Wasser da)
+# Bei jeder Ventil-Aenderung laeuft ventil_leds_aktualisieren (faktoriert den Pumpen-Ist ein) —
+# Logik/Skript: include/gartenbewaesserung_pumpe_link.yaml
+
 # https://esphome.io/components/switch/gpio.html
 switch:
   - platform: gpio
@@ -7,13 +13,9 @@ switch:
     pin: 25
     restore_mode: ALWAYS_OFF  # Kann nicht geändert werden (Astra Controller Verhalten)
     on_turn_on:
-      - select.set:
-            id: taster_1_led
-            option: green
+      - script.execute: ventil_leds_aktualisieren
     on_turn_off:
-      - select.set:
-            id: taster_1_led
-            option: "off"
+      - script.execute: ventil_leds_aktualisieren
 
   - platform: gpio
     name: Ventil 2
@@ -21,13 +23,9 @@ switch:
     pin: 26
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - select.set:
-            id: taster_2_led
-            option: green
+      - script.execute: ventil_leds_aktualisieren
     on_turn_off:
-      - select.set:
-            id: taster_2_led
-            option: "off"
+      - script.execute: ventil_leds_aktualisieren
 
   - platform: gpio
     name: Ventil 3
@@ -35,13 +33,9 @@ switch:
     pin: 33
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - select.set:
-            id: taster_3_led
-            option: green
+      - script.execute: ventil_leds_aktualisieren
     on_turn_off:
-      - select.set:
-            id: taster_3_led
-            option: "off"
+      - script.execute: ventil_leds_aktualisieren
 
   - platform: gpio
     name: Ventil 4
@@ -49,10 +43,6 @@ switch:
     pin: 32
     restore_mode: ALWAYS_OFF
     on_turn_on:
-      - select.set:
-            id: taster_4_led
-            option: green
+      - script.execute: ventil_leds_aktualisieren
     on_turn_off:
-      - select.set:
-            id: taster_4_led
-            option: "off"
+      - script.execute: ventil_leds_aktualisieren

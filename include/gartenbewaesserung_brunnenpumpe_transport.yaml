@@ -1,0 +1,45 @@
+# ======================================================================================================================
+# Gartenbewaesserung Brunnenpumpe — Transport-Layer (packet_transport / UDP)
+# ======================================================================================================================
+# Direkter Link zum Gartenbewaesserung-Astra OHNE Home Assistant im Steuerkreis (verschluesselt, Subnetz-Broadcast):
+#   empfaengt: pumpe_anforderung (Soll-Zustand vom Astra) -> setzt das Relais bei JEDER Aenderung
+#   sendet:    pumpe_zustand_code (Zustandsmaschine 0=Aus 1=Einsatzbereit 2=Laeuft 3=Fehler) -> Astra bildet
+#              daraus die Panel-LEDs und Toene ab. packet_transport kann keine text_sensor uebertragen, daher Zahl.
+# Der lokale Taster (Steuerungs-Include) bleibt Override; kein Auto-Aus bei Astra-Ausfall (Relais haelt).
+# ======================================================================================================================
+
+udp:
+  id: udp_packet
+  addresses:
+    - 192.168.23.255            # Subnetz-Broadcast (Astra + Pumpe im selben Netz)
+
+packet_transport:
+  - platform: udp
+    id: pumpe_transport
+    udp_id: udp_packet
+    encryption: !secret packet_transport_key
+    update_interval: 5s
+    sensors:
+      - pumpe_zustand_code
+    providers:
+      - name: gartenbewaesserung-astra
+        encryption: !secret packet_transport_key
+
+# Empfangene Pumpen-Anforderung vom Astra -> Relais nachfuehren (bei Aenderung)
+binary_sensor:
+  - platform: packet_transport
+    transport_id: pumpe_transport
+    provider: gartenbewaesserung-astra
+    remote_id: pumpe_anforderung
+    id: pumpe_anforderung_rx
+    name: Pumpe Anforderung (Astra)
+    internal: false
+    on_state:
+      then:
+        - if:
+            condition:
+              lambda: 'return x;'
+            then:
+              - switch.turn_on: pumpe_relais
+            else:
+              - switch.turn_off: pumpe_relais

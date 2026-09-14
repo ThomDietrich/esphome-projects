@@ -2,11 +2,12 @@
 # Gartenbewaesserung Brunnenpumpe — Schaltsteckdose der Brunnenpumpe (Migration Tasmota -> ESPHome)
 # ======================================================================================================================
 # Hardware: "CurrySmarter 30A" Schaltsteckdose mit Leistungsmessung (ESP8266EX, BL0937 Energiemess-IC).
-# Vorher Tasmota 14.1.0; migriert nach ESPHome, um spaeter eine direkte ESP-zu-ESP-Steuerung
-# (packet_transport/UDP) mit dem Gartenbewaesserung-Astra aufzubauen (Phase 2) — ohne Home Assistant im Steuerkreis.
+# Vorher Tasmota 14.1.0; migriert nach ESPHome fuer eine direkte ESP-zu-ESP-Steuerung
+# (packet_transport/UDP) mit dem Gartenbewaesserung-Astra — ohne Home Assistant im Steuerkreis.
 #
 # Aufbau (Includes):
 #   - gartenbewaesserung_brunnenpumpe_steuerung.yaml : Relais, Taster, BL0937-Leistung, Zustandsmaschine
+#   - gartenbewaesserung_brunnenpumpe_transport.yaml : packet_transport-Link zum Astra (Anforderung/Leistung)
 #
 # GPIO-BELEGUNG (aus Tasmota-Template "CurrySmarter 30A", BASE 18 / Generic)
 # ----------------------------------------------------------------------------------------------------------------------
@@ -34,8 +35,7 @@
 #   - Relais 'restore_mode: ALWAYS_OFF' = Fail-safe: Pumpe ist nach jedem Boot AUS.
 #   - Flash: ESP8266 1 MB Layout (esp01_1m). Chip ist physisch 4 MB (Tasmota meldete FlashSize 4096) — falls der
 #     OTA-Build nicht ins 1-MB-Layout passt, auf ein 4-MB-Board/flash_size umstellen.
-#   - api bleibt aktiv -> Geraet bleibt in HA sichtbar (Dashboards/History). Gesteuert wird es spaeter direkt
-#     vom Astra (Phase 2, packet_transport) — HA dann nicht mehr im Steuerkreis.
+#   - api bleibt aktiv -> Geraet bleibt in HA sichtbar (Dashboards/History), ist aber NICHT mehr im Steuerkreis.
 #   - Historischer Energie-Total (Tasmota: 102.589 kWh) laesst sich beim Firmware-Wechsel nicht uebernehmen.
 # ======================================================================================================================
 
@@ -57,6 +57,7 @@ packages:
   - !include common/wifi.yaml
   - !include common/boilerplate.yaml
   - !include include/gartenbewaesserung_brunnenpumpe_steuerung.yaml   # Relais, Taster, Leistung, Zustandsmaschine
+  - !include include/gartenbewaesserung_brunnenpumpe_transport.yaml   # packet_transport-Link zum Astra
 
 logger:
   baud_rate: 0  # Sealed Plug: kein serieller Zugang -> UART-Log aus (Logs via api/web_server)

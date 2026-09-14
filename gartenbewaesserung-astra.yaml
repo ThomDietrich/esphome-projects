@@ -16,8 +16,8 @@
 # ----------------------------------------------------------------------------------------------------------------------
 #   Brunnen -> Brunnenpumpe -> Druckwaechter + Ausdehnungsgefaess -> Verteiler mit 4 Ventilen -> Tropfschlaeuche
 #
-#   - Brunnenpumpe: extern 230V. Der ASTRA schaltet sie NICHT direkt; sie wird in Home Assistant ueber einen
-#     Tasmota-Schalter repraesentiert:  switch.gartenbewaesserung_pumpe
+#   - Brunnenpumpe: extern 230V, geschaltet von einer eigenen ESPHome-Schaltsteckdose (gartenbewaesserung-brunnenpumpe).
+#     Der ASTRA schaltet sie NICHT direkt, sondern sendet den Soll-Zustand per packet_transport/UDP (siehe Steuerlogik).
 #   - Druckwaechter (mechanischer Druckschalter) + Ausdehnungsgefaess (Membrandruckkessel) takten die Pumpe
 #     druckabhaengig autonom. Primaere Nutzung ist Troepfchenbewaesserung (sehr geringer Durchfluss); das
 #     Ausdehnungsgefaess haelt den Druck und verhindert staendiges Takten der Pumpe.
@@ -41,15 +41,15 @@
 # ----------------------------------------------------------------------------------------------------------------------
 #   - Ventile 1-4: Taster 1-4 toggeln das jeweilige Ventil DIREKT auf dem ESP (switch.toggle). Zusaetzlich feuert
 #     jeder Tastendruck ein Event (controller_button_pressed_event_1..4).
-#   - Pumpe: Taster 0 schaltet NICHT direkt, sondern feuert nur ein Event (controller_button_pressed_event_0).
-#     Die Pumpenfreigabe (Tasmota-Schalter) wird in HA getoggelt.
-#     HA-Regeln: packages/gartenbewaesserung_controller.yaml (im Home-Assistant-Config-Repo)
-#       * Event Taster 0  -> switch.gartenbewaesserung_pumpe umschalten (an/aus, OHNE Ventil-Guard)
-#       * Pumpe an  -> Taster-0-LED gruen ;  Pumpe aus -> Taster-0-LED aus
+#   - Pumpe: Taster 0 toggelt den Pumpen-Soll (global pumpe_soll) und sendet ihn per packet_transport/UDP DIREKT
+#     an die Brunnenpumpe — OHNE Home Assistant im Steuerkreis. Zusaetzlich feuert ein Event
+#     (controller_button_pressed_event_0). Link + LED-Logik: include/gartenbewaesserung_pumpe_link.yaml.
+#     Die Pumpe meldet Leistung + Relais-Ist zurueck -> Taster-0-LED folgt dem ECHTEN Pumpenzustand.
+#     (Ersetzt die frueheren HA-Regeln in packages/gartenbewaesserung_controller.yaml.)
 #
 # LED-SEMANTIK
 # ----------------------------------------------------------------------------------------------------------------------
-#   - Taster 0:   gruen = Pumpe freigegeben/an,  aus = Pumpe aus   (rot = nur Boot; orange/gelb = ungenutzt)
+#   - Taster 0:   aus = Pumpe aus | gruen = freigegeben/einsatzbereit (~0 W) | gelb = laeuft (> 20 W)  (rot = nur Boot)
 #   - Taster 1-4: gruen = Ventil offen,  aus = Ventil zu           (orange = nur Boot-Animation; gelb = ungenutzt)
 #   - Boot-Animation ueber on_boot-Prioritaeten: include/gartenbewaesserung_controller_boot.yaml
 #
@@ -138,6 +138,8 @@ packages:
       taster_idx: "4"
       pin_gruen: "6"
       pin_orange: "7"
+  # Phase 2: direkter Link zur Brunnenpumpe (packet_transport/UDP) + lokale Pumpen-LED-Logik
+  - !include include/gartenbewaesserung_pumpe_link.yaml
 
 output:
   - id: !extend rtttl_out_buzzer
