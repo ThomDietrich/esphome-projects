@@ -5,6 +5,9 @@
 # Vorher Tasmota 14.1.0; migriert nach ESPHome, um spaeter eine direkte ESP-zu-ESP-Steuerung
 # (packet_transport/UDP) mit dem Gartenbewaesserung-Astra aufzubauen (Phase 2) — ohne Home Assistant im Steuerkreis.
 #
+# Aufbau (Includes):
+#   - gartenbewaesserung_brunnenpumpe_steuerung.yaml : Relais, Taster, BL0937-Leistung, Zustandsmaschine
+#
 # GPIO-BELEGUNG (aus Tasmota-Template "CurrySmarter 30A", BASE 18 / Generic)
 # ----------------------------------------------------------------------------------------------------------------------
 #   GPIO   | Tasmota          | Funktion
@@ -18,16 +21,13 @@
 #   GPIO16 | Led_i            | Status-/Link-LED (invertiert)
 #   GPIO0,1,2,3,17 | None     | frei/unbelegt
 #
-# KALIBRIERUNG (Leistungsmessung)
+# KALIBRIERUNG (Leistungsmessung, im Steuerungs-Include)
 # ----------------------------------------------------------------------------------------------------------------------
 #   Tasmota-Werte (Quercheck):  PowerCal 9683, VoltageCal 1559, CurrentCal 3500.  Es gibt KEINE direkte
 #   Tasmota->ESPHome-Formel -> nach dem Flashen 1-Punkt-kalibrieren:
-#     1. Spannung: 'Spannung' sollte ~Netzspannung (~230 V) zeigen. Faktor in 'voltage_divider' anpassen
-#        (Anzeige zu hoch -> voltage_divider verkleinern, zu niedrig -> vergroessern), bis ~230 V stimmen.
-#     2. Leistung: bekannte ohmsche Last (z.B. Wasserkocher/Heizluefter, PF~1) einstecken, 'Leistung' mit dem
-#        echten Wert vergleichen und 'current_resistor' anpassen (Anzeige zu niedrig -> current_resistor
-#        verkleinern). Die Brunnenpumpe (~922 W lt. Tasmota) ist induktiv (PF<1) und als Referenz nur grob geeignet.
-#   Die hier gesetzten Werte sind ESPHome-Defaults und nur Startpunkte.
+#     1. Spannung: 'voltage_divider' so anpassen, dass die (interne) Spannung ~Netzspannung (~230 V) zeigt.
+#     2. Leistung: bekannte ohmsche Last (PF~1) einstecken, 'current_resistor' anpassen, bis 'Leistung' stimmt.
+#        Die Brunnenpumpe (~922 W lt. Tasmota) ist induktiv (PF<1) und als Referenz nur grob geeignet.
 #
 # HINWEISE
 # ----------------------------------------------------------------------------------------------------------------------
@@ -56,6 +56,7 @@ esp8266:
 packages:
   - !include common/wifi.yaml
   - !include common/boilerplate.yaml
+  - !include include/gartenbewaesserung_brunnenpumpe_steuerung.yaml   # Relais, Taster, Leistung, Zustandsmaschine
 
 logger:
   baud_rate: 0  # Sealed Plug: kein serieller Zugang -> UART-Log aus (Logs via api/web_server)
@@ -71,11 +72,11 @@ status_led:
     number: GPIO16
     inverted: true
 
-# --------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # EXTERNER HARDWARE-WATCHDOG (GPIO4): muss periodisch getoggelt werden, sonst resettet der WDT den Stecker.
 # Ersetzt die Tasmota-"Heartbeat"-Funktion. Square-Wave ~0,5 Hz (Flanke jede Sekunde) haelt den WDT zufrieden.
 # WICHTIG: nach dem Flashen pruefen, dass der Stecker NICHT periodisch neu bootet.
-# --------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 output:
   - platform: gpio
     pin: GPIO4
@@ -93,98 +94,3 @@ interval:
       - lambda: |-
           id(watchdog_state) = !id(watchdog_state);
           id(watchdog_feed).set_state(id(watchdog_state));
-
-# Pumpenrelais — Fail-safe: nach Boot AUS
-switch:
-  - platform: gpio
-    name: Schalter
-    id: pumpe_relais
-    pin: GPIO5
-    restore_mode: ALWAYS_OFF
-
-# Geraetebutton: toggelt lokal das Relais (Tasmota-Default-Verhalten; in Phase 2 hat die Astra-Anforderung Vorrang)
-binary_sensor:
-  - platform: gpio
-    name: Taster
-    pin:
-      number: GPIO13
-      mode:
-        input: true
-        pullup: true
-      inverted: true
-    filters:
-      - delayed_on_off: 50ms
-    on_press:
-      - switch.toggle: pumpe_relais
-
-# Leistungsmessung BL0937
-sensor:
-  - platform: hlw8012
-    model: BL0937
-    sel_pin:
-      number: GPIO15
-      inverted: true   # SEL fuer dieses Board invertiert (Tasmota: HLWBL SEL_i) -> sonst V und I vertauscht
-    cf_pin: GPIO12
-    cf1_pin: GPIO14
-    current_resistor: 0.001 ohm   # Startwert (Default) — kalibrieren, siehe Header
-    voltage_divider: 1603         # kalibriert: 337.3 V @2351 -> ~230 V (Netz). current_resistor noch via Last kalibrieren.
-    update_interval: 2s           # schnelle Erfassung des Pumpenlaufs (Druckwaechter-getaktet, asynchron); HA-Last via delta-Filter gedaempft
-    voltage:
-      name: Spannung
-      id: pumpe_spannung
-      internal: true            # nicht nach HA exportieren (nur intern; Leistung genuegt)
-      device_class: voltage
-      unit_of_measurement: V
-      accuracy_decimals: 1
-    current:
-      name: Strom
-      id: pumpe_strom
-      internal: true            # nicht nach HA exportieren (nur intern)
-      device_class: current
-      unit_of_measurement: A
-      accuracy_decimals: 3
-    power:
-      name: Leistung
-      id: pumpe_leistung
-      device_class: power
-      unit_of_measurement: W
-      accuracy_decimals: 1
-      icon: mdi:flash
-      filters:
-        - or:
-            - delta: 2
-            - heartbeat: 30s
-
-  - platform: total_daily_energy
-    name: Energie heute
-    power_id: pumpe_leistung
-    unit_of_measurement: kWh
-    state_class: total_increasing
-    device_class: energy
-    accuracy_decimals: 3
-    icon: mdi:meter-electric
-    filters:
-      - multiply: 0.001
-
-# ----------------------------------------------------------------------------------------------------------------------
-# Pumpen-Zustandsmaschine (on-device): explizit aus Relais + Leistung (Motor zieht Strom).
-# Vier Faelle (Wahrheitstabelle Relais x Last); der else-Fall ist ein Fehlerzustand:
-#   Relais AUS + ~0 W   -> "Aus"            (sauber stromlos)
-#   Relais AN  + ~0 W   -> "Einsatzbereit"  (Druckwaechter haelt den Motor an)
-#   Relais AN  + Last   -> "Laeuft"          (Motor zieht Strom, > 20 W)
-#   Relais AUS + Last   -> "Fehler"          (Strom trotz Relais AUS -> klebendes Relais / Messfehler)
-# Schwelle 20 W robust (Leerlauf ~0 W); nach der current_resistor-Kalibrierung ggf. anpassen.
-# ----------------------------------------------------------------------------------------------------------------------
-text_sensor:
-  - platform: template
-    name: Pumpenzustand
-    id: pumpe_zustand
-    icon: mdi:state-machine
-    update_interval: 2s
-    lambda: |-
-      bool relais = id(pumpe_relais).state;
-      bool last = id(pumpe_leistung).has_state() && id(pumpe_leistung).state > 20.0f;
-      if (!relais && !last) return std::string("Aus");
-      if ( relais && !last) return std::string("Einsatzbereit");
-      if ( relais &&  last) return std::string("Laeuft");
-      return std::string("Fehler");   // !relais && last: Strom trotz Relais AUS

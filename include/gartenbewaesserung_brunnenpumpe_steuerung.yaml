@@ -1,0 +1,118 @@
+# ======================================================================================================================
+# Gartenbewaesserung Brunnenpumpe — Steuerung + Zustandsmaschine
+# ======================================================================================================================
+# Relais (Pumpenfreigabe), Geraetebutton (lokaler Override), BL0937-Leistungsmessung und die
+# Pumpen-Zustandsmaschine. Der Astra-Link (Anforderung empfangen, Leistung senden) liegt im
+# Transport-Include (gartenbewaesserung_brunnenpumpe_transport.yaml).
+# Kalibrierung der Leistungsmessung: siehe Kopf der Geraete-Datei (gartenbewaesserung-brunnenpumpe.yaml).
+# ======================================================================================================================
+
+# Pumpenrelais — Fail-safe: nach Boot AUS
+switch:
+  - platform: gpio
+    name: Schalter
+    id: pumpe_relais
+    pin: GPIO5
+    restore_mode: ALWAYS_OFF
+
+# Geraetebutton: toggelt lokal das Relais (lokaler Override; "last command wins" mit der Astra-Anforderung)
+binary_sensor:
+  - platform: gpio
+    name: Taster
+    pin:
+      number: GPIO13
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    filters:
+      - delayed_on_off: 50ms
+    on_press:
+      - switch.toggle: pumpe_relais
+
+# Leistungsmessung BL0937
+sensor:
+  - platform: hlw8012
+    model: BL0937
+    sel_pin:
+      number: GPIO15
+      inverted: true   # SEL fuer dieses Board invertiert (Tasmota: HLWBL SEL_i) -> sonst V und I vertauscht
+    cf_pin: GPIO12
+    cf1_pin: GPIO14
+    current_resistor: 0.001 ohm   # Startwert (Default) — via bekannte Last kalibrieren (siehe Geraete-Header)
+    voltage_divider: 1603         # kalibriert: 337.3 V @2351 -> ~230 V (Netz)
+    update_interval: 2s           # schnelle Erfassung des (druckwaechter-getakteten) Pumpenlaufs; HA-Last via delta-Filter gedaempft
+    voltage:
+      name: Spannung
+      id: pumpe_spannung
+      internal: true            # nur intern (Leistung genuegt)
+      device_class: voltage
+      unit_of_measurement: V
+      accuracy_decimals: 1
+    current:
+      name: Strom
+      id: pumpe_strom
+      internal: true            # nur intern
+      device_class: current
+      unit_of_measurement: A
+      accuracy_decimals: 3
+    power:
+      name: Leistung
+      id: pumpe_leistung
+      device_class: power
+      unit_of_measurement: W
+      accuracy_decimals: 1
+      icon: mdi:flash
+      filters:
+        - or:
+            - delta: 2
+            - heartbeat: 30s
+
+  - platform: total_daily_energy
+    name: Energie heute
+    power_id: pumpe_leistung
+    unit_of_measurement: kWh
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    icon: mdi:meter-electric
+    filters:
+      - multiply: 0.001
+
+  # --------------------------------------------------------------------------------------------------------------------
+  # Pumpen-Zustandsmaschine (EINZIGE Quelle der Zustandslogik): explizit aus Relais + Leistung (Motor zieht Strom).
+  # Als Zahl (Code), weil packet_transport keine text_sensor uebertragen kann -> der Astra bildet daraus LEDs/Toene ab.
+  # Vier Faelle (Wahrheitstabelle Relais x Last); der else-Fall ist ein Fehlerzustand:
+  #   Relais AUS + ~0 W = 0 "Aus"           (sauber stromlos)
+  #   Relais AN  + ~0 W = 1 "Einsatzbereit" (Druckwaechter haelt den Motor an)
+  #   Relais AN  + Last = 2 "Laeuft"         (Motor zieht Strom, > 20 W)
+  #   Relais AUS + Last = 3 "Fehler"         (Strom trotz Relais AUS -> klebendes Relais / Messfehler)
+  # --------------------------------------------------------------------------------------------------------------------
+  - platform: template
+    name: Pumpenzustand Code
+    id: pumpe_zustand_code
+    update_interval: 2s
+    accuracy_decimals: 0
+    icon: mdi:state-machine
+    lambda: |-
+      bool relais = id(pumpe_relais).state;
+      bool last = id(pumpe_leistung).has_state() && id(pumpe_leistung).state > 20.0f;
+      if (!relais && !last) return 0.0f;  // Aus
+      if ( relais && !last) return 1.0f;  // Einsatzbereit
+      if ( relais &&  last) return 2.0f;  // Laeuft
+      return 3.0f;                        // Fehler: Strom trotz Relais AUS
+
+# Lesbarer Zustandstext (fuer HA) — bildet nur den Code ab, KEINE eigene Logik.
+text_sensor:
+  - platform: template
+    name: Pumpenzustand
+    id: pumpe_zustand
+    icon: mdi:state-machine
+    update_interval: 2s
+    lambda: |-
+      switch (id(pumpe_zustand_code).has_state() ? (int) roundf(id(pumpe_zustand_code).state) : 0) {
+        case 1:  return std::string("Einsatzbereit");
+        case 2:  return std::string("Laeuft");
+        case 3:  return std::string("Fehler");
+        default: return std::string("Aus");
+      }
