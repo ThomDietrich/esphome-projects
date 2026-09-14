@@ -12,3 +12,9 @@
 
 # MCP config (contains API tokens)
 .mcp.json
+
+# Python-Bytecode aus lokalen external_components (entsteht beim ESPHome-Build)
+__pycache__/
+
+# oh-my-claudecode: lokale Session-/State-Daten
+.omc/
