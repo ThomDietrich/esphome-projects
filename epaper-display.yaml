@@ -39,13 +39,15 @@ sensor:
     id: epaperdisplay_last_update
 
 button:
-  # Kurze Auffrischung: normaler (Mono-)Refresh, ~2-3 Farbwechsel — zeichnet den
-  # aktuellen Inhalt schnell neu. Ist Rot im Bild, wird automatisch Tri-Color.
+  # Kurze Auffrischung: zeichnet den aktuellen Inhalt neu, auch wenn er unveraendert
+  # ist (unveraenderte Bilder ueberspringt der Treiber sonst). Mono-Refresh (2-4 s);
+  # ist Rot im Bild oder noch auf dem Panel, automatisch Tri-Color.
   - platform: template
     name: Auffrischung (kurz)
     icon: mdi:refresh
     entity_category: config
     on_press:
+      - lambda: 'id(epaperdisplay).request_redraw();'
       - component.update: epaperdisplay
 
   # Volle Auffrischung: erzwingt den vollen Tri-Color-OTP-Refresh (lange Waveform,

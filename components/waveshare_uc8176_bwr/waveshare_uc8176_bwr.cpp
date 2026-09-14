@@ -9,6 +9,21 @@ namespace waveshare_uc8176_bwr {
 
 static const char *const TAG = "waveshare_uc8176_bwr";
 
+// POWER ON releases BUSY after ~40 ms, POWER OFF after < 250 ms (measured).
+static const uint32_t POWER_ON_TIMEOUT_MS = 300;
+static const uint32_t POWER_OFF_TIMEOUT_MS = 500;
+// BUSY asserts within a few ms after DISPLAY REFRESH; judged only after this.
+static const uint32_t REFRESH_BUSY_SETTLE_MS = 200;
+static const uint32_t REFRESH_POLL_INTERVAL_MS = 100;
+// Safety net if BUSY never releases (tri-color refresh measured at ~26.5 s).
+static const uint32_t REFRESH_TIMEOUT_MS = 45000;
+// Fixed refresh durations if BUSY gives no usable signal (measured mono ~4.2 s,
+// tri-color ~26.5 s at room temperature; plus margin for colder panels).
+static const uint32_t REFRESH_FIXED_MONO_MS = 6000;
+static const uint32_t REFRESH_FIXED_FULL_MS = 32000;
+// An unchanged frame is still redrawn after this age (keeps the pigments fresh).
+static const uint32_t UNCHANGED_MAX_AGE_MS = 6UL * 60UL * 60UL * 1000UL;
+
 // Short "quick" LUTs for the UC8176 4.2" panel (black/white only), copied from
 // the built-in mono 4.20in driver. They give a short waveform (~4 phases =
 // 2-3 visible flashes) and are used for the fast mono refresh when the frame
@@ -73,7 +88,7 @@ void WaveshareEPaper4P2InBWR::initialize() {
 
   // COMMAND POWER ON
   this->command(0x04);
-  this->wait_until_idle_();
+  this->wait_busy_idle_(POWER_ON_TIMEOUT_MS);  // BUSY usability is judged per refresh in display()
   delay(10);
 
   // COMMAND PLL CONTROL
@@ -83,12 +98,33 @@ void WaveshareEPaper4P2InBWR::initialize() {
   delay(2);
 }
 
-// BUSY is only sampled after this settle time: the controller asserts BUSY a
-// few ms after DISPLAY REFRESH (Waveshare's reference code waits 100 ms too).
-static const uint32_t REFRESH_BUSY_SETTLE_MS = 200;
-static const uint32_t REFRESH_POLL_INTERVAL_MS = 100;
-// Safety net if BUSY never releases (tri-color refresh measured at ~26 s).
-static const uint32_t REFRESH_TIMEOUT_MS = 60000;
+bool WaveshareEPaper4P2InBWR::wait_busy_idle_(uint32_t timeout_ms) {
+  // Own short wait instead of the base wait_until_idle_() (fixed 1 s timeout):
+  // POWER ON/OFF take well below these timeouts on a panel with a working BUSY.
+  const uint32_t start = millis();
+  while (this->busy_()) {
+    if (millis() - start >= timeout_ms)
+      return false;
+    delay(1);
+  }
+  return true;
+}
+
+uint32_t WaveshareEPaper4P2InBWR::frame_hash_() {
+  // FNV-1a over both planes: 4 bytes of state instead of a 30 KB frame copy.
+  uint32_t hash = 2166136261UL;
+  const uint32_t len = this->get_buffer_length_();
+  for (uint32_t i = 0; i < len; i++) {
+    hash ^= this->buffer_[i];
+    hash *= 16777619UL;
+  }
+  return hash;
+}
+
+void WaveshareEPaper4P2InBWR::note_busy_unusable_(const char *reason) {
+  // Logged per refresh rather than once: boot-time logs never reach an API log client.
+  ESP_LOGW(TAG, "BUSY gives no usable signal (%s) - check the BUSY wire; using fixed refresh time", reason);
+}
 
 void WaveshareEPaper4P2InBWR::update() {
   if (this->refresh_running_) {
@@ -99,21 +135,50 @@ void WaveshareEPaper4P2InBWR::update() {
     return;
   }
   this->do_update_();
+
+  // Skip the refresh if the panel already shows exactly this frame (e.g. the
+  // burst of updates while HA connects at boot): a tri-color refresh flashes for
+  // ~26 s. Explicit requests and images older than the max age are redrawn.
+  const uint32_t hash = this->frame_hash_();
+  const bool forced = this->redraw_requested_ || this->full_refresh_requested_;
+  const bool stale = millis() - this->last_refresh_ms_ >= UNCHANGED_MAX_AGE_MS;
+  if (this->frame_shown_ && hash == this->shown_frame_hash_ && !forced && !stale) {
+    ESP_LOGD(TAG, "Frame unchanged, refresh skipped");
+    return;
+  }
+  this->redraw_requested_ = false;
+  this->shown_frame_hash_ = hash;
+  this->frame_shown_ = true;
   this->display();
 }
 
 void WaveshareEPaper4P2InBWR::poll_refresh_done_() {
   const uint32_t elapsed = millis() - this->refresh_start_ms_;
+  const bool busy = this->busy_();
+  if (busy)
+    this->refresh_busy_seen_ = true;
   if (elapsed < REFRESH_BUSY_SETTLE_MS)
     return;
-  const bool busy = this->busy_pin_ != nullptr && this->busy_pin_->digital_read();
-  if (busy && elapsed < REFRESH_TIMEOUT_MS)
-    return;
 
-  if (busy) {
-    ESP_LOGW(TAG, "Refresh: BUSY still active after %" PRIu32 " ms, powering off anyway", elapsed);
+  if (this->refresh_use_busy_ && !this->refresh_busy_seen_) {
+    // A working BUSY is active for the whole waveform (seconds): never seen
+    // active means the signal is stuck idle.
+    this->refresh_use_busy_ = false;
+    this->note_busy_unusable_("not active during refresh");
+  }
+
+  if (this->refresh_use_busy_) {
+    if (busy && elapsed < REFRESH_TIMEOUT_MS)
+      return;
+    if (busy) {
+      ESP_LOGW(TAG, "Refresh: BUSY still active after %" PRIu32 " ms, powering off anyway", elapsed);
+    } else {
+      ESP_LOGD(TAG, "Refresh done after %" PRIu32 " ms", elapsed);
+    }
   } else {
-    ESP_LOGD(TAG, "Refresh done after %" PRIu32 " ms", elapsed);
+    if (elapsed < (this->refresh_full_ ? REFRESH_FIXED_FULL_MS : REFRESH_FIXED_MONO_MS))
+      return;
+    ESP_LOGD(TAG, "Refresh assumed done after fixed %" PRIu32 " ms (no BUSY signal)", elapsed);
   }
   this->cancel_interval("refresh_wait");
   this->command(0x02);  // POWER OFF (< deep sleep; image is retained)
@@ -137,16 +202,24 @@ void HOT WaveshareEPaper4P2InBWR::display() {
       break;
     }
   }
-  const bool full = has_red || this->full_refresh_requested_;
+  // Only the tri-color (OTP) waveform moves the red pigment: a mono refresh
+  // leaves the previous frame's red visible (verified 2026-09-14). So the full
+  // refresh is also needed while the panel still shows red.
+  const bool red_leaving = this->panel_shows_red_ && !has_red;
+  const bool full = has_red || red_leaving || this->full_refresh_requested_;
   this->full_refresh_requested_ = false;
+  this->panel_shows_red_ = has_red;
 
   ESP_LOGD(TAG, "Refresh: %s%s", full ? "full tri-color (OTP LUT, ~26s)" : "fast mono (custom LUT)",
-           (full && !has_red) ? " [forced]" : "");
+           (!full || has_red) ? "" : (red_leaving ? " [clearing red]" : " [forced]"));
 
   // POWER ON (registers persist across the power-off at the end of the previous
-  // refresh; e-paper holds the image unpowered in between).
+  // refresh; e-paper holds the image unpowered in between). A working BUSY is
+  // idle again after ~40 ms; otherwise it is unusable for this refresh.
   this->command(0x04);
-  this->wait_until_idle_();
+  this->refresh_use_busy_ = this->wait_busy_idle_(POWER_ON_TIMEOUT_MS);
+  if (!this->refresh_use_busy_)
+    this->note_busy_unusable_("still active after POWER ON");
 
   // --- Panel setting + LUT (mode dependent) ---
   if (full) {
@@ -217,8 +290,11 @@ void HOT WaveshareEPaper4P2InBWR::display() {
   // BUSY stays active for the whole waveform (~26 s tri-color). Poll for its end
   // instead of blocking the main loop; poll_refresh_done_() then powers off.
   this->command(0x12);  // DISPLAY REFRESH
+  this->refresh_full_ = full;
+  this->refresh_busy_seen_ = false;
   this->refresh_running_ = true;
   this->refresh_start_ms_ = millis();
+  this->last_refresh_ms_ = this->refresh_start_ms_;
   this->set_interval("refresh_wait", REFRESH_POLL_INTERVAL_MS, [this]() { this->poll_refresh_done_(); });
 }
 
@@ -237,7 +313,10 @@ void WaveshareEPaper4P2InBWR::deep_sleep() {
   this->data(0x00);
   delay(100);  // NOLINT
   this->command(0x02);
-  this->wait_until_idle_();
+  // While a refresh runs, BUSY stays active until the waveform ends (the reset
+  // at the next boot aborts it cleanly, verified): waiting would only delay.
+  if (!this->refresh_running_)
+    this->wait_busy_idle_(POWER_OFF_TIMEOUT_MS);
   this->command(0x07);
   this->data(0xA5);  // check byte
 }
@@ -246,6 +325,8 @@ void WaveshareEPaper4P2InBWR::dump_config() {
   LOG_DISPLAY("", "Waveshare E-Paper (UC8176 BWR, hybrid)", this);
   ESP_LOGCONFIG(TAG, "  Model: 4.2in-B tri-color (400x300, UC8176)");
   ESP_LOGCONFIG(TAG, "  Refresh: mono custom-LUT when no red, else tri-color OTP");
+  ESP_LOGCONFIG(TAG, "  Refresh wait: non-blocking via BUSY (LOW-active), fixed times if BUSY unusable");
+  ESP_LOGCONFIG(TAG, "  Unchanged frames: skipped, redrawn after %" PRIu32 " min", UNCHANGED_MAX_AGE_MS / 60000UL);
   LOG_PIN("  Reset Pin: ", this->reset_pin_);
   LOG_PIN("  DC Pin: ", this->dc_pin_);
   LOG_PIN("  Busy Pin: ", this->busy_pin_);

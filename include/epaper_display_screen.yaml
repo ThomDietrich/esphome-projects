@@ -24,9 +24,14 @@ display:
     dc_pin: GPIO21
     # BUSY ist beim UC8176 LOW-aktiv (gemessen 2026-09-14: 0 waehrend des Refresh,
     # 1 im Ruhezustand) - ESPHome erwartet HIGH-aktiv, daher invertiert.
+    # Pull-up: eine unterbrochene BUSY-Leitung liest damit eindeutig "bereit" statt
+    # zufaellig; der Treiber erkennt das und nutzt feste Refresh-Zeiten.
     busy_pin:
       number: GPIO22
       inverted: true
+      mode:
+        input: true
+        pullup: true
     reset_pin: GPIO25
     update_interval: 30min
 
