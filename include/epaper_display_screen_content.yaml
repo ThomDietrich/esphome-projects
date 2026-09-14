@@ -104,14 +104,26 @@
   int y_start_c = 230;
   int y_sep_c = 28;
   int cal_index = 0;
+
+  // Erinnerungsblock: roter Balken ueber die volle Kalenderspalte, Icon + Text schwarz darauf.
+  // Breite = Spalte von der Ueberschrift (x=10) bis Ende der Trennlinie (x=292), vor dem
+  // geloeschten rechten Bereich (ab x=295). Hoehe: Icon Y-19..Y+1, Text Y-17..Y+3, plus 2px
+  // Rand -> 26px; bei 28px Zeilenabstand bleibt zwischen zwei Bloecken 2px Weiss.
+  // Reihenfolge: erst Balken, dann Schrift - der BWR-Treiber loescht beim Zeichnen eines
+  // schwarzen Pixels das Rot-Bit, die Schrift bleibt dadurch schwarz.
+  auto erinnerung_hintergrund = [&](int y_baseline) {
+    it.filled_rectangle(10, y_baseline - 21, 292 - 10, 26, id(farbe_rot));
+  };
+
   if (id(opstate_waschmaschine).state == "Active") {
     it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
     it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "Waschmaschine läuft ...");
     cal_index += 1;
   }
   if (id(opstate_waschmaschine).state == "Finished") {
-    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), id(farbe_rot), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
-    it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), id(farbe_rot), TextAlign::BASELINE_LEFT, "Waschmaschine ist fertig!");
+    erinnerung_hintergrund(y_start_c+cal_index*y_sep_c);
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰜪"); // mdi-washing-machine
+    it.print(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "Waschmaschine ist fertig!");
     cal_index += 1;
   }
   if (id(cal_geburtstag).state != "unknown" && id(cal_geburtstag).state != "unavailable" && id(cal_geburtstag).state != "") {
@@ -135,8 +147,9 @@
     cal_index += 1;
   }
   if (id(muell_entsorgung_tage).state < 2) {
-    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), id(farbe_rot), TextAlign::BASELINE_CENTER, "󰩺"); // mdi-trash-can-outline
-    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), id(farbe_rot), TextAlign::BASELINE_LEFT, "%s", id(muell_entsorgung).state.c_str());
+    erinnerung_hintergrund(y_start_c+cal_index*y_sep_c);
+    it.print(25, y_start_c+cal_index*y_sep_c, id(mdi_calendar), TextAlign::BASELINE_CENTER, "󰩺"); // mdi-trash-can-outline
+    it.printf(45, y_start_c+cal_index*y_sep_c-2, id(font_calendar), TextAlign::BASELINE_LEFT, "%s", id(muell_entsorgung).state.c_str());
     cal_index += 1;
   }
 
