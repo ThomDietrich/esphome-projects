@@ -141,25 +141,10 @@ packages:
   # Phase 2: direkter Link zur Brunnenpumpe (packet_transport/UDP) + lokale Pumpen-LED-Logik
   - !include include/gartenbewaesserung_pumpe_link.yaml
 
-output:
-  - id: !extend rtttl_out_buzzer
-    pin:
-      ignore_strapping_warning: true
-
-################################################################################
-
 logger:
+  # Per-Reading-Sensorlogs wuerden den (langsamen) UART fluten -> nur INFO, andere Meldungen bleiben
   logs:
-    # By default, every reading will be printed to the UART, which is very slow
-    # This will disable printing the readings but keep other helpful messages
     sensor: INFO
-
-status_led:
-  pin:
-    number: ${blue_led_pin}
-    inverted: true
-
-###############################################################################
 
 i2c:
   id: i2c_component
@@ -167,3 +152,14 @@ i2c:
   scl: 14
   scan: true
   frequency: 50kHz
+
+status_led:
+  pin:
+    number: ${blue_led_pin}
+    inverted: true
+
+# Buzzer-Pin (aus buzzer_rtttl.yaml) ist ein Strapping-Pin -> Warnung unterdruecken
+output:
+  - id: !extend rtttl_out_buzzer
+    pin:
+      ignore_strapping_warning: true
