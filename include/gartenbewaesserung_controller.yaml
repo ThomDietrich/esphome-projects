@@ -140,6 +140,7 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
+        - rtttl.play: "blip:d=32,o=6,b=200:c"   # Tastendruck-Quittung
         - switch.toggle: ventil_1
         - event.trigger:
             id: taster_ereignis
@@ -157,6 +158,7 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
+        - rtttl.play: "blip:d=32,o=6,b=200:c"   # Tastendruck-Quittung
         - switch.toggle: ventil_2
         - event.trigger:
             id: taster_ereignis
@@ -174,6 +176,7 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
+        - rtttl.play: "blip:d=32,o=6,b=200:c"   # Tastendruck-Quittung
         - switch.toggle: ventil_3
         - event.trigger:
             id: taster_ereignis
@@ -191,6 +194,7 @@ binary_sensor:
       - delayed_on_off: 100ms
     on_press:
       then:
+        - rtttl.play: "blip:d=32,o=6,b=200:c"   # Tastendruck-Quittung
         - switch.toggle: ventil_4
         - event.trigger:
             id: taster_ereignis
