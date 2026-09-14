@@ -1,4 +1,5 @@
 #include "waveshare_uc8176_bwr.h"
+#include <cinttypes>
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/helpers.h"
@@ -82,6 +83,49 @@ void WaveshareEPaper4P2InBWR::initialize() {
   delay(2);
 }
 
+// BUSY is only sampled after this settle time: the controller asserts BUSY a
+// few ms after DISPLAY REFRESH (Waveshare's reference code waits 100 ms too).
+static const uint32_t REFRESH_BUSY_SETTLE_MS = 200;
+static const uint32_t REFRESH_POLL_INTERVAL_MS = 100;
+// Safety net if BUSY never releases (tri-color refresh measured at ~26 s).
+static const uint32_t REFRESH_TIMEOUT_MS = 60000;
+
+void WaveshareEPaper4P2InBWR::update() {
+  if (this->refresh_running_) {
+    // Panel still busy with the previous refresh: a frame sent now would corrupt
+    // the running waveform. Redraw with then-current data once it is done.
+    this->update_pending_ = true;
+    ESP_LOGD(TAG, "Update deferred: refresh still running");
+    return;
+  }
+  this->do_update_();
+  this->display();
+}
+
+void WaveshareEPaper4P2InBWR::poll_refresh_done_() {
+  const uint32_t elapsed = millis() - this->refresh_start_ms_;
+  if (elapsed < REFRESH_BUSY_SETTLE_MS)
+    return;
+  const bool busy = this->busy_pin_ != nullptr && this->busy_pin_->digital_read();
+  if (busy && elapsed < REFRESH_TIMEOUT_MS)
+    return;
+
+  if (busy) {
+    ESP_LOGW(TAG, "Refresh: BUSY still active after %" PRIu32 " ms, powering off anyway", elapsed);
+  } else {
+    ESP_LOGD(TAG, "Refresh done after %" PRIu32 " ms", elapsed);
+  }
+  this->cancel_interval("refresh_wait");
+  this->command(0x02);  // POWER OFF (< deep sleep; image is retained)
+  this->refresh_running_ = false;
+
+  if (this->update_pending_) {
+    this->update_pending_ = false;
+    // Replay outside this interval callback (display() re-arms the interval).
+    this->defer([this]() { this->update(); });
+  }
+}
+
 void HOT WaveshareEPaper4P2InBWR::display() {
   const uint32_t buf_len = this->get_buffer_length_() / 2u;
 
@@ -96,7 +140,7 @@ void HOT WaveshareEPaper4P2InBWR::display() {
   const bool full = has_red || this->full_refresh_requested_;
   this->full_refresh_requested_ = false;
 
-  ESP_LOGD(TAG, "Refresh: %s%s", full ? "full tri-color (OTP LUT, ~15s)" : "fast mono (custom LUT)",
+  ESP_LOGD(TAG, "Refresh: %s%s", full ? "full tri-color (OTP LUT, ~26s)" : "fast mono (custom LUT)",
            (full && !has_red) ? " [forced]" : "");
 
   // POWER ON (registers persist across the power-off at the end of the previous
@@ -169,10 +213,13 @@ void HOT WaveshareEPaper4P2InBWR::display() {
       this->buffer_[i] ^= 0xFF;
   }
 
-  // --- Refresh + power off ---
+  // --- Refresh (non-blocking) ---
+  // BUSY stays active for the whole waveform (~26 s tri-color). Poll for its end
+  // instead of blocking the main loop; poll_refresh_done_() then powers off.
   this->command(0x12);  // DISPLAY REFRESH
-  this->wait_until_idle_();
-  this->command(0x02);  // POWER OFF (< deep sleep; image is retained)
+  this->refresh_running_ = true;
+  this->refresh_start_ms_ = millis();
+  this->set_interval("refresh_wait", REFRESH_POLL_INTERVAL_MS, [this]() { this->poll_refresh_done_(); });
 }
 
 void WaveshareEPaper4P2InBWR::deep_sleep() {

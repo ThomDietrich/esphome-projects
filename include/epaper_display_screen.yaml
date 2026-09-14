@@ -22,7 +22,11 @@ display:
     id: epaperdisplay
     cs_pin: GPIO19
     dc_pin: GPIO21
-    busy_pin: GPIO22
+    # BUSY ist beim UC8176 LOW-aktiv (gemessen 2026-09-14: 0 waehrend des Refresh,
+    # 1 im Ruhezustand) - ESPHome erwartet HIGH-aktiv, daher invertiert.
+    busy_pin:
+      number: GPIO22
+      inverted: true
     reset_pin: GPIO25
     update_interval: 30min
 

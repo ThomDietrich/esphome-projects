@@ -49,7 +49,7 @@ button:
       - component.update: epaperdisplay
 
   # Volle Auffrischung: erzwingt den vollen Tri-Color-OTP-Refresh (lange Waveform,
-  # ~15s) auch ohne Rot — frischt das ganze Panel auf (heller/weisserer Hintergrund).
+  # ~26s) auch ohne Rot — frischt das ganze Panel auf (heller/weisserer Hintergrund).
   - platform: template
     name: Auffrischung (voll)
     icon: mdi:image-refresh
