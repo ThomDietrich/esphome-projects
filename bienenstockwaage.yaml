@@ -39,9 +39,9 @@ substitutions:
   scale_test_refweight_30kg_raw:     "351850"
   scale_test_refweight_78_5kg_raw:  "1472100"
   #
-  scale_01_refweight_0kg_raw:        "684598" # Nicht gemessen, nur angenähert! Muss noch ermittelt werden.
-  scale_01_refweight_30kg_raw:      "1378000"
-  scale_01_refweight_78_5kg_raw:    "2499000"
+  scale_01_refweight_0kg_raw:        "694400"
+  scale_01_refweight_30kg_raw:      "1369450"
+  scale_01_refweight_78_5kg_raw:    "2497400"
   #
   scale_02_refweight_0kg_raw:       "-353088"
   scale_02_refweight_30kg_raw:       "362451"
